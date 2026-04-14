@@ -4,17 +4,20 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bank Reconciliation — Full Preview</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; }
+  :root { font-family: 'Inter', sans-serif; font-feature-settings: 'liga' 1, 'calt' 1; }
+  @supports (font-variation-settings: normal) {
+    :root { font-family: 'InterVariable', sans-serif; }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-synthesis: none; }
+  body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 <div id="root"></div>
-<script>
-/**
+<script>/**
  * @license React
  * react.development.js
  *
@@ -3356,10 +3359,8 @@
   exports.version = ReactVersion;
 
 })));
-
 </script>
-<script>
-/**
+<script>/**
  * @license React
  * react-dom.development.js
  *
@@ -33228,7 +33229,6 @@
   exports.version = ReactVersion;
 
 })));
-
 </script>
 <script>
 const { useState, useEffect, useRef } = React;
@@ -37183,7 +37183,8 @@ function ReconciliationFlow({
       fontSize: 24,
       fontWeight: 600,
       color: "#080908",
-      flexShrink: 0
+      flexShrink: 0,
+      letterSpacing: "-1px"
     }
   }, "Bank reconciliation"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -38987,7 +38988,8 @@ function BankReconciliation() {
       fontSize: 32,
       fontWeight: 500,
       color: "#080908",
-      lineHeight: "40px"
+      lineHeight: "40px",
+      letterSpacing: "-1px"
     }
   }, "Bank reconciliation"), /*#__PURE__*/React.createElement(PrimaryButton, {
     icon: /*#__PURE__*/React.createElement(PlayCircleIcon, {
