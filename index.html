@@ -34460,7 +34460,7 @@ function AccountTable({
       background: "#FFFFFF",
       borderRadius: 8,
       padding: "0",
-      maxWidth: 420,
+      maxWidth: 450,
       width: "90%",
       boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
       fontFamily: "'Inter', sans-serif",
@@ -34468,22 +34468,25 @@ function AccountTable({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "24px 24px 20px"
+      padding: "24px 24px 0"
     }
   }, /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 600,
       color: "#080908",
-      margin: "0 0 12px"
-    }
-  }, "Replace bank statement?"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: 1,
-      background: "#E9E9EB",
       margin: "0 0 16px"
     }
-  }), /*#__PURE__*/React.createElement("p", {
+  }, "Replace bank statement")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 24px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#545453",
@@ -34926,20 +34929,24 @@ function AccountTable({
         gap: 8,
         fontSize: 14,
         fontWeight: 500,
-        color: "#8C8C8B",
+        color: "#000000",
         whiteSpace: "nowrap"
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "16",
+      height: "16",
+      viewBox: "0 0 16 16",
+      fill: "none",
       style: {
-        width: 16,
-        height: 16,
-        borderRadius: "50%",
-        border: "2px solid #E9E9EB",
-        borderTopColor: "#05A105",
         animation: "spin 0.75s linear infinite",
         flexShrink: 0
       }
-    }), "Reconciling account") : isReconciled ? /*#__PURE__*/React.createElement(ReconciledCard, {
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M8 1.5A6.5 6.5 0 1 1 1.5 8",
+      stroke: "#05A105",
+      strokeWidth: "2",
+      strokeLinecap: "round"
+    })), "Reconciling account") : isReconciled ? /*#__PURE__*/React.createElement(ReconciledCard, {
       date: reconciledDates[row.name],
       status: reconciledStatuses[row.name] || "reconciled",
       suggestionCount: reconciledCounts[row.name],
@@ -37186,6 +37193,7 @@ function ReconciliationFlow({
   onClose,
   showResults = false,
   allResolved = false,
+  isCleanReconcile = false,
   onUploadStatement
 }) {
   const accounts = ["Lloyds Bank - Operations GBP", "Lloyds Bank - Business", "HSBC - Business Transactions", "Barclays - Operations", "American Express OP GBP", "Mastercard Business"];
@@ -38333,7 +38341,7 @@ function ReconciliationFlow({
       animation: "resultsFadeIn 0.5s ease both",
       height: "100%"
     }
-  }, !allResolved && resolvedCards.size >= totalSuggestions ? /*#__PURE__*/React.createElement("div", {
+  }, isCleanReconcile || !allResolved && resolvedCards.size >= totalSuggestions && accountName !== "HSBC - Business Transactions" ? /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -39131,6 +39139,7 @@ function BankReconciliation() {
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
   const [allResolvedOnOpen, setAllResolvedOnOpen] = useState(false); // true when opening from a fully reconciled account
+  const [isCleanReconcileOnOpen, setIsCleanReconcileOnOpen] = useState(false); // true when account has "reconciled" status (no suggestions)
   const [reconciledAccounts, setReconciledAccounts] = useState(new Set()); // tracks completed reconciliations
   const [reconciledDates, setReconciledDates] = useState({}); // { [accountName]: "13 Apr" }
   const [reconciledStatuses, setReconciledStatuses] = useState({}); // { [accountName]: "reconciled"|"suggestions"|"completed" }
@@ -39241,8 +39250,8 @@ function BankReconciliation() {
       if (!(showResultsMode && currentStatus === "reconciled")) {
         const outcome = ACCOUNT_OUTCOMES[accountName];
         const accountsWithCompletedState = new Set(["Lloyds Bank - Business", "HSBC - Business Transactions"]);
-        const resolvedStatus = accountsWithCompletedState.has(accountName) && allSuggestionsResolved ? "completed" : "suggestions";
-        const resolvedCount = resolvedStatus === "completed" ? null : outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3;
+        const resolvedStatus = accountsWithCompletedState.has(accountName) && allSuggestionsResolved ? "completed" : accountName === "Lloyds Bank - Operations GBP" ? "reconciled" : "suggestions";
+        const resolvedCount = resolvedStatus === "completed" || resolvedStatus === "reconciled" ? null : outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3;
         setReconciledStatuses(prev => ({
           ...prev,
           [accountName]: resolvedStatus
@@ -39259,6 +39268,8 @@ function BankReconciliation() {
   const handleRunReconciliation = accountName => {
     setReconciling(accountName);
     setShowResultsMode(false);
+    setAllResolvedOnOpen(false);
+    setIsCleanReconcileOnOpen(accountName === "Lloyds Bank - Operations GBP");
   };
   const handleAutoReconcile = (accountName, status = "reconciled", count = null) => {
     setReconciledAccounts(prev => new Set([...prev, accountName]));
@@ -39308,6 +39319,7 @@ function BankReconciliation() {
     setShowResultsMode(true);
     const status = reconciledStatuses[accountName] || "reconciled";
     setAllResolvedOnOpen(status !== "suggestions");
+    setIsCleanReconcileOnOpen(status === "reconciled");
   };
   if (reconciling) {
     return /*#__PURE__*/React.createElement(ReconciliationFlow, {
@@ -39315,6 +39327,7 @@ function BankReconciliation() {
       onClose: (completed, allSuggestionsResolved) => handleCloseReconciliation(reconciling, completed, allSuggestionsResolved),
       showResults: showResultsMode,
       allResolved: allResolvedOnOpen,
+      isCleanReconcile: isCleanReconcileOnOpen,
       onUploadStatement: handleUploadStatement
     });
   }
