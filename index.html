@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bank Reconciliation — Full Preview</title>
+<title>Bank Reconciliation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjI0IiBoZWlnaHQ9IjIyNCIgdmlld0JveD0iMCAwIDIyNCAyMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF85MzlfNjU0MjQpIj4KPHJlY3Qgd2lkdGg9IjIyNCIgaGVpZ2h0PSIyMjQiIHJ4PSI0OCIgZmlsbD0iI0FDRDM5NCIvPgo8cGF0aCBkPSJNMTc4Ljc5OCA1MS43MzYzSDE0Ny4wNzhWMTc0LjQ3NEgxNzguNzk4VjUxLjczNjNaIiBmaWxsPSIjMDAzMzI0Ii8+CjxwYXRoIGQ9Ik02Ny40ODcxIDQ4Ljk3MzVMNDUuMDU3NiA3MS40MDNMMTEzLjQ4MyAxMzkuODI4TDEzNS45MTIgMTE3LjM5OUw2Ny40ODcxIDQ4Ljk3MzVaIiBmaWxsPSIjMDAzMzI0Ii8+CjxwYXRoIGQ9Ik03OS41NTgxIDExNy40MDNINDcuODM3OVYxNzQuNjZINzkuNTU4MVYxMTcuNDAzWiIgZmlsbD0iIzAwMzMyNCIvPgo8L2c+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9ImNsaXAwXzkzOV82NTQyNCI+CjxyZWN0IHdpZHRoPSIyMjQiIGhlaWdodD0iMjI0IiByeD0iNDgiIGZpbGw9IndoaXRlIi8+CjwvY2xpcFBhdGg+CjwvZGVmcz4KPC9zdmc+Cg==" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <style>
-  :root { font-family: 'Inter', sans-serif; font-feature-settings: 'liga' 1, 'calt' 1; }
-  @supports (font-variation-settings: normal) { :root { font-family: 'InterVariable', sans-serif; } }
-  * { margin: 0; padding: 0; box-sizing: border-box; font-synthesis: none; }
-  body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-family: 'Inter', sans-serif; font-synthesis: none; -webkit-font-smoothing: antialiased; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -33345,7 +33343,8 @@ function TopBar({
   }, syncLabel)));
 }
 
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+</script>
+<script>function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 // ── Icon SVG paths ────────────────────────────────────────────────────────────
 const PATHS = {
   home: "M7.5 17.5016V11.3349C7.5 10.8682 7.5 10.6348 7.59083 10.4566C7.67072 10.2998 7.79821 10.1723 7.95501 10.0924C8.13327 10.0016 8.36662 10.0016 8.83333 10.0016H11.1667C11.6334 10.0016 11.8667 10.0016 12.045 10.0924C12.2018 10.1723 12.3293 10.2998 12.4092 10.4566C12.5 10.6348 12.5 10.8682 12.5 11.3349V17.5016M9.18141 2.30492L3.52949 6.70086C3.15168 6.99471 2.96278 7.14163 2.82669 7.32563C2.70614 7.48862 2.61633 7.67224 2.56169 7.86746C2.5 8.08785 2.5 8.32717 2.5 8.8058V14.8349C2.5 15.7683 2.5 16.235 2.68166 16.5916C2.84144 16.9052 3.09641 17.1601 3.41002 17.3199C3.76654 17.5016 4.23325 17.5016 5.16667 17.5016H14.8333C15.7668 17.5016 16.2335 17.5016 16.59 17.3199C16.9036 17.1601 17.1586 16.9052 17.3183 16.5916C17.5 16.235 17.5 15.7683 17.5 14.8349V8.8058C17.5 8.32717 17.5 8.08785 17.4383 7.86746C17.3837 7.67224 17.2939 7.48862 17.1733 7.32563C17.0372 7.14163 16.8483 6.99471 16.4705 6.70086L10.8186 2.30492C10.5258 2.07721 10.3794 1.96335 10.2178 1.91959C10.0752 1.88097 9.92484 1.88097 9.78221 1.91959C9.62057 1.96335 9.47418 2.07721 9.18141 2.30492Z",
@@ -33761,7 +33760,8 @@ function MainMenu({
     fill: "#545453"
   })))));
 }
-
+</script>
+<script>
 // ── Icon SVG paths from Mimo nav icon set ─────────────────────────────────────
 const _BPATHS = {
   home: "M7.5 17.5016V11.3349C7.5 10.8682 7.5 10.6348 7.59083 10.4566C7.67072 10.2998 7.79821 10.1723 7.95501 10.0924C8.13327 10.0016 8.36662 10.0016 8.83333 10.0016H11.1667C11.6334 10.0016 11.8667 10.0016 12.045 10.0924C12.2018 10.1723 12.3293 10.2998 12.4092 10.4566C12.5 10.6348 12.5 10.8682 12.5 11.3349V17.5016M9.18141 2.30492L3.52949 6.70086C3.15168 6.99471 2.96278 7.14163 2.82669 7.32563C2.70614 7.48862 2.61633 7.67224 2.56169 7.86746C2.5 8.08785 2.5 8.32717 2.5 8.8058V14.8349C2.5 15.7683 2.5 16.235 2.68166 16.5916C2.84144 16.9052 3.09641 17.1601 3.41002 17.3199C3.76654 17.5016 4.23325 17.5016 5.16667 17.5016H14.8333C15.7668 17.5016 16.2335 17.5016 16.59 17.3199C16.9036 17.1601 17.1586 16.9052 17.3183 16.5916C17.5 16.235 17.5 15.7683 17.5 14.8349V8.8058C17.5 8.32717 17.5 8.08785 17.4383 7.86746C17.3837 7.67224 17.2939 7.48862 17.1733 7.32563C17.0372 7.14163 16.8483 6.99471 16.4705 6.70086L10.8186 2.30492C10.5258 2.07721 10.3794 1.96335 10.2178 1.91959C10.0752 1.88097 9.92484 1.88097 9.78221 1.91959C9.62057 1.96335 9.47418 2.07721 9.18141 2.30492Z",
@@ -34269,7 +34269,8 @@ function AccountTable({
   reconciledCounts = {},
   bankStatements = {},
   onUploadStatement,
-  onAutoReconcile
+  onAutoReconcile,
+  onResetAccount
 }) {
   const [hovered, setHovered] = useState(null);
   const fileInputRef = useRef(null);
@@ -34307,7 +34308,16 @@ function AccountTable({
       const {
         status,
         count
-      } = randomOutcome();
+      } = accountName === "Lloyds Bank - Operations GBP" ? {
+        status: "reconciled",
+        count: null
+      } : accountName === "Lloyds Bank - Business" ? {
+        status: "suggestions",
+        count: 8
+      } : {
+        status: "suggestions",
+        count: reconciledData[accountName]?.suggestions || 3
+      };
       setReconcilingViaUpload(prev => new Set([...prev, accountName]));
       setTimeout(() => {
         setReconcilingViaUpload(prev => {
@@ -34359,30 +34369,10 @@ function AccountTable({
     };
   };
   const [dragOverRow, setDragOverRow] = useState(null);
-  const handleRowDragOver = (e, rowName) => {
-    if (reconciledAccounts.has(rowName) || reconcilingViaUpload.has(rowName)) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-    setDragOverRow(rowName);
-  };
-  const handleRowDragLeave = e => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setDragOverRow(null);
-  };
-  const handleRowDrop = (e, rowName) => {
-    e.preventDefault();
-    setDragOverRow(null);
-    if (reconciledAccounts.has(rowName) || reconcilingViaUpload.has(rowName)) return;
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short"
-    });
-    const timeStr = now.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+  const [replacePrompt, setReplacePrompt] = useState(null); // { rowName, file, dateStr, timeStr }
+
+  const startReconciliationWithFile = (rowName, file, dateStr, timeStr) => {
+    onResetAccount?.(rowName);
     onUploadStatement?.(rowName, {
       fileName: file.name,
       date: dateStr,
@@ -34397,7 +34387,14 @@ function AccountTable({
         status: "suggestions",
         count: 8
       };
-      return randomOutcome();
+      if (name === "HSBC - Business Transactions") return {
+        status: "suggestions",
+        count: 1
+      };
+      return {
+        status: "suggestions",
+        count: reconciledData[name]?.suggestions || 3
+      };
     };
     const {
       status,
@@ -34413,7 +34410,150 @@ function AccountTable({
       onAutoReconcile?.(rowName, status, count);
     }, 3000);
   };
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, `@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`), badgeTooltip.visible && /*#__PURE__*/React.createElement("div", {
+  const handleRowDragOver = (e, rowName) => {
+    if (reconcilingViaUpload.has(rowName)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOverRow(rowName);
+  };
+  const handleRowDragLeave = e => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDragOverRow(null);
+  };
+  const handleRowDrop = (e, rowName) => {
+    e.preventDefault();
+    setDragOverRow(null);
+    if (reconcilingViaUpload.has(rowName)) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short"
+    });
+    const timeStr = now.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    if (bankStatements[rowName]) {
+      setReplacePrompt({
+        rowName,
+        file,
+        dateStr,
+        timeStr
+      });
+    } else {
+      startReconciliationWithFile(rowName, file, dateStr, timeStr);
+    }
+  };
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, `@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`), replacePrompt && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.35)",
+      zIndex: 10000,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#FFFFFF",
+      borderRadius: 8,
+      padding: "0",
+      maxWidth: 420,
+      width: "90%",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+      fontFamily: "'Inter', sans-serif",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "24px 24px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 16,
+      fontWeight: 600,
+      color: "#080908",
+      margin: "0 0 12px"
+    }
+  }, "Replace bank statement?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      margin: "0 0 16px"
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#545453",
+      lineHeight: "22px",
+      margin: 0
+    }
+  }, /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: "#080908"
+    }
+  }, bankStatements[replacePrompt.rowName]?.fileName), " is already uploaded for ", /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: "#080908"
+    }
+  }, replacePrompt.rowName), ". Do you want to replace it with ", /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: "#080908"
+    }
+  }, replacePrompt.file.name), " and start a new reconciliation?")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 24px",
+      display: "flex",
+      gap: 10,
+      justifyContent: "flex-end"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setReplacePrompt(null),
+    style: {
+      padding: "0 18px",
+      height: 40,
+      border: "1px solid #E9E9EB",
+      borderRadius: 8,
+      background: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: 500,
+      color: "#080908",
+      cursor: "pointer"
+    },
+    onMouseEnter: e => e.currentTarget.style.background = "#F5F5F5",
+    onMouseLeave: e => e.currentTarget.style.background = "#FFFFFF"
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const {
+        rowName,
+        file,
+        dateStr,
+        timeStr
+      } = replacePrompt;
+      setReplacePrompt(null);
+      startReconciliationWithFile(rowName, file, dateStr, timeStr);
+    },
+    style: {
+      padding: "0 18px",
+      height: 40,
+      border: "none",
+      borderRadius: 8,
+      background: "#05A105",
+      fontSize: 14,
+      fontWeight: 500,
+      color: "#FFFFFF",
+      cursor: "pointer"
+    },
+    onMouseEnter: e => e.currentTarget.style.background = "#048504",
+    onMouseLeave: e => e.currentTarget.style.background = "#05A105"
+  }, "Replace and reconcile")))), badgeTooltip.visible && /*#__PURE__*/React.createElement("div", {
     style: {
       ...tipStyle(badgeTooltip.x, badgeTooltip.y),
       background: "#2A2A2A",
@@ -36543,6 +36683,7 @@ function BatchDraftSidebar({
 
 // ── Results panel ─────────────────────────────────────────────────────────────
 function ResultsPanel({
+  accountName,
   onOpenSpendMoney,
   onOpenBatchDraft,
   resolvedCards = new Set(),
@@ -36550,7 +36691,11 @@ function ResultsPanel({
   onShowToast
 }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const resultRows = [{
+  const isHSBC = accountName === "HSBC - Business Transactions";
+  const resultRows = isHSBC ? [{
+    description: "Missing entries",
+    issues: 1
+  }] : [{
     description: "Missing entries",
     issues: 3
   }, {
@@ -36569,7 +36714,17 @@ function ResultsPanel({
     description: "General",
     issues: 1
   }];
-  const missingEntries = [{
+  const missingEntries = isHSBC ? [{
+    state: "Open",
+    contact: "Anchor & Webb Consulting",
+    date: "21 Mar 2026",
+    amount: "£875.00",
+    email: "20 Mar, 10:30",
+    description: "A bank statement line for Anchor & Webb Consulting (£875.00) dated 21 Mar 2026 was found with no matching GL entry in Xero.",
+    primaryLabel: "Create spend money",
+    external: false,
+    fileAction: null
+  }] : [{
     state: "Open",
     contact: "Yorkshire Tea Estates",
     date: "17 Mar 2026",
@@ -36755,7 +36910,7 @@ function ResultsPanel({
       color: "#000000",
       margin: "0 0 16px"
     }
-  }, "3 Missing entries"), /*#__PURE__*/React.createElement("div", {
+  }, missingEntries.length, " Missing ", missingEntries.length === 1 ? "entry" : "entries"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -36793,7 +36948,7 @@ function ResultsPanel({
         onShowToast?.("Reconciled in Xero successfully");
       } : undefined
     });
-  })), /*#__PURE__*/React.createElement("p", {
+  })), !isHSBC && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -36983,8 +37138,7 @@ function ResultsPanel({
     style: {
       display: "flex",
       flexDirection: "column",
-      gap: 12,
-      paddingBottom: 32
+      gap: 12
     }
   }, general.map((entry, i) => {
     const cardIdx = 7 + i;
@@ -37019,7 +37173,11 @@ function ResultsPanel({
         onShowToast?.("Removed in Xero successfully");
       }
     });
-  }))), " ");
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      paddingBottom: 32
+    }
+  })), " ");
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
@@ -37055,7 +37213,15 @@ function ReconciliationFlow({
   const chatScrollRef = useRef(null);
   const chatEndRef = useRef(null);
   const [batchDraftSidebar, setBatchDraftSidebar] = useState(null);
-  const [resolvedCards, setResolvedCards] = useState(allResolved ? new Set([0, 1, 2, 3, 4, 5, 6, 7]) : new Set());
+  const ACCOUNT_TOTAL_SUGGESTIONS = {
+    "Lloyds Bank - Business": 8,
+    "HSBC - Business Transactions": 1
+  };
+  const totalSuggestions = ACCOUNT_TOTAL_SUGGESTIONS[accountName] ?? 8;
+  const allResolvedSet = allResolved ? new Set(Array.from({
+    length: totalSuggestions
+  }, (_, i) => i)) : new Set();
+  const [resolvedCards, setResolvedCards] = useState(allResolvedSet);
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -37362,8 +37528,8 @@ function ReconciliationFlow({
     style: {
       color: "#080908"
     }
-  }, 8 - resolvedCards.size, " suggestion", 8 - resolvedCards.size !== 1 ? "s" : "")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => onClose(canvasReady, resolvedCards.size >= 8),
+  }, totalSuggestions - resolvedCards.size, " suggestion", totalSuggestions - resolvedCards.size !== 1 ? "s" : "")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onClose(canvasReady, resolvedCards.size >= totalSuggestions),
     style: {
       border: "none",
       background: "none",
@@ -38167,7 +38333,7 @@ function ReconciliationFlow({
       animation: "resultsFadeIn 0.5s ease both",
       height: "100%"
     }
-  }, allResolved ? /*#__PURE__*/React.createElement("div", {
+  }, !allResolved && resolvedCards.size >= totalSuggestions ? /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -38215,6 +38381,7 @@ function ReconciliationFlow({
       lineHeight: "22px"
     }
   }, "All transactions have been matched and verified. No issues found.")) : /*#__PURE__*/React.createElement(ResultsPanel, {
+    accountName: accountName,
     onOpenSpendMoney: (entry, cardIndex) => setSpendMoneySidebar({
       ...entry,
       cardIndex
@@ -39055,6 +39222,10 @@ function BankReconciliation() {
     "Lloyds Bank - Business": {
       status: "suggestions",
       count: 8
+    },
+    "HSBC - Business Transactions": {
+      status: "suggestions",
+      count: 1
     }
   };
   const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false) => {
@@ -39064,10 +39235,14 @@ function BankReconciliation() {
         ...prev,
         [accountName]: getDateLabel()
       }));
-      const outcome = ACCOUNT_OUTCOMES[accountName];
-      if (outcome) {
-        const resolvedStatus = accountName === "Lloyds Bank - Business" && allSuggestionsResolved ? "completed" : outcome.status;
-        const resolvedCount = resolvedStatus === "completed" ? null : outcome.count;
+      // When closing from view-results mode for an already-"reconciled" account,
+      // preserve its status — don't downgrade it to "suggestions".
+      const currentStatus = reconciledStatuses[accountName];
+      if (!(showResultsMode && currentStatus === "reconciled")) {
+        const outcome = ACCOUNT_OUTCOMES[accountName];
+        const accountsWithCompletedState = new Set(["Lloyds Bank - Business", "HSBC - Business Transactions"]);
+        const resolvedStatus = accountsWithCompletedState.has(accountName) && allSuggestionsResolved ? "completed" : "suggestions";
+        const resolvedCount = resolvedStatus === "completed" ? null : outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3;
         setReconciledStatuses(prev => ({
           ...prev,
           [accountName]: resolvedStatus
@@ -39099,6 +39274,34 @@ function BankReconciliation() {
       ...prev,
       [accountName]: count
     }));
+  };
+  const handleResetAccount = accountName => {
+    setReconciledAccounts(prev => {
+      const next = new Set(prev);
+      next.delete(accountName);
+      return next;
+    });
+    setReconciledStatuses(prev => {
+      const next = {
+        ...prev
+      };
+      delete next[accountName];
+      return next;
+    });
+    setReconciledCounts(prev => {
+      const next = {
+        ...prev
+      };
+      delete next[accountName];
+      return next;
+    });
+    setReconciledDates(prev => {
+      const next = {
+        ...prev
+      };
+      delete next[accountName];
+      return next;
+    });
   };
   const handleViewResults = accountName => {
     setReconciling(accountName);
@@ -39220,7 +39423,8 @@ function BankReconciliation() {
     reconciledCounts: reconciledCounts,
     bankStatements: bankStatements,
     onUploadStatement: handleUploadStatement,
-    onAutoReconcile: handleAutoReconcile
+    onAutoReconcile: handleAutoReconcile,
+    onResetAccount: handleResetAccount
   })))));
 }
 
