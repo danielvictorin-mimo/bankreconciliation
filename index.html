@@ -33522,7 +33522,7 @@ function MainMenu({
       display: "flex",
       alignItems: "center",
       gap: 8,
-      padding: "8px 12px",
+      padding: "10px 16px",
       background: "#FFFFFF",
       border: "1px solid #E9E9EB",
       borderRadius: 8,
@@ -33541,7 +33541,7 @@ function MainMenu({
     strokeLinejoin: "round"
   })), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: 500,
       color: "#080908"
     }
@@ -33571,7 +33571,7 @@ function MainMenu({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: 500,
       color: "#080908"
     }
@@ -33611,7 +33611,7 @@ function MainMenu({
       color: active ? "#080908" : "#4F4F4F"
     }), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: active ? 600 : 400,
         color: active ? "#080908" : "#4F4F4F",
         overflow: "hidden",
@@ -33639,7 +33639,7 @@ function MainMenu({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: 500,
       color: "#080908"
     }
@@ -33669,7 +33669,7 @@ function MainMenu({
     color: "#545453"
   }), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: 400,
       color: "#4F4F4F"
     }
@@ -33681,23 +33681,26 @@ function MainMenu({
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: "16px 20px",
+      margin: "12px",
       display: "flex",
       alignItems: "center",
       gap: 10,
-      flexShrink: 0
+      flexShrink: 0,
+      borderRadius: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       borderRadius: "50%",
       background: "#2D2D2D",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
-      overflow: "hidden"
+      overflow: "hidden",
+      margin: 8
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -33712,8 +33715,8 @@ function MainMenu({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 14,
-      fontWeight: 600,
+      fontSize: 15,
+      fontWeight: 500,
       color: "#080908",
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -33721,7 +33724,7 @@ function MainMenu({
     }
   }, userName), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 15,
       color: "#8C8C8B",
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -37013,6 +37016,7 @@ function ReconciliationFlow({
   accountName,
   onClose,
   showResults = false,
+  allResolved = false,
   onUploadStatement
 }) {
   const accounts = ["Lloyds Bank - Operations GBP", "Lloyds Bank - Business", "HSBC - Business Transactions", "Barclays - Operations", "American Express OP GBP", "Mastercard Business"];
@@ -37040,7 +37044,7 @@ function ReconciliationFlow({
   const chatScrollRef = useRef(null);
   const chatEndRef = useRef(null);
   const [batchDraftSidebar, setBatchDraftSidebar] = useState(null);
-  const [resolvedCards, setResolvedCards] = useState(new Set());
+  const [resolvedCards, setResolvedCards] = useState(allResolved ? new Set([0, 1, 2, 3, 4, 5, 6, 7]) : new Set());
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -38900,6 +38904,7 @@ function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Bank reconciliation");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
+  const [allResolvedOnOpen, setAllResolvedOnOpen] = useState(false); // true when opening from a fully reconciled account
   const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations", "Mastercard Business"])); // tracks completed reconciliations
   const [reconciledDates, setReconciledDates] = useState({
     "Barclays - Operations": "14 Apr",
@@ -39037,12 +39042,15 @@ function BankReconciliation() {
   const handleViewResults = accountName => {
     setReconciling(accountName);
     setShowResultsMode(true);
+    const status = reconciledStatuses[accountName] || "reconciled";
+    setAllResolvedOnOpen(status !== "suggestions");
   };
   if (reconciling) {
     return /*#__PURE__*/React.createElement(ReconciliationFlow, {
       accountName: reconciling,
       onClose: completed => handleCloseReconciliation(reconciling, completed),
       showResults: showResultsMode,
+      allResolved: allResolvedOnOpen,
       onUploadStatement: handleUploadStatement
     });
   }
