@@ -7,9 +7,7 @@
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <style>
   :root { font-family: 'Inter', sans-serif; font-feature-settings: 'liga' 1, 'calt' 1; }
-  @supports (font-variation-settings: normal) {
-    :root { font-family: 'InterVariable', sans-serif; }
-  }
+  @supports (font-variation-settings: normal) { :root { font-family: 'InterVariable', sans-serif; } }
   * { margin: 0; padding: 0; box-sizing: border-box; font-synthesis: none; }
   body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -33262,7 +33260,7 @@ function Chevron({
 //   onSyncClick   — fn(): called when sync button is clicked
 function TopBar({
   contextLabel = "Month-end close",
-  period = "February 2026",
+  period = "April 2026",
   syncStatus = "Last synced 32 minutes ago",
   syncLabel = "Sync with Xero",
   onPeriodClick,
@@ -33923,7 +33921,7 @@ function TrMatchBadge({
       padding: "2px 8px",
       fontSize: 12,
       fontWeight: 500,
-      color: "#545453"
+      color: "#7C7C7C"
     }
   }, /*#__PURE__*/React.createElement("svg", {
     width: "10",
@@ -34600,7 +34598,7 @@ function AccountTable({
       }
     }, isReconciled && rowStatus !== "suggestions" ? row.feedBalance : row.glBalance), (() => {
       let bg = "#ECECEC",
-        color = "#8C8C8B",
+        color = "#7C7C7C",
         value = row.glSub;
       if (isReconciled) {
         const stmtBalance = rData.statementBalance || row.feedBalance;
@@ -34628,8 +34626,22 @@ function AccountTable({
           color,
           marginTop: 4,
           alignSelf: "flex-start",
-          whiteSpace: "nowrap"
-        }
+          whiteSpace: "nowrap",
+          cursor: "default"
+        },
+        onMouseEnter: e => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setBadgeTooltip({
+            visible: true,
+            x: rect.left + rect.width / 2,
+            y: rect.top,
+            text: "Difference between statement balance and GL balance"
+          });
+        },
+        onMouseLeave: () => setBadgeTooltip(t => ({
+          ...t,
+          visible: false
+        }))
       }, value);
     })()), /*#__PURE__*/React.createElement("div", _extends({
       style: cell({
@@ -34701,7 +34713,7 @@ function AccountTable({
       style: {
         fontSize: 11,
         fontWeight: 500,
-        color: "#8C8C8B",
+        color: "#7C7C7C",
         background: "#ECECEC",
         borderRadius: 4,
         padding: "2px 6px",
@@ -36518,7 +36530,9 @@ function BatchDraftSidebar({
 function ResultsPanel({
   onOpenSpendMoney,
   onOpenBatchDraft,
-  resolvedCards = new Set()
+  resolvedCards = new Set(),
+  onResolveCard,
+  onShowToast
 }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const resultRows = [{
@@ -36759,7 +36773,10 @@ function ResultsPanel({
       primaryLabel: entry.primaryLabel,
       external: entry.external,
       fileAction: entry.fileAction,
-      onPrimaryAction: entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, i) : entry.primaryLabel === "Review and publish" ? () => onOpenBatchDraft?.(entry, i) : undefined
+      onPrimaryAction: entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, i) : entry.primaryLabel === "Review and publish" ? () => onOpenBatchDraft?.(entry, i) : entry.primaryLabel === "Reconcile in Xero" ? () => {
+        onResolveCard?.(i);
+        onShowToast?.("Reconciled in Xero successfully");
+      } : undefined
     });
   })), /*#__PURE__*/React.createElement("p", {
     style: {
@@ -36773,27 +36790,40 @@ function ResultsPanel({
       flexDirection: "column",
       gap: 12
     }
-  }, anomalies.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
-    key: i,
-    title: `Anomaly: ${entry.contact}`,
-    description: entry.description,
-    statusLabel: "Unresolved",
-    statusStyle: {
-      background: "#FDF8EE",
-      border: "none",
-      color: "#D5A750"
-    },
-    tableRow: {
-      state: entry.state,
-      contact: entry.contact,
-      date: entry.date,
-      amount: entry.amount,
-      email: entry.email
-    },
-    primaryLabel: entry.primaryLabel,
-    external: entry.external,
-    fileAction: entry.fileAction
-  }))), /*#__PURE__*/React.createElement("p", {
+  }, anomalies.map((entry, i) => {
+    const cardIdx = 3 + i;
+    const isResolved = resolvedCards.has(cardIdx);
+    return /*#__PURE__*/React.createElement(RecommendationCard, {
+      key: i,
+      title: `Anomaly: ${entry.contact}`,
+      description: entry.description,
+      statusLabel: isResolved ? "Resolved" : "Unresolved",
+      statusStyle: isResolved ? {
+        background: "#EAF2E2",
+        border: "none",
+        color: "#05A105"
+      } : {
+        background: "#FDF8EE",
+        border: "none",
+        color: "#D5A750"
+      },
+      collapsed: isResolved,
+      tableRow: {
+        state: entry.state,
+        contact: entry.contact,
+        date: entry.date,
+        amount: entry.amount,
+        email: entry.email
+      },
+      primaryLabel: entry.primaryLabel,
+      external: entry.external,
+      fileAction: entry.fileAction,
+      onPrimaryAction: () => {
+        onResolveCard?.(cardIdx);
+        onShowToast?.("Removed in Xero successfully");
+      }
+    });
+  })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -36805,27 +36835,40 @@ function ResultsPanel({
       flexDirection: "column",
       gap: 12
     }
-  }, duplicates.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
-    key: i,
-    title: `Duplicate: ${entry.contact}`,
-    description: entry.description,
-    statusLabel: "Unresolved",
-    statusStyle: {
-      background: "#FDF8EE",
-      border: "none",
-      color: "#D5A750"
-    },
-    tableRow: {
-      state: entry.state,
-      contact: entry.contact,
-      date: entry.date,
-      amount: entry.amount,
-      email: entry.email
-    },
-    primaryLabel: entry.primaryLabel,
-    external: entry.external,
-    fileAction: entry.fileAction
-  }))), /*#__PURE__*/React.createElement("p", {
+  }, duplicates.map((entry, i) => {
+    const cardIdx = 4 + i;
+    const isResolved = resolvedCards.has(cardIdx);
+    return /*#__PURE__*/React.createElement(RecommendationCard, {
+      key: i,
+      title: `Duplicate: ${entry.contact}`,
+      description: entry.description,
+      statusLabel: isResolved ? "Resolved" : "Unresolved",
+      statusStyle: isResolved ? {
+        background: "#EAF2E2",
+        border: "none",
+        color: "#05A105"
+      } : {
+        background: "#FDF8EE",
+        border: "none",
+        color: "#D5A750"
+      },
+      collapsed: isResolved,
+      tableRow: {
+        state: entry.state,
+        contact: entry.contact,
+        date: entry.date,
+        amount: entry.amount,
+        email: entry.email
+      },
+      primaryLabel: entry.primaryLabel,
+      external: entry.external,
+      fileAction: entry.fileAction,
+      onPrimaryAction: () => {
+        onResolveCard?.(cardIdx);
+        onShowToast?.("Removed in Xero successfully");
+      }
+    });
+  })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -36837,27 +36880,40 @@ function ResultsPanel({
       flexDirection: "column",
       gap: 12
     }
-  }, dateDifferences.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
-    key: i,
-    title: `Date difference: ${entry.contact}`,
-    description: entry.description,
-    statusLabel: "Unresolved",
-    statusStyle: {
-      background: "#FDF8EE",
-      border: "none",
-      color: "#D5A750"
-    },
-    tableRow: {
-      state: entry.state,
-      contact: entry.contact,
-      date: entry.date,
-      amount: entry.amount,
-      email: entry.email
-    },
-    primaryLabel: entry.primaryLabel,
-    external: entry.external,
-    fileAction: entry.fileAction
-  }))), /*#__PURE__*/React.createElement("p", {
+  }, dateDifferences.map((entry, i) => {
+    const cardIdx = 5 + i;
+    const isResolved = resolvedCards.has(cardIdx);
+    return /*#__PURE__*/React.createElement(RecommendationCard, {
+      key: i,
+      title: `Date difference: ${entry.contact}`,
+      description: entry.description,
+      statusLabel: isResolved ? "Resolved" : "Unresolved",
+      statusStyle: isResolved ? {
+        background: "#EAF2E2",
+        border: "none",
+        color: "#05A105"
+      } : {
+        background: "#FDF8EE",
+        border: "none",
+        color: "#D5A750"
+      },
+      collapsed: isResolved,
+      tableRow: {
+        state: entry.state,
+        contact: entry.contact,
+        date: entry.date,
+        amount: entry.amount,
+        email: entry.email
+      },
+      primaryLabel: entry.primaryLabel,
+      external: entry.external,
+      fileAction: entry.fileAction,
+      onPrimaryAction: () => {
+        onResolveCard?.(cardIdx);
+        onShowToast?.("Date difference acknowledged");
+      }
+    });
+  })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -36869,27 +36925,40 @@ function ResultsPanel({
       flexDirection: "column",
       gap: 12
     }
-  }, omitted.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
-    key: i,
-    title: `Omitted: ${entry.contact}`,
-    description: entry.description,
-    statusLabel: "Unresolved",
-    statusStyle: {
-      background: "#FDF8EE",
-      border: "none",
-      color: "#D5A750"
-    },
-    tableRow: {
-      state: entry.state,
-      contact: entry.contact,
-      date: entry.date,
-      amount: entry.amount,
-      email: entry.email
-    },
-    primaryLabel: entry.primaryLabel,
-    external: entry.external,
-    fileAction: entry.fileAction
-  }))), /*#__PURE__*/React.createElement("p", {
+  }, omitted.map((entry, i) => {
+    const cardIdx = 6 + i;
+    const isResolved = resolvedCards.has(cardIdx);
+    return /*#__PURE__*/React.createElement(RecommendationCard, {
+      key: i,
+      title: `Omitted: ${entry.contact}`,
+      description: entry.description,
+      statusLabel: isResolved ? "Resolved" : "Unresolved",
+      statusStyle: isResolved ? {
+        background: "#EAF2E2",
+        border: "none",
+        color: "#05A105"
+      } : {
+        background: "#FDF8EE",
+        border: "none",
+        color: "#D5A750"
+      },
+      collapsed: isResolved,
+      tableRow: {
+        state: entry.state,
+        contact: entry.contact,
+        date: entry.date,
+        amount: entry.amount,
+        email: entry.email
+      },
+      primaryLabel: entry.primaryLabel,
+      external: entry.external,
+      fileAction: entry.fileAction,
+      onPrimaryAction: () => {
+        onResolveCard?.(cardIdx);
+        onShowToast?.("Removed in Xero successfully");
+      }
+    });
+  })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -36902,27 +36971,40 @@ function ResultsPanel({
       gap: 12,
       paddingBottom: 32
     }
-  }, general.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
-    key: i,
-    title: `General: ${entry.contact}`,
-    description: entry.description,
-    statusLabel: "Unresolved",
-    statusStyle: {
-      background: "#FDF8EE",
-      border: "none",
-      color: "#D5A750"
-    },
-    tableRow: {
-      state: entry.state,
-      contact: entry.contact,
-      date: entry.date,
-      amount: entry.amount,
-      email: entry.email
-    },
-    primaryLabel: entry.primaryLabel,
-    external: entry.external,
-    fileAction: entry.fileAction
-  })))), " ");
+  }, general.map((entry, i) => {
+    const cardIdx = 7 + i;
+    const isResolved = resolvedCards.has(cardIdx);
+    return /*#__PURE__*/React.createElement(RecommendationCard, {
+      key: i,
+      title: `General: ${entry.contact}`,
+      description: entry.description,
+      statusLabel: isResolved ? "Resolved" : "Unresolved",
+      statusStyle: isResolved ? {
+        background: "#EAF2E2",
+        border: "none",
+        color: "#05A105"
+      } : {
+        background: "#FDF8EE",
+        border: "none",
+        color: "#D5A750"
+      },
+      collapsed: isResolved,
+      tableRow: {
+        state: entry.state,
+        contact: entry.contact,
+        date: entry.date,
+        amount: entry.amount,
+        email: entry.email
+      },
+      primaryLabel: entry.primaryLabel,
+      external: entry.external,
+      fileAction: entry.fileAction,
+      onPrimaryAction: () => {
+        onResolveCard?.(cardIdx);
+        onShowToast?.("Removed in Xero successfully");
+      }
+    });
+  }))), " ");
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
@@ -38077,7 +38159,12 @@ function ReconciliationFlow({
       ...entry,
       cardIndex
     }),
-    resolvedCards: resolvedCards
+    resolvedCards: resolvedCards,
+    onResolveCard: idx => setResolvedCards(prev => new Set([...prev, idx])),
+    onShowToast: msg => {
+      setToast(msg);
+      setTimeout(() => setToast(null), 4000);
+    }
   })) : /*#__PURE__*/React.createElement(CanvasLoader, null))), resultsVisible && /*#__PURE__*/React.createElement("div", {
     onMouseDown: handleDragStart,
     style: {
@@ -38180,7 +38267,7 @@ function ReconciliationFlow({
 // ── TopBar component (from TopBar.jsx) ────────────────────────────────────────
 function TopBar({
   contextLabel = "Month-end close",
-  period = "February 2026",
+  period = "April 2026",
   syncStatus = "Last synced 32 minutes ago",
   syncLabel = "Sync with Xero",
   onPeriodClick,
@@ -38812,12 +38899,14 @@ function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Bank reconciliation");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
-  const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations"])); // tracks completed reconciliations
+  const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations", "Mastercard Business"])); // tracks completed reconciliations
   const [reconciledDates, setReconciledDates] = useState({
-    "Barclays - Operations": "14 Apr"
+    "Barclays - Operations": "14 Apr",
+    "Mastercard Business": "12 Apr"
   }); // { [accountName]: "13 Apr" }
   const [reconciledStatuses, setReconciledStatuses] = useState({
-    "Barclays - Operations": "suggestions"
+    "Barclays - Operations": "suggestions",
+    "Mastercard Business": "reconciled"
   }); // { [accountName]: "reconciled"|"suggestions"|"completed" }
   const [reconciledCounts, setReconciledCounts] = useState({
     "Barclays - Operations": 23
@@ -38826,6 +38915,10 @@ function BankReconciliation() {
     "Barclays - Operations": {
       fileName: "barclays-ops-apr2026.pdf",
       date: "14 Apr"
+    },
+    "Mastercard Business": {
+      fileName: "mastercard-biz-apr2026.pdf",
+      date: "12 Apr"
     }
   }); // { [accountName]: { fileName, date } }
 
