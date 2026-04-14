@@ -7,8 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { font-family: 'Inter', sans-serif; font-synthesis: none; -webkit-font-smoothing: antialiased; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+  html { font-synthesis: none; -webkit-font-smoothing: antialiased; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -33267,7 +33267,7 @@ function TopBar({
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 56,
+      height: 60,
       background: "#FFFFFF",
       borderBottom: "1px solid #E9E9EB",
       display: "flex",
@@ -38515,7 +38515,7 @@ function TopBar({
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 56,
+      height: 60,
       background: "#FFFFFF",
       borderBottom: "1px solid #E9E9EB",
       display: "flex",
@@ -38564,13 +38564,14 @@ function TopBar({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#8C8C8B"
     }
   }, syncStatus), /*#__PURE__*/React.createElement("button", {
     onClick: onSyncClick,
     style: {
-      padding: "6px 12px",
+      padding: "0 12px",
+      height: 36,
       border: "1px solid #E9E9EB",
       borderRadius: 6,
       background: "#FFFFFF",
