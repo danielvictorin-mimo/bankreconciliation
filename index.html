@@ -33232,6 +33232,534 @@
 </script>
 <script>
 const { useState, useEffect, useRef } = React;
+// ── Chevron helper ───────────────────────────────────────────────────────────
+function Chevron({
+  up = false,
+  color = "#545453",
+  size = 14
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 14 14",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: up ? "M3 9.5L7 5.5L11 9.5" : "M3 5.5L7 9.5L11 5.5",
+    stroke: color,
+    strokeWidth: "1.25",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }));
+}
+
+// ── TopBar component ─────────────────────────────────────────────────────────
+// Props:
+//   contextLabel  — string: left-side label (e.g. "Month-end close")
+//   period        — string: period picker text (e.g. "February 2026")
+//   syncStatus    — string: sync status text (e.g. "Last synced 32 minutes ago")
+//   syncLabel     — string: sync button label (e.g. "Sync with Xero")
+//   onPeriodClick — fn(): called when period picker is clicked
+//   onSyncClick   — fn(): called when sync button is clicked
+function TopBar({
+  contextLabel = "Month-end close",
+  period = "February 2026",
+  syncStatus = "Last synced 32 minutes ago",
+  syncLabel = "Sync with Xero",
+  onPeriodClick,
+  onSyncClick
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 56,
+      background: "#FFFFFF",
+      borderBottom: "1px solid #E9E9EB",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 24px",
+      flexShrink: 0,
+      fontFamily: "'Inter', sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      color: "#8C8C8B"
+    }
+  }, contextLabel), /*#__PURE__*/React.createElement("button", {
+    onClick: onPeriodClick,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      padding: "5px 10px",
+      border: "1px solid #E9E9EB",
+      borderRadius: 6,
+      background: "#FFFFFF",
+      cursor: "pointer",
+      fontSize: 14,
+      fontWeight: 500,
+      color: "#080908"
+    },
+    onMouseEnter: e => e.currentTarget.style.borderColor = "#CFCFD1",
+    onMouseLeave: e => e.currentTarget.style.borderColor = "#E9E9EB"
+  }, period, /*#__PURE__*/React.createElement(Chevron, {
+    up: false,
+    color: "#080908",
+    size: 13
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "#8C8C8B"
+    }
+  }, syncStatus), /*#__PURE__*/React.createElement("button", {
+    onClick: onSyncClick,
+    style: {
+      padding: "6px 12px",
+      border: "1px solid #E9E9EB",
+      borderRadius: 6,
+      background: "#FFFFFF",
+      cursor: "pointer",
+      fontSize: 14,
+      fontWeight: 500,
+      color: "#080908"
+    },
+    onMouseEnter: e => {
+      e.currentTarget.style.borderColor = "#CFCFD1";
+      e.currentTarget.style.background = "#FAFAFA";
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.borderColor = "#E9E9EB";
+      e.currentTarget.style.background = "#FFFFFF";
+    }
+  }, syncLabel)));
+}
+
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+// ── Icon SVG paths ────────────────────────────────────────────────────────────
+const PATHS = {
+  home: "M7.5 17.5016V11.3349C7.5 10.8682 7.5 10.6348 7.59083 10.4566C7.67072 10.2998 7.79821 10.1723 7.95501 10.0924C8.13327 10.0016 8.36662 10.0016 8.83333 10.0016H11.1667C11.6334 10.0016 11.8667 10.0016 12.045 10.0924C12.2018 10.1723 12.3293 10.2998 12.4092 10.4566C12.5 10.6348 12.5 10.8682 12.5 11.3349V17.5016M9.18141 2.30492L3.52949 6.70086C3.15168 6.99471 2.96278 7.14163 2.82669 7.32563C2.70614 7.48862 2.61633 7.67224 2.56169 7.86746C2.5 8.08785 2.5 8.32717 2.5 8.8058V14.8349C2.5 15.7683 2.5 16.235 2.68166 16.5916C2.84144 16.9052 3.09641 17.1601 3.41002 17.3199C3.76654 17.5016 4.23325 17.5016 5.16667 17.5016H14.8333C15.7668 17.5016 16.2335 17.5016 16.59 17.3199C16.9036 17.1601 17.1586 16.9052 17.3183 16.5916C17.5 16.235 17.5 15.7683 17.5 14.8349V8.8058C17.5 8.32717 17.5 8.08785 17.4383 7.86746C17.3837 7.67224 17.2939 7.48862 17.1733 7.32563C17.0372 7.14163 16.8483 6.99471 16.4705 6.70086L10.8186 2.30492C10.5258 2.07721 10.3794 1.96335 10.2178 1.91959C10.0752 1.88097 9.92484 1.88097 9.78221 1.91959C9.62057 1.96335 9.47418 2.07721 9.18141 2.30492Z",
+  bookOpen: "M9.99984 17.5L9.91646 17.3749C9.33759 16.5066 9.04816 16.0725 8.66575 15.7582C8.32722 15.4799 7.93714 15.2712 7.51784 15.1438C7.04421 15 6.52243 15 5.47886 15H4.33317C3.39975 15 2.93304 15 2.57652 14.8183C2.26292 14.6586 2.00795 14.4036 1.84816 14.09C1.6665 13.7335 1.6665 13.2668 1.6665 12.3333V5.16667C1.6665 4.23325 1.6665 3.76654 1.84816 3.41002C2.00795 3.09641 2.26292 2.84144 2.57652 2.68166C2.93304 2.5 3.39975 2.5 4.33317 2.5H4.6665C6.53335 2.5 7.46677 2.5 8.17981 2.86331C8.80701 3.18289 9.31695 3.69282 9.63653 4.32003C9.99984 5.03307 9.99984 5.96649 9.99984 7.83333M9.99984 17.5V7.83333M9.99984 17.5L10.0832 17.3749C10.6621 16.5066 10.9515 16.0725 11.3339 15.7582C11.6725 15.4799 12.0625 15.2712 12.4818 15.1438C12.9555 15 13.4772 15 14.5208 15H15.6665C16.5999 15 17.0666 15 17.4232 14.8183C17.7368 14.6586 17.9917 14.4036 18.1515 14.09C18.3332 13.7335 18.3332 13.2668 18.3332 12.3333V5.16667C18.3332 4.23325 18.3332 3.76654 18.1515 3.41002C17.9917 3.09641 17.7368 2.84144 17.4232 2.68166C17.0666 2.5 16.5999 2.5 15.6665 2.5H15.3332C13.4663 2.5 12.5329 2.5 11.8199 2.86331C11.1927 3.18289 10.6827 3.69282 10.3631 4.32003C9.99984 5.03307 9.99984 5.96649 9.99984 7.83333",
+  inbox: "M2.08317 9.9987H4.90148C5.47248 9.9987 5.99448 10.3213 6.24984 10.832C6.5052 11.3428 7.02719 11.6654 7.5982 11.6654H12.4015C12.9725 11.6654 13.4945 11.3428 13.7498 10.832C14.0052 10.3213 14.5272 9.9987 15.0982 9.9987H17.9165M7.47197 3.33203H12.5277C13.4251 3.33203 13.8738 3.33203 14.2699 3.46867C14.6202 3.5895 14.9393 3.78669 15.204 4.04599C15.5034 4.33919 15.7041 4.74053 16.1054 5.54318L17.9109 9.15412C18.0684 9.4691 18.1471 9.6266 18.2027 9.79165C18.252 9.93824 18.2876 10.0891 18.309 10.2423C18.3332 10.4147 18.3332 10.5908 18.3332 10.943V12.6654C18.3332 14.0655 18.3332 14.7656 18.0607 15.3003C17.821 15.7707 17.4386 16.1532 16.9681 16.3929C16.4334 16.6654 15.7333 16.6654 14.3332 16.6654H5.6665C4.26637 16.6654 3.56631 16.6654 3.03153 16.3929C2.56112 16.1532 2.17867 15.7707 1.93899 15.3003C1.6665 14.7656 1.6665 14.0655 1.6665 12.6654V10.943C1.6665 10.5908 1.6665 10.4147 1.69065 10.2423C1.71209 10.0891 1.7477 9.93824 1.79702 9.79165C1.85255 9.6266 1.9313 9.4691 2.0888 9.15412L3.89426 5.54318C4.29559 4.74052 4.49625 4.3392 4.79562 4.04599C5.06036 3.78669 5.37943 3.5895 5.72974 3.46867C6.12588 3.33203 6.57458 3.33203 7.47197 3.33203Z",
+  checkVerifiedBadge: "M7.66809 17.1687C7.94121 17.1326 8.21712 17.2067 8.43469 17.3742L9.43738 18.1437C9.76884 18.3983 10.2299 18.3983 10.5604 18.1437L11.6011 17.3446C11.7955 17.1955 12.0409 17.1298 12.2834 17.1622L13.5852 17.3335C13.999 17.3881 14.3981 17.1576 14.5583 16.7715L15.0591 15.5604C15.1526 15.3336 15.3323 15.1539 15.5591 15.0604L16.7701 14.5595C17.1562 14.4003 17.3867 14.0003 17.3321 13.5864L17.1673 12.3318C17.1312 12.0587 17.2053 11.7827 17.3728 11.5651L18.1422 10.5624C18.3968 10.2309 18.3968 9.76983 18.1422 9.43928L17.3432 8.39857C17.1941 8.20413 17.1284 7.95877 17.1608 7.71618L17.3321 6.41437C17.3867 6.00049 17.1562 5.60142 16.7701 5.44124L15.5591 4.94033C15.3323 4.84682 15.1526 4.66719 15.0591 4.44035L14.5583 3.22927C14.399 2.84317 13.999 2.61262 13.5852 2.66725L12.2834 2.83854C12.0409 2.87187 11.7955 2.80613 11.602 2.65799L10.5614 1.85894C10.2299 1.60431 9.76884 1.60431 9.43831 1.85894L8.39766 2.65799C8.20323 2.80613 7.95788 2.87187 7.71531 2.84039L6.41356 2.6691C5.99971 2.61447 5.60067 2.84502 5.4405 3.23112L4.94054 4.4422C4.8461 4.66812 4.66649 4.84774 4.44058 4.94218L3.22957 5.44217C2.84349 5.60235 2.61295 6.00141 2.66758 6.41529L2.83886 7.71711C2.87034 7.95969 2.8046 8.20506 2.65647 8.39857L1.85746 9.43928C1.60285 9.77075 1.60285 10.2319 1.85746 10.5624L2.65647 11.6031C2.80553 11.7975 2.87126 12.0429 2.83886 12.2855L2.66758 13.5873C2.61295 14.0012 2.84349 14.4003 3.22957 14.5604L4.44058 15.0613C4.66741 15.1549 4.84703 15.3345 4.94054 15.5613L5.44142 16.7724C5.60067 17.1585 6.00063 17.3891 6.41449 17.3344L7.66809 17.1687Z",
+  checkVerifiedMark: "M7.49984 10.0013L9.1665 11.668L12.9165 7.91797",
+  switchHorizontal: "M16.6668 14.1667H3.3335M3.3335 14.1667L6.66683 10.8333M3.3335 14.1667L6.66683 17.5M3.3335 5.83333H16.6668M16.6668 5.83333L13.3335 2.5M16.6668 5.83333L13.3335 9.16667",
+  fileQuestion: "M16.6668 7.91797V5.66797C16.6668 4.26784 16.6668 3.56777 16.3943 3.03299C16.1547 2.56259 15.7722 2.18014 15.3018 1.94045C14.767 1.66797 14.067 1.66797 12.6668 1.66797H7.3335C5.93336 1.66797 5.2333 1.66797 4.69852 1.94045C4.22811 2.18014 3.84566 2.56259 3.60598 3.03299C3.3335 3.56777 3.3335 4.26784 3.3335 5.66797V14.3346C3.3335 15.7348 3.3335 16.4348 3.60598 16.9696C3.84566 17.44 4.22811 17.8225 4.69852 18.0622C5.2333 18.3346 5.93336 18.3346 7.3335 18.3346H11.6668M11.6668 9.16797H6.66683M8.3335 12.5013H6.66683M13.3335 5.83464H6.66683M13.7502 12.5032C13.897 12.0858 14.1868 11.7338 14.5683 11.5096C14.9497 11.2854 15.3982 11.2035 15.8343 11.2783C16.2704 11.3531 16.666 11.5798 16.9509 11.9183C17.2359 12.2568 17.3919 12.6852 17.3912 13.1277C17.3912 14.3768 15.5176 15.0013 15.5176 15.0013M15.5417 17.5013H15.5501",
+  settingsGear: "M7.82936 16.1439L8.3164 17.2393C8.46118 17.5653 8.69747 17.8424 8.99659 18.0368C9.29571 18.2312 9.64483 18.3347 10.0016 18.3346C10.3583 18.3347 10.7075 18.2312 11.0066 18.0368C11.3057 17.8424 11.542 17.5653 11.6868 17.2393L12.1738 16.1439C12.3472 15.7552 12.6388 15.4312 13.0071 15.218C13.3778 15.0042 13.8066 14.9131 14.2321 14.9578L15.4238 15.0846C15.7785 15.1222 16.1365 15.056 16.4544 14.8941C16.7722 14.7322 17.0363 14.4816 17.2145 14.1726C17.393 13.8638 17.4781 13.5099 17.4593 13.1537C17.4406 12.7975 17.3189 12.4545 17.109 12.1661L16.4034 11.1967C16.1522 10.8489 16.018 10.4303 16.0201 10.0013C16.02 9.57346 16.1555 9.15659 16.4071 8.81056L17.1127 7.84112C17.3226 7.55276 17.4443 7.20969 17.463 6.85353C17.4818 6.49737 17.3967 6.14342 17.2183 5.83464C17.04 5.52566 16.7759 5.27504 16.4581 5.11316C16.1402 4.95127 15.7822 4.88508 15.4275 4.9226L14.2358 5.04945C13.8103 5.09414 13.3815 5.00307 13.0108 4.78927C12.6418 4.57485 12.3501 4.2491 12.1775 3.85871L11.6868 2.76334C11.542 2.43728 11.3057 2.16023 11.0066 1.9658C10.7075 1.77137 10.3583 1.66791 10.0016 1.66797C9.64483 1.66791 9.29571 1.77137 8.99659 1.9658C8.69747 2.16023 8.46118 2.43728 8.3164 2.76334L7.82936 3.85871C7.6568 4.2491 7.36509 4.57485 6.99603 4.78927C6.62538 5.00307 6.19659 5.09414 5.77103 5.04945L4.57566 4.9226C4.22094 4.88508 3.86294 4.95127 3.54509 5.11316C3.22724 5.27504 2.96317 5.52566 2.78492 5.83464C2.60644 6.14342 2.52141 6.49737 2.54014 6.85353C2.55888 7.20969 2.68058 7.55276 2.89048 7.84112L3.59603 8.81056C3.84765 9.15659 3.98315 9.57346 3.98307 10.0013C3.98315 10.4291 3.84765 10.846 3.59603 11.192L2.89048 12.1615C2.68058 12.4498 2.55888 12.7929 2.54014 13.1491C2.52141 13.5052 2.60644 13.8592 2.78492 14.168C2.96335 14.4768 3.22744 14.7273 3.54525 14.8891C3.86306 15.051 4.22096 15.1173 4.57566 15.08L5.76733 14.9532C6.19289 14.9085 6.62167 14.9995 6.99233 15.2133C7.36277 15.4272 7.65583 15.753 7.82936 16.1439Z",
+  settingsCircle: "M10.0001 12.5013C11.3808 12.5013 12.5001 11.382 12.5001 10.0013C12.5001 8.62059 11.3808 7.5013 10.0001 7.5013C8.61939 7.5013 7.5001 8.62059 7.5001 10.0013C7.5001 11.382 8.61939 12.5013 10.0001 12.5013Z"
+};
+function NavIcon({
+  name,
+  color
+}) {
+  const sp = {
+    stroke: color,
+    strokeWidth: "1.25",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  };
+  if (name === "checkVerified") return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 20 20",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", _extends({
+    d: PATHS.checkVerifiedBadge
+  }, sp)), /*#__PURE__*/React.createElement("path", _extends({
+    d: PATHS.checkVerifiedMark
+  }, sp)));
+  if (name === "settings") return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 20 20",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", _extends({
+    d: PATHS.settingsGear
+  }, sp)), /*#__PURE__*/React.createElement("path", _extends({
+    d: PATHS.settingsCircle
+  }, sp)));
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 20 20",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", _extends({
+    d: PATHS[name]
+  }, sp)));
+}
+function Chevron({
+  up = false,
+  color = "#545453",
+  size = 14
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 14 14",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: up ? "M3 9.5L7 5.5L11 9.5" : "M3 5.5L7 9.5L11 5.5",
+    stroke: color,
+    strokeWidth: "1.25",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }));
+}
+
+// ── MainMenu component ────────────────────────────────────────────────────────
+// Props:
+//   activeNav      — string: currently active nav label
+//   onNavChange    — fn(label): called when a nav item is clicked
+//   companyName    — string: e.g. "Seabrook Foods Ltd."
+//   userName       — string: e.g. "Laura Bennett"
+//   userRole       — string: e.g. "Clifton & Harrow"
+//   navItems       — array of { label, icon } for the Associate section
+function MainMenu({
+  activeNav,
+  onNavChange,
+  companyName = "Seabrook Foods Ltd.",
+  userName = "Laura Bennett",
+  userRole = "Clifton & Harrow",
+  navItems = [{
+    label: "Home",
+    icon: "home"
+  }, {
+    label: "Collect documents",
+    icon: "fileQuestion"
+  }, {
+    label: "Inbox",
+    icon: "inbox"
+  }, {
+    label: "Bank reconciliation",
+    icon: "checkVerified"
+  }, {
+    label: "Adjustments",
+    icon: "switchHorizontal"
+  }, {
+    label: "Review",
+    icon: "bookOpen"
+  }]
+}) {
+  const [associateOpen, setAssociateOpen] = useState(true);
+  const [paymentsOpen, setPaymentsOpen] = useState(false);
+  return /*#__PURE__*/React.createElement("aside", {
+    style: {
+      width: 264,
+      flexShrink: 0,
+      display: "flex",
+      flexDirection: "column",
+      background: "#FFFFFF",
+      borderRight: "1px solid #E9E9EB",
+      height: "100vh",
+      fontFamily: "'Inter', sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 96,
+      display: "flex",
+      alignItems: "center",
+      padding: "0 16px",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "93",
+    height: "20",
+    viewBox: "0 0 98 21",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg"
+  }, /*#__PURE__*/React.createElement("g", {
+    clipPath: "url(#mimoClip)"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z",
+    fill: "#1F2024"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z",
+    fill: "#1F2024"
+  })), /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("clipPath", {
+    id: "mimoClip"
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: "98",
+    height: "20.2181",
+    fill: "white"
+  }))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "24px 12px",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 12px",
+      background: "#FFFFFF",
+      border: "1px solid #E9E9EB",
+      borderRadius: 8,
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "14",
+    height: "14",
+    viewBox: "0 0 16 16",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M10 12.5L5.5 8L10 3.5",
+    stroke: "#545453",
+    strokeWidth: "1.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 500,
+      color: "#080908"
+    }
+  }, companyName))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("nav", {
+    style: {
+      flex: 1,
+      padding: "8px 8px 0",
+      overflowY: "auto"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAssociateOpen(o => !o),
+    style: {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "6px 20px 4px",
+      background: "none",
+      border: "none",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 500,
+      color: "#080908"
+    }
+  }, "Associate"), /*#__PURE__*/React.createElement(Chevron, {
+    up: associateOpen
+  })), associateOpen && navItems.map(item => {
+    const active = activeNav === item.label;
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.label,
+      onClick: () => onNavChange?.(item.label),
+      style: {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        height: 40,
+        padding: "0 12px",
+        marginBottom: 1,
+        marginLeft: 8,
+        marginRight: 8,
+        width: "calc(100% - 16px)",
+        borderRadius: 6,
+        border: "none",
+        cursor: "pointer",
+        background: active ? "#F0F0F0" : "transparent",
+        textAlign: "left",
+        boxShadow: "none"
+      },
+      onMouseEnter: e => {
+        if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)";
+      },
+      onMouseLeave: e => {
+        if (!active) e.currentTarget.style.background = "transparent";
+      }
+    }, /*#__PURE__*/React.createElement(NavIcon, {
+      name: item.icon,
+      color: active ? "#080908" : "#4F4F4F"
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        fontWeight: active ? 600 : 400,
+        color: active ? "#080908" : "#4F4F4F",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      }
+    }, item.label));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      margin: "16px 0"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPaymentsOpen(o => !o),
+    style: {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "6px 20px 4px",
+      background: "none",
+      border: "none",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 500,
+      color: "#080908"
+    }
+  }, "Payments"), /*#__PURE__*/React.createElement(Chevron, {
+    up: paymentsOpen
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      margin: "16px 0"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    style: {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "6px 12px 4px",
+      background: "none",
+      border: "none",
+      cursor: "pointer"
+    },
+    onMouseEnter: e => e.currentTarget.style.background = "rgba(0,0,0,0.04)",
+    onMouseLeave: e => e.currentTarget.style.background = "transparent"
+  }, /*#__PURE__*/React.createElement(NavIcon, {
+    name: "settings",
+    color: "#545453"
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 400,
+      color: "#4F4F4F"
+    }
+  }, "Settings")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 1,
+      background: "#E9E9EB",
+      margin: "16px 0 8px"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "12px 16px",
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 36,
+      height: 36,
+      borderRadius: "50%",
+      background: "#2D2D2D",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#FFFFFF"
+    }
+  }, userName.charAt(0))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: "#080908",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, userName), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#8C8C8B",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap"
+    }
+  }, userRole)), /*#__PURE__*/React.createElement("button", {
+    style: {
+      border: "none",
+      background: "none",
+      cursor: "pointer",
+      padding: 4,
+      display: "flex",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 16 16",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "8",
+    cy: "3",
+    r: "1.2",
+    fill: "#545453"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "8",
+    cy: "8",
+    r: "1.2",
+    fill: "#545453"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "8",
+    cy: "13",
+    r: "1.2",
+    fill: "#545453"
+  })))));
+}
+
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 // ── Icon SVG paths from Mimo nav icon set ─────────────────────────────────────
 const PATHS = {
@@ -33462,13 +33990,6 @@ function TrMatchingBadge({
       display: "block"
     }
   }, /*#__PURE__*/React.createElement("circle", {
-    cx: CX,
-    cy: CY,
-    r: RADIUS,
-    stroke: trackColor,
-    strokeWidth: SW,
-    fill: "none"
-  }), /*#__PURE__*/React.createElement("circle", {
     cx: CX,
     cy: CY,
     r: RADIUS,
@@ -34064,7 +34585,7 @@ function AccountTable({
         borderRight: "1px solid #E9E9EB",
         whiteSpace: "nowrap"
       })
-    }, cellProps), isReconciled ? row.feedBalance : "No bank statement"), /*#__PURE__*/React.createElement("div", _extends({
+    }, cellProps), isReconciled ? rowStatus === "suggestions" ? rData.statementBalance || row.feedBalance : row.feedBalance : "No bank statement"), /*#__PURE__*/React.createElement("div", _extends({
       style: cell({
         display: "flex",
         flexDirection: "column",
@@ -34078,13 +34599,13 @@ function AccountTable({
         color: "#080908",
         whiteSpace: "nowrap"
       }
-    }, isReconciled && rowStatus === "completed" ? row.feedBalance : row.glBalance), (() => {
+    }, isReconciled && rowStatus !== "suggestions" ? row.feedBalance : row.glBalance), (() => {
       let bg = "#ECECEC",
         color = "#8C8C8B",
         value = row.glSub;
       if (isReconciled) {
-        let diff = rowStatus === "suggestions" ? parseGBP(row.glBalance) - parseGBP(row.feedBalance) : 0;
-        if (rowStatus === "suggestions" && diff === 0) diff = -(suggCount * 1500);
+        const stmtBalance = rData.statementBalance || row.feedBalance;
+        const diff = rowStatus === "suggestions" ? parseGBP(row.glBalance) - parseGBP(stmtBalance) : 0;
         value = formatGBPDiff(diff);
         if (rowStatus === "suggestions") {
           bg = "#FCEFEC";
@@ -34252,7 +34773,7 @@ function AccountTable({
         animation: "spin 0.75s linear infinite",
         flexShrink: 0
       }
-    }), "Reconciling statement") : isReconciled ? /*#__PURE__*/React.createElement(ReconciledCard, {
+    }), "Reconciling account") : isReconciled ? /*#__PURE__*/React.createElement(ReconciledCard, {
       date: reconciledDates[row.name],
       status: reconciledStatuses[row.name] || "reconciled",
       suggestionCount: reconciledCounts[row.name],
@@ -35547,7 +36068,7 @@ function BatchDraftSidebar({
     }
   }, "Lloyds Bank - Business"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C",
       marginTop: 1
     }
@@ -35558,7 +36079,7 @@ function BatchDraftSidebar({
       borderRadius: 8,
       background: "#FFFFFF",
       cursor: "pointer",
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: 500,
       color: "#080908"
     },
@@ -35567,18 +36088,19 @@ function BatchDraftSidebar({
   }, "Copy upload link")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
+      alignItems: "center",
       borderTop: "1px solid #F0F0F0"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
-      padding: "12px 18px"
+      padding: "14px 18px"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C",
-      marginBottom: 3
+      marginBottom: 4
     }
   }, "Amount"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -35590,18 +36112,19 @@ function BatchDraftSidebar({
     style: {
       width: 1,
       background: "#F0F0F0",
-      alignSelf: "stretch"
+      height: 28,
+      flexShrink: 0
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
-      padding: "12px 18px"
+      padding: "14px 18px"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C",
-      marginBottom: 3
+      marginBottom: 4
     }
   }, "Date"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -35639,7 +36162,7 @@ function BatchDraftSidebar({
     }
   }, "Lloyd Bank - Operations GBP"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C",
       marginTop: 1
     }
@@ -35679,7 +36202,7 @@ function BatchDraftSidebar({
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       flex: 1,
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: 500,
       color: "#1F2024",
       display: "flex",
@@ -35695,38 +36218,48 @@ function BatchDraftSidebar({
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      gap: 16,
-      padding: "12px 18px"
+      alignItems: "center",
+      gap: 0,
+      padding: "16px 18px"
     }
-  }, [["S", "Sara Thompson"], ["O", "Oliver Davies"]].map(([initial, name]) => /*#__PURE__*/React.createElement("div", {
-    key: name,
+  }, [["S", "Sara Thompson"], ["O", "Oliver Davies"]].map(([initial, name], i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: name
+  }, i > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 1,
+      background: "#E9E9EB",
+      alignSelf: "stretch",
+      margin: "0 16px"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 7
+      gap: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 24,
-      height: 24,
+      width: 32,
+      height: 32,
       borderRadius: "50%",
       background: "#F0F5FC",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center"
+      justifyContent: "center",
+      flexShrink: 0
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: 600,
       color: "#6389CF"
     }
   }, initial)), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 14,
       color: "#080908"
     }
-  }, name))))), /*#__PURE__*/React.createElement("div", {
+  }, name)))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -35745,7 +36278,7 @@ function BatchDraftSidebar({
     }
   }, "Archive request"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C"
     }
   }, "If no document needed, archive this request")), /*#__PURE__*/React.createElement("button", {
@@ -35755,7 +36288,7 @@ function BatchDraftSidebar({
       borderRadius: 8,
       background: "#FCEFEC",
       cursor: "pointer",
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: 500,
       color: "#C8543A",
       whiteSpace: "nowrap",
@@ -35777,7 +36310,7 @@ function BatchDraftSidebar({
       marginRight: 24,
       fontSize: 14,
       fontWeight: activeTab === tab ? 600 : 400,
-      color: activeTab === tab ? "#05A105" : "#7C7C7C",
+      color: activeTab === tab ? "#080908" : "#7C7C7C",
       background: "none",
       border: "none",
       borderBottom: activeTab === tab ? "2px solid #05A105" : "2px solid transparent",
@@ -35802,7 +36335,7 @@ function BatchDraftSidebar({
     }
   }, "Invoice"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 14,
       color: "#7C7C7C",
       marginTop: 2
     }
@@ -35810,19 +36343,22 @@ function BatchDraftSidebar({
     style: {
       fontWeight: 500
     }
-  }, "Direct Expenses"), " 325")), /*#__PURE__*/React.createElement("span", {
+  }, "Direct Expenses"), " 325")), /*#__PURE__*/React.createElement("button", {
     style: {
-      padding: "4px 10px",
-      borderRadius: 6,
-      background: "#FDF8EE",
-      fontSize: 12,
+      padding: "6px 14px",
+      border: "1px solid #E9E9EB",
+      borderRadius: 8,
+      background: "#FFFFFF",
+      cursor: "pointer",
+      fontSize: 14,
       fontWeight: 500,
-      color: "#D5A750"
-    }
+      color: "#080908"
+    },
+    onMouseEnter: e => e.currentTarget.style.background = "#FAFAFA",
+    onMouseLeave: e => e.currentTarget.style.background = "#FFFFFF"
   }, "Review")), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "14px 18px",
-      borderBottom: "1px solid #F0F0F0"
+      padding: "14px 18px"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -35835,7 +36371,7 @@ function BatchDraftSidebar({
     }
   }, contact), " 31 Jan 2026"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
+      fontSize: 14,
       color: "#7C7C7C",
       marginTop: 4
     }
@@ -35852,7 +36388,8 @@ function BatchDraftSidebar({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "10px 14px"
+      padding: "0 14px",
+      height: 70
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -35861,11 +36398,11 @@ function BatchDraftSidebar({
       gap: 10
     }
   }, /*#__PURE__*/React.createElement(InvoiceFileIcon, {
-    width: 20,
-    height: 24
+    width: 32,
+    height: 38
   }), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 14,
       color: "#080908"
     }
   }, fileName)), /*#__PURE__*/React.createElement("div", {
@@ -35874,15 +36411,14 @@ function BatchDraftSidebar({
       alignItems: "center",
       gap: 8
     }
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", {
     style: {
-      border: "none",
-      background: "none",
-      cursor: "pointer",
+      padding: "3px 8px",
+      borderRadius: 6,
+      background: "#FDF8EE",
       fontSize: 13,
       fontWeight: 500,
-      color: "#C8543A",
-      padding: "2px 4px"
+      color: "#D5A750"
     }
   }, "Review"), /*#__PURE__*/React.createElement("button", {
     style: {
@@ -35949,9 +36485,9 @@ function BatchDraftSidebar({
     style: {
       flex: 1,
       padding: "10px 16px",
-      border: "none",
+      border: confirming ? "1px solid #E9E9EB" : "none",
       borderRadius: 8,
-      background: confirming ? "#04880E" : "#05A105",
+      background: confirming ? "#F5F5F5" : "#05A105",
       cursor: confirming ? "default" : "pointer",
       fontSize: 14,
       fontWeight: 500,
@@ -35972,8 +36508,8 @@ function BatchDraftSidebar({
       width: 20,
       height: 20,
       borderRadius: "50%",
-      border: "2.5px solid rgba(255,255,255,0.3)",
-      borderTopColor: "#FFFFFF",
+      border: "2.5px solid #E9E9EB",
+      borderTopColor: "#05A105",
       animation: "spin 0.75s linear infinite"
     }
   }) : "Publish to Xero")));
@@ -36011,30 +36547,85 @@ function ResultsPanel({
     date: "17 Mar 2026",
     amount: "£240.00",
     email: "12 Mar, 09:00",
-    description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 24 February 2026 was found with no matching GL entry in Xero.",
+    description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",
     primaryLabel: "Create spend money",
     external: false,
     fileAction: null
   }, {
     state: "Review",
-    contact: "Yorkshire Tea Estates",
-    date: "17 Mar 2026",
-    amount: "£240.00",
-    email: "12 Mar, 09:00",
-    description: "A bank statement line for Bakery & Food (£240.00) dated 24 February 2026 was found with no matching GL entry in Xero.",
+    contact: "Clifton & Harrow Supplies",
+    date: "14 Mar 2026",
+    amount: "£1,180.00",
+    email: "13 Mar, 10:15",
+    description: "A bank statement line for Clifton & Harrow Supplies (£1,180.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.",
     primaryLabel: "Review and publish",
     external: false,
-    fileAction: "YorkshireTeaEstates.pdf"
+    fileAction: "CliftonHarrow-invoice.pdf"
   }, {
     state: "Ready",
+    contact: "Meridian Office Solutions",
+    date: "9 Mar 2026",
+    amount: "£530.00",
+    email: "8 Mar, 16:40",
+    description: "A bank statement line for Meridian Office Solutions (£530.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",
+    primaryLabel: "Reconcile in Xero",
+    external: true,
+    fileAction: "Meridian-invoice.pdf"
+  }];
+  const anomalies = [{
+    state: "Open",
+    contact: "Bakery & Food Supplies",
+    date: "12 Mar 2026",
+    amount: "£4,850.00",
+    email: "10 Mar, 11:30",
+    description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.",
+    primaryLabel: "Remove in Xero",
+    external: true,
+    fileAction: null
+  }];
+  const duplicates = [{
+    state: "Open",
     contact: "Yorkshire Tea Estates",
     date: "17 Mar 2026",
     amount: "£240.00",
-    email: "12 Mar, 09:00",
-    description: "A bank statement line for Bakery & Food (£240.00) dated 24 February 2026 was found with no matching GL entry in Xero.",
-    primaryLabel: "Reconcile in Xero",
+    email: "15 Mar, 08:45",
+    description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.",
+    primaryLabel: "Remove in Xero",
     external: true,
-    fileAction: "YorkshireTeaEstates.pdf"
+    fileAction: null
+  }];
+  const dateDifferences = [{
+    state: "Open",
+    contact: "Direct Expenses",
+    date: "14 Mar 2026",
+    amount: "£320.00",
+    email: "13 Mar, 14:00",
+    description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.",
+    primaryLabel: "Acknowledge",
+    external: false,
+    fileAction: null
+  }];
+  const omitted = [{
+    state: "Open",
+    contact: "Internal Transfer",
+    date: "28 Feb 2026",
+    amount: "£12,000.00",
+    email: "28 Feb, 09:00",
+    description: "A bank statement line for an internal transfer of £12,000.00 on 28 Feb 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",
+    primaryLabel: "Remove in Xero",
+    external: true,
+    fileAction: null
+  }];
+  const general = [{
+    state: "Open",
+    contact: "Unclassified",
+    date: "22 Mar 2026",
+    amount: "£85.00",
+    email: "21 Mar, 17:20",
+    description: "A transaction of £85.00 on 22 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.",
+    primaryLabel: "Remove in Xero",
+    external: true,
+    fileAction: null
   }];
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -36171,7 +36762,168 @@ function ResultsPanel({
       fileAction: entry.fileAction,
       onPrimaryAction: entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, i) : entry.primaryLabel === "Review and publish" ? () => onOpenBatchDraft?.(entry, i) : undefined
     });
-  }))), " ");
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#000000",
+      margin: "24px 0 16px"
+    }
+  }, "1 Anomaly"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, anomalies.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
+    key: i,
+    title: `Anomaly: ${entry.contact}`,
+    description: entry.description,
+    statusLabel: "Unresolved",
+    statusStyle: {
+      background: "#FDF8EE",
+      border: "none",
+      color: "#D5A750"
+    },
+    tableRow: {
+      state: entry.state,
+      contact: entry.contact,
+      date: entry.date,
+      amount: entry.amount,
+      email: entry.email
+    },
+    primaryLabel: entry.primaryLabel,
+    external: entry.external,
+    fileAction: entry.fileAction
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#000000",
+      margin: "24px 0 16px"
+    }
+  }, "1 Duplicate"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, duplicates.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
+    key: i,
+    title: `Duplicate: ${entry.contact}`,
+    description: entry.description,
+    statusLabel: "Unresolved",
+    statusStyle: {
+      background: "#FDF8EE",
+      border: "none",
+      color: "#D5A750"
+    },
+    tableRow: {
+      state: entry.state,
+      contact: entry.contact,
+      date: entry.date,
+      amount: entry.amount,
+      email: entry.email
+    },
+    primaryLabel: entry.primaryLabel,
+    external: entry.external,
+    fileAction: entry.fileAction
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#000000",
+      margin: "24px 0 16px"
+    }
+  }, "1 Date difference"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, dateDifferences.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
+    key: i,
+    title: `Date difference: ${entry.contact}`,
+    description: entry.description,
+    statusLabel: "Unresolved",
+    statusStyle: {
+      background: "#FDF8EE",
+      border: "none",
+      color: "#D5A750"
+    },
+    tableRow: {
+      state: entry.state,
+      contact: entry.contact,
+      date: entry.date,
+      amount: entry.amount,
+      email: entry.email
+    },
+    primaryLabel: entry.primaryLabel,
+    external: entry.external,
+    fileAction: entry.fileAction
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#000000",
+      margin: "24px 0 16px"
+    }
+  }, "1 Omitted"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, omitted.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
+    key: i,
+    title: `Omitted: ${entry.contact}`,
+    description: entry.description,
+    statusLabel: "Unresolved",
+    statusStyle: {
+      background: "#FDF8EE",
+      border: "none",
+      color: "#D5A750"
+    },
+    tableRow: {
+      state: entry.state,
+      contact: entry.contact,
+      date: entry.date,
+      amount: entry.amount,
+      email: entry.email
+    },
+    primaryLabel: entry.primaryLabel,
+    external: entry.external,
+    fileAction: entry.fileAction
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#000000",
+      margin: "24px 0 16px"
+    }
+  }, "1 General"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12,
+      paddingBottom: 32
+    }
+  }, general.map((entry, i) => /*#__PURE__*/React.createElement(RecommendationCard, {
+    key: i,
+    title: `General: ${entry.contact}`,
+    description: entry.description,
+    statusLabel: "Unresolved",
+    statusStyle: {
+      background: "#FDF8EE",
+      border: "none",
+      color: "#D5A750"
+    },
+    tableRow: {
+      state: entry.state,
+      contact: entry.contact,
+      date: entry.date,
+      amount: entry.amount,
+      email: entry.email
+    },
+    primaryLabel: entry.primaryLabel,
+    external: entry.external,
+    fileAction: entry.fileAction
+  })))), " ");
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
@@ -36203,6 +36955,8 @@ function ReconciliationFlow({
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
   const [spendMoneySidebar, setSpendMoneySidebar] = useState(null);
+  const chatScrollRef = useRef(null);
+  const chatEndRef = useRef(null);
   const [batchDraftSidebar, setBatchDraftSidebar] = useState(null);
   const [resolvedCards, setResolvedCards] = useState(new Set());
   const [toast, setToast] = useState(null);
@@ -36386,6 +37140,16 @@ function ReconciliationFlow({
   const {
     done: line5Done
   } = useTypewriter(line4Done ? line5Text : "", 18, showResults);
+
+  // Auto-scroll chat to bottom whenever new content appears
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end"
+      });
+    }
+  }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -36442,7 +37206,11 @@ function ReconciliationFlow({
       fontWeight: 500,
       color: "#080908"
     }
-  }, selectedAccount, /*#__PURE__*/React.createElement(Chevron, {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: selectedAccount ? "#080908" : "#9D9D9E"
+    }
+  }, selectedAccount || "Select account"), /*#__PURE__*/React.createElement(Chevron, {
     color: "#080908"
   })), dropdownOpen && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -36545,6 +37313,7 @@ function ReconciliationFlow({
       willChange: "width"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    ref: chatScrollRef,
     style: {
       flex: 1,
       overflowY: "auto",
@@ -36556,7 +37325,7 @@ function ReconciliationFlow({
       maxWidth: resultsVisible ? "100%" : 680,
       width: "100%",
       margin: "0 auto",
-      padding: resultsVisible ? "32px 24px 24px" : "40px 24px 24px",
+      padding: resultsVisible ? "32px 24px 40px" : "40px 24px 40px",
       flex: 1,
       display: "flex",
       flexDirection: "column",
@@ -37015,8 +37784,14 @@ function ReconciliationFlow({
         animation: "fadeIn 0.3s ease"
       }
     }, step.subtext)));
-  })))), (() => {
-    const isStreaming = !line1Done || line1Done && !line2Done || line2Done && !line3Done || prepDone && !line4Done || line4Done && !line5Done;
+  })), /*#__PURE__*/React.createElement("div", {
+    ref: chatEndRef,
+    style: {
+      height: 32,
+      flexShrink: 0
+    }
+  }))), (() => {
+    const isStreaming = !line1Done || isPicker && line1Done && !line2Done || !line3Done && (isPicker ? line2Done : line1Done) || prepDone && !line4Done || line4Done && !line5Done;
     return isStreaming ? /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "0 24px 20px",
@@ -38070,10 +38845,10 @@ function BankReconciliation() {
       suggestions: 3
     },
     "Lloyds Bank - Business": {
-      statementBalance: "£155,000.00",
-      difference: "£0,00",
-      matched: "244/244",
-      suggestions: 0
+      statementBalance: "£152,500.00",
+      difference: "£2,500.00",
+      matched: "241/244",
+      suggestions: 2
     },
     "HSBC - Business Transactions": {
       statementBalance: "£95,500.00",
@@ -38082,9 +38857,9 @@ function BankReconciliation() {
       suggestions: 2
     },
     "Barclays - Operations": {
-      statementBalance: "£380,000.00",
-      difference: "£0,00",
-      matched: "412/420",
+      statementBalance: "£374,000.00",
+      difference: "£6,000.00",
+      matched: "409/420",
       suggestions: 1
     },
     "American Express OP GBP": {
@@ -38094,10 +38869,10 @@ function BankReconciliation() {
       suggestions: 3
     },
     "Mastercard Business": {
-      statementBalance: "£155,000.00",
-      difference: "£0,00",
-      matched: "56/56",
-      suggestions: 0
+      statementBalance: "£152,500.00",
+      difference: "£2,500.00",
+      matched: "53/56",
+      suggestions: 2
     }
   };
   const bankAccounts = [{
