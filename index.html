@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bank Reconciliation</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjI0IiBoZWlnaHQ9IjIyNCIgdmlld0JveD0iMCAwIDIyNCAyMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF85MzlfNjU0MjQpIj4KPHJlY3Qgd2lkdGg9IjIyNCIgaGVpZ2h0PSIyMjQiIHJ4PSI0OCIgZmlsbD0iI0FDRDM5NCIvPgo8cGF0aCBkPSJNMTc4Ljc5OCA1MS43MzYzSDE0Ny4wNzhWMTc0LjQ3NEgxNzguNzk4VjUxLjczNjNaIiBmaWxsPSIjMDAzMzI0Ii8+CjxwYXRoIGQ9Ik02Ny40ODcxIDQ4Ljk3MzVMNDUuMDU3NiA3MS40MDNMMTEzLjQ4MyAxMzkuODI4TDEzNS45MTIgMTE3LjM5OUw2Ny40ODcxIDQ4Ljk3MzVaIiBmaWxsPSIjMDAzMzI0Ii8+CjxwYXRoIGQ9Ik03OS41NTgxIDExNy40MDNINDcuODM3OVYxNzQuNjZINzkuNTU4MVYxMTcuNDAzWiIgZmlsbD0iIzAwMzMyNCIvPgo8L2c+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9ImNsaXAwXzkzOV82NTQyNCI+CjxyZWN0IHdpZHRoPSIyMjQiIGhlaWdodD0iMjI0IiByeD0iNDgiIGZpbGw9IndoaXRlIi8+CjwvY2xpcFBhdGg+CjwvZGVmcz4KPC9zdmc+Cg==" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37984,8 +37984,7 @@ function ReconciliationFlow({
       key: i,
       style: {
         display: "flex",
-        gap: 16,
-        alignItems: "flex-start"
+        gap: 16
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -38382,7 +38381,7 @@ function ReconciliationFlow({
       color: "#080908",
       margin: 0
     }
-  }, "This account is reconciled"), /*#__PURE__*/React.createElement("p", {
+  }, accountName, " is reconciled"), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#8C8C8B",
