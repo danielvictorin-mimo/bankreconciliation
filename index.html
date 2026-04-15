@@ -1606,45 +1606,29 @@ function StreamingMessage({
 
 // ── All Documents Sidebar ─────────────────────────────────────────────────────
 const ALL_DOCUMENTS = [{
-  name: "INV-67890b.pdf",
+  name: "Lloyds_Business_April_2026.pdf",
   type: "pdf",
-  date: "15 Mar, 2026"
+  date: "15 Apr, 2026"
 }, {
-  name: "Transaction_list_25.csv",
+  name: "Lloyds_Operations_GBP_April_2026.csv",
   type: "csv",
-  date: "15 Mar, 2026"
+  date: "15 Apr, 2026"
 }, {
-  name: "INV-2315.pdf",
+  name: "HSBC_Business_April_2026.pdf",
   type: "pdf",
-  date: "15 Mar, 2026"
+  date: "14 Apr, 2026"
 }, {
-  name: "Transaction_list_26.csv",
+  name: "Barclays_Operations_April_2026.csv",
   type: "csv",
-  date: "15 Mar, 2026"
+  date: "14 Apr, 2026"
 }, {
-  name: "INV-2315.pdf",
+  name: "AmEx_OP_GBP_April26.pdf",
   type: "pdf",
-  date: "15 Mar, 2026"
+  date: "12 Apr, 2026"
 }, {
-  name: "INV-987654.pdf",
-  type: "pdf",
-  date: "9 Mar, 2026"
-}, {
-  name: "INV-987654.pdf",
-  type: "pdf",
-  date: "9 Mar, 2026"
-}, {
-  name: "INV-456789.pdf",
-  type: "pdf",
-  date: "9 Mar, 2026"
-}, {
-  name: "INV-123456.pdf",
-  type: "pdf",
-  date: "9 Mar, 2026"
-}, {
-  name: "INV-987654.pdf",
-  type: "pdf",
-  date: "9 Mar, 2026"
+  name: "Mastercard_Business_April26.csv",
+  type: "csv",
+  date: "12 Apr, 2026"
 }];
 function DocFileIcon({
   type
@@ -1672,7 +1656,7 @@ function AllDocumentsSidebar({
     setVisible(false);
     setTimeout(() => onClose(), 320);
   };
-  const filtered = ALL_DOCUMENTS.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.subtitle.toLowerCase().includes(search.toLowerCase()));
+  const filtered = ALL_DOCUMENTS.filter(d => d.name.toLowerCase().includes(search.toLowerCase()));
   const toggleRow = i => {
     setSelected(prev => {
       const next = new Set(prev);
@@ -2475,7 +2459,8 @@ function RecommendationCard({
     }
   }, /*#__PURE__*/React.createElement(PrimaryButton, {
     style: {
-      padding: "8px 14px",
+      height: 40,
+      padding: "0 14px",
       fontSize: 13,
       borderRadius: 8
     },
@@ -2483,7 +2468,8 @@ function RecommendationCard({
     onClick: onPrimaryAction
   }, primaryLabel), fileAction ? /*#__PURE__*/React.createElement(SecondaryButton, {
     style: {
-      padding: "7px 12px",
+      height: 40,
+      padding: "0 12px",
       fontSize: 13,
       borderRadius: 8,
       borderColor: "#EFF1F4"
@@ -2492,7 +2478,8 @@ function RecommendationCard({
     onClick: onFileAction
   }, /*#__PURE__*/React.createElement(PdfIcon, null), fileAction) : /*#__PURE__*/React.createElement(SecondaryButton, {
     style: {
-      padding: "7px 12px",
+      height: 40,
+      padding: "0 12px",
       fontSize: 13,
       borderRadius: 8,
       borderColor: "#EFF1F4"
@@ -2500,8 +2487,8 @@ function RecommendationCard({
     onClick: onFileAction
   }, "Upload document"), /*#__PURE__*/React.createElement("button", {
     style: {
-      width: 34,
-      height: 34,
+      width: 40,
+      height: 40,
       border: "1px solid #EFF1F4",
       borderRadius: 8,
       background: "#FFFFFF",
@@ -3728,11 +3715,32 @@ function ResultsPanel({
   onOpenBatchDraft,
   resolvedCards = new Set(),
   onResolveCard,
-  onShowToast
+  onShowToast,
+  isCleanReconcile = false,
+  onAccountsOverview = null,
+  matchedTotal = null
 }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const isHSBC = accountName === "HSBC - Business Transactions";
-  const resultRows = isHSBC ? [{
+  const resultRows = isCleanReconcile ? [{
+    description: "Missing entries",
+    issues: 0
+  }, {
+    description: "Anomalies",
+    issues: 0
+  }, {
+    description: "Duplicates",
+    issues: 0
+  }, {
+    description: "Date differences",
+    issues: 0
+  }, {
+    description: "Omitted",
+    issues: 0
+  }, {
+    description: "General",
+    issues: 0
+  }] : isHSBC ? [{
     description: "Missing entries",
     issues: 1
   }] : [{
@@ -3881,7 +3889,7 @@ function ResultsPanel({
       key: "issues",
       label: "Suggestions found",
       width: "160px"
-    }, {
+    }, ...(!isCleanReconcile ? [{
       key: "action",
       label: "Action",
       width: "100px",
@@ -3893,7 +3901,7 @@ function ResultsPanel({
           whiteSpace: "nowrap"
         }
       }, "Review")
-    }],
+    }] : [])],
     rows: resultRows
   })), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3937,20 +3945,74 @@ function ResultsPanel({
       borderTop: "1px solid #EFF1F4",
       paddingTop: 14
     }
-  }, "The reconciliation found 8 items requiring attention across 6 categories. The most significant issues are 3 missing entries totalling \xA3720.00. Balance is confirmed matching at \xA312,439.00 with 361 of 380 bank statement lines matched to GL records.")), /*#__PURE__*/React.createElement("h3", {
+  }, isCleanReconcile ? "The reconciliation completed successfully with no issues found. All 420 bank statement lines were matched to GL records in Xero. The account balance is confirmed with zero discrepancy." : "The reconciliation found 8 items requiring attention across 6 categories. The most significant issues are 3 missing entries totalling £720.00. Balance is confirmed matching at £12,439.00 with 361 of 380 bank statement lines matched to GL records.")), /*#__PURE__*/React.createElement("h3", {
     style: {
       fontSize: 16,
       fontWeight: 500,
       color: "#080908",
-      margin: "0 0 6px"
+      margin: "0 0 16px"
     }
-  }, "Suggestions"), /*#__PURE__*/React.createElement("p", {
+  }, "Suggestions"), isCleanReconcile && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 12,
+      padding: "40px 24px",
+      textAlign: "center",
+      border: "1px solid #E9E9EB",
+      borderRadius: 8,
+      background: "#FFFFFF",
+      marginBottom: 28
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 48,
+      height: 48,
+      borderRadius: "50%",
+      background: "#EAF2E2",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 22 22",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4.5 11.5L8.5 15.5L17.5 7",
+    stroke: "#05A105",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 16,
+      fontWeight: 500,
+      color: "#080908",
+      margin: 0
+    }
+  }, "All ", matchedTotal ?? 420, " transactions matched"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      color: "#8C8C8B",
+      margin: 0,
+      maxWidth: 520,
+      lineHeight: "22px"
+    }
+  }, "Every bank statement line has been matched and verified against GL records in Xero. No suggestions found."), onAccountsOverview && /*#__PURE__*/React.createElement(PrimaryButton, {
+    onClick: onAccountsOverview,
+    style: {
+      marginTop: 8
+    }
+  }, "Accounts overview")), !isCleanReconcile && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
       margin: "0 0 16px"
     }
-  }, missingEntries.length, " Missing ", missingEntries.length === 1 ? "entry" : "entries"), /*#__PURE__*/React.createElement("div", {
+  }, missingEntries.length, " Missing ", missingEntries.length === 1 ? "entry" : "entries"), !isCleanReconcile && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3988,7 +4050,7 @@ function ResultsPanel({
         onShowToast?.("Reconciled in Xero successfully");
       } : undefined
     });
-  })), !isHSBC && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+  })), !isCleanReconcile && !isHSBC && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
       color: "#000000",
@@ -4227,7 +4289,9 @@ function ReconciliationFlow({
   showResults = false,
   allResolved = false,
   isCleanReconcile = false,
-  onUploadStatement
+  onUploadStatement,
+  reconciledDate = null,
+  reconciledMatchedStr = null
 }) {
   const accounts = ["Lloyds Bank - Business", "Lloyds Bank - Operations GBP", "HSBC - Business Transactions", "Barclays - Operations", "American Express OP GBP", "Mastercard Business"];
   const isPicker = accountName === "__picker__";
@@ -4237,6 +4301,7 @@ function ReconciliationFlow({
   const effectiveAccountName = selectedAccount || accountName;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState(showResults ? [{
     name: "bank-statement.pdf",
     type: "application/pdf"
@@ -4486,6 +4551,17 @@ function ReconciliationFlow({
       });
     }
   }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected]);
+
+  // Track whether the chat is scrolled to the bottom
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -4647,9 +4723,51 @@ function ReconciliationFlow({
       flexShrink: 0,
       transition: isDragging ? "none" : "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
       overflow: "hidden",
-      willChange: "width"
+      willChange: "width",
+      position: "relative"
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, resultsVisible && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const el = chatScrollRef.current;
+      if (el) el.scrollTo({
+        top: el.scrollHeight,
+        behavior: "smooth"
+      });
+    },
+    style: {
+      position: "absolute",
+      bottom: 218,
+      left: "50%",
+      transform: "translateX(-50%)",
+      zIndex: 10,
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: "#FFFFFF",
+      border: "none",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+      opacity: isAtBottom ? 0 : 1,
+      pointerEvents: isAtBottom ? "none" : "auto",
+      transition: "opacity 0.35s ease"
+    },
+    onMouseEnter: e => e.currentTarget.style.background = "#F5F5F5",
+    onMouseLeave: e => e.currentTarget.style.background = "#FFFFFF"
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 5V19M12 19L19 12M12 19L5 12",
+    stroke: "#1F2024",
+    strokeWidth: "1.25",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }))), /*#__PURE__*/React.createElement("div", {
     ref: chatScrollRef,
     style: {
       flex: 1,
@@ -5243,8 +5361,10 @@ function ReconciliationFlow({
     /* Standalone textarea — visible when AI is not streaming and no action card is showing */
     React.createElement("div", {
       style: {
-        padding: "0 24px 20px",
-        flexShrink: 0
+        padding: resultsVisible ? "60px 24px 20px" : "0 24px 20px",
+        flexShrink: 0,
+        background: resultsVisible ? "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 60px)" : undefined,
+        marginTop: resultsVisible ? -60 : 0
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -5438,60 +5558,11 @@ function ReconciliationFlow({
       animation: "resultsFadeIn 0.5s ease both",
       height: "100%"
     }
-  }, effectiveIsCleanReconcile || !allResolved && resolvedCards.size >= totalSuggestions && accountName !== "HSBC - Business Transactions" ? /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      height: "100%",
-      gap: 16,
-      padding: 48,
-      textAlign: "center"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 64,
-      height: 64,
-      borderRadius: "50%",
-      background: "#EAF2E2",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "32",
-    height: "32",
-    viewBox: "0 0 32 32",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M7 16.5L12.5 22L25 10",
-    stroke: "#05A105",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }))), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 18,
-      fontWeight: 500,
-      color: "#080908",
-      margin: 0
-    }
-  }, effectiveAccountName, " is reconciled"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 14,
-      color: "#8C8C8B",
-      margin: 0,
-      maxWidth: 280,
-      lineHeight: "22px"
-    }
-  }, "All transactions have been matched and verified. No issues found."), /*#__PURE__*/React.createElement(PrimaryButton, {
-    onClick: () => onClose(true, false, effectiveAccountName),
-    style: {
-      marginTop: 8
-    }
-  }, "Accounts overview")) : /*#__PURE__*/React.createElement(ResultsPanel, {
-    accountName: accountName,
+  }, false ? null : /*#__PURE__*/React.createElement(ResultsPanel, {
+    accountName: effectiveAccountName,
+    isCleanReconcile: effectiveIsCleanReconcile || !allResolved && resolvedCards.size >= totalSuggestions && accountName !== "HSBC - Business Transactions",
+    onAccountsOverview: () => onClose(true, false, effectiveAccountName),
+    matchedTotal: reconciledMatchedStr ? parseInt(reconciledMatchedStr.split("/")[1]) || null : null,
     onOpenSpendMoney: (entry, cardIndex) => setSpendMoneySidebar({
       ...entry,
       cardIndex
@@ -6607,7 +6678,9 @@ function BankReconciliation() {
       showResults: showResultsMode,
       allResolved: allResolvedOnOpen,
       isCleanReconcile: isCleanReconcileOnOpen,
-      onUploadStatement: handleUploadStatement
+      onUploadStatement: handleUploadStatement,
+      reconciledDate: reconciledDates[reconciling] || null,
+      reconciledMatchedStr: reconciledData[reconciling]?.matched || null
     });
   }
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, `
