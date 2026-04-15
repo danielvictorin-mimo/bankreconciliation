@@ -1720,31 +1720,38 @@ function AllDocumentsSidebar({
     style: {
       width: 30,
       height: 30,
-      borderRadius: "50%",
-      background: "#F5F5F5",
       border: "none",
+      background: "none",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      flexShrink: 0
+      flexShrink: 0,
+      padding: 0
     },
-    onMouseEnter: e => e.currentTarget.style.background = "#EBEBEB",
-    onMouseLeave: e => e.currentTarget.style.background = "#F5F5F5"
+    onMouseEnter: e => e.currentTarget.querySelector("rect").setAttribute("fill", "#EBEBEB"),
+    onMouseLeave: e => e.currentTarget.querySelector("rect").setAttribute("fill", "#F5F5F5")
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "14",
-    height: "14",
-    viewBox: "0 0 14 14",
+    width: "30",
+    height: "30",
+    viewBox: "0 0 30 30",
     fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M2 2L12 12M12 2L2 12",
-    stroke: "#545453",
-    strokeWidth: "1.5",
-    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: "30",
+    height: "30",
+    rx: "15",
+    fill: "#F5F5F5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M20 10L10 20M10 10L20 20",
+    stroke: "#2A2A2A",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
   })))), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "16px 16px 0",
-      flexShrink: 0
+      flex: 1,
+      overflowY: "auto",
+      padding: "16px 16px 0"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1758,27 +1765,23 @@ function AllDocumentsSidebar({
       alignItems: "center",
       gap: 10,
       padding: "10px 14px",
-      borderBottom: "1px solid #F0F0F2"
+      borderBottom: "1px solid #E9E9EB",
+      flexShrink: 0
     }
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 16 16",
+    width: "20",
+    height: "20",
+    viewBox: "0 0 20 20",
     fill: "none",
     style: {
       flexShrink: 0
     }
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "7",
-    cy: "7",
-    r: "5",
-    stroke: "#8C8C8B",
-    strokeWidth: "1.25"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M11 11L14 14",
-    stroke: "#8C8C8B",
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M17.5 17.5L13.875 13.875M15.8333 9.16667C15.8333 12.8486 12.8486 15.8333 9.16667 15.8333C5.48477 15.8333 2.5 12.8486 2.5 9.16667C2.5 5.48477 5.48477 2.5 9.16667 2.5C12.8486 2.5 15.8333 5.48477 15.8333 9.16667Z",
+    stroke: "#4F4F4F",
     strokeWidth: "1.25",
-    strokeLinecap: "round"
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
   })), /*#__PURE__*/React.createElement("input", {
     value: search,
     onChange: e => setSearch(e.target.value),
@@ -1788,7 +1791,7 @@ function AllDocumentsSidebar({
       border: "none",
       outline: "none",
       fontSize: 14,
-      color: "#080908",
+      color: "#4F4F4F",
       background: "transparent",
       fontFamily: "'Inter', sans-serif"
     }
@@ -1797,12 +1800,13 @@ function AllDocumentsSidebar({
       display: "inline-flex",
       alignItems: "center",
       gap: 6,
-      padding: "4px 10px",
+      height: 36,
+      padding: "0 10px",
       border: "1px solid #DBDBDB",
       borderRadius: 7,
       background: "#FFFFFF",
       cursor: "pointer",
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: 500,
       color: "#080908",
       flexShrink: 0
@@ -1810,81 +1814,43 @@ function AllDocumentsSidebar({
     onMouseEnter: e => e.currentTarget.style.background = "#F5F5F5",
     onMouseLeave: e => e.currentTarget.style.background = "#FFFFFF"
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "13",
-    height: "13",
-    viewBox: "0 0 13 13",
+    width: "20",
+    height: "20",
+    viewBox: "0 0 20 20",
     fill: "none"
   }, /*#__PURE__*/React.createElement("path", {
-    d: "M6.5 2v9M2 6.5h9",
-    stroke: "#080908",
-    strokeWidth: "1.5",
-    strokeLinecap: "round"
-  })), "Add filter")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px 14px"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 5,
-      padding: "4px 10px",
-      background: "#F5F5F3",
-      borderRadius: 7,
-      fontSize: 13,
-      color: "#080908"
-    }
-  }, "30 days", /*#__PURE__*/React.createElement("svg", {
-    width: "11",
-    height: "11",
-    viewBox: "0 0 11 11",
-    fill: "none",
-    style: {
-      cursor: "pointer"
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M2 2L9 9M9 2L2 9",
-    stroke: "#545453",
+    d: "M9.99996 4.16675V15.8334M4.16663 10.0001H15.8333",
+    stroke: "#1F2024",
     strokeWidth: "1.25",
-    strokeLinecap: "round"
-  })))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      overflowY: "auto",
-      padding: "16px 16px 0"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      border: "1px solid #EFF1F4",
-      borderRadius: 10,
-      overflow: "hidden"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })), "Add filter")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       background: "#FBFBFB",
-      borderBottom: "1px solid #EFF1F4"
+      borderBottom: "1px solid #E9E9EB",
+      flexShrink: 0
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 44,
       flexShrink: 0,
-      borderRight: "1px solid #EFF1F4"
+      borderRight: "1px solid #E9E9EB"
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       padding: "10px 14px",
-      fontSize: 13,
+      fontSize: 14,
       color: "#8C8C8B",
       fontWeight: 400,
-      borderRight: "1px solid #EFF1F4"
+      borderRight: "1px solid #E9E9EB"
     }
   }, "Name"), /*#__PURE__*/React.createElement("div", {
     style: {
       width: 130,
       padding: "10px 14px",
-      fontSize: 13,
+      fontSize: 14,
       color: "#8C8C8B",
       fontWeight: 400,
       flexShrink: 0
@@ -1897,7 +1863,7 @@ function AllDocumentsSidebar({
       style: {
         display: "flex",
         alignItems: "center",
-        borderBottom: i < filtered.length - 1 ? "1px solid #EFF1F4" : "none",
+        borderBottom: i < filtered.length - 1 ? "1px solid #E9E9EB" : "none",
         cursor: "pointer",
         background: isSelected ? "#F4F9F1" : "#FFFFFF",
         transition: "background 0.1s"
@@ -1915,7 +1881,7 @@ function AllDocumentsSidebar({
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        borderRight: "1px solid #EFF1F4",
+        borderRight: "1px solid #E9E9EB",
         alignSelf: "stretch"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -1949,7 +1915,7 @@ function AllDocumentsSidebar({
         display: "flex",
         alignItems: "center",
         gap: 10,
-        borderRight: "1px solid #EFF1F4",
+        borderRight: "1px solid #E9E9EB",
         minWidth: 0
       }
     }, /*#__PURE__*/React.createElement(DocFileIcon, {
@@ -1960,7 +1926,7 @@ function AllDocumentsSidebar({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 500,
         color: "#080908",
         overflow: "hidden",
@@ -1969,7 +1935,7 @@ function AllDocumentsSidebar({
       }
     }, doc.name), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 12,
+        fontSize: 14,
         color: "#8C8C8B",
         marginTop: 1
       }
@@ -1977,7 +1943,7 @@ function AllDocumentsSidebar({
       style: {
         width: 130,
         padding: "10px 14px",
-        fontSize: 13,
+        fontSize: 14,
         color: "#080908",
         flexShrink: 0
       }
@@ -2015,11 +1981,11 @@ function AllDocumentsSidebar({
 
 // ── Upload card ───────────────────────────────────────────────────────────────
 function UploadCard({
-  onFileSelected
+  onFileSelected,
+  onOpenAllDocs
 }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
-  const [allDocsOpen, setAllDocsOpen] = useState(false);
   const fileInputRef = useRef(null);
   const handleFile = file => {
     if (file) {
@@ -2221,7 +2187,7 @@ function UploadCard({
     strokeWidth: "2",
     strokeLinecap: "round"
   })), "Upload document"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setAllDocsOpen(true),
+    onClick: () => onOpenAllDocs?.(),
     style: {
       flex: 1,
       display: "inline-flex",
@@ -2244,14 +2210,7 @@ function UploadCard({
       e.currentTarget.style.background = "#FFFFFF";
       e.currentTarget.style.borderColor = "#DBDBDB";
     }
-  }, "All documents"))), allDocsOpen && /*#__PURE__*/React.createElement(AllDocumentsSidebar, {
-    onClose: () => setAllDocsOpen(false),
-    onSelect: docs => {
-      onFileSelected?.(docs.map(d => ({
-        name: d.name
-      })));
-    }
-  }));
+  }, "All documents"))));
 }
 
 // ── Reconciliation progress steps ─────────────────────────────────────────────
@@ -2507,7 +2466,8 @@ function RecommendationCard({
     }
   }), /*#__PURE__*/React.createElement("button", {
     style: {
-      padding: "7px 12px",
+      height: 40,
+      padding: "0 12px",
       border: "none",
       borderRadius: 8,
       background: "#FCEFEC",
@@ -4318,6 +4278,7 @@ function ReconciliationFlow({
   const [canvasReady, setCanvasReady] = useState(showResults);
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
+  const [allDocsOpen, setAllDocsOpen] = useState(false);
   const [spendMoneySidebar, setSpendMoneySidebar] = useState(null);
   const chatScrollRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -4359,6 +4320,28 @@ function ReconciliationFlow({
   useEffect(() => {
     if (reconciliationComplete) setResultsVisible(true);
   }, [reconciliationComplete]);
+
+  // Escape key — closes any open overlay first, then goes back to account overview
+  useEffect(() => {
+    const onKeyDown = e => {
+      if (e.key !== "Escape") return;
+      if (allDocsOpen) {
+        setAllDocsOpen(false);
+        return;
+      }
+      if (spendMoneySidebar) {
+        setSpendMoneySidebar(null);
+        return;
+      }
+      if (batchDraftSidebar) {
+        setBatchDraftSidebar(null);
+        return;
+      }
+      onClose(canvasReady, resolvedCards.size >= totalSuggestions, effectiveAccountName);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [allDocsOpen, spendMoneySidebar, batchDraftSidebar, canvasReady, resolvedCards, totalSuggestions, effectiveAccountName]);
 
   // Delay canvas content until panel has slid in
   useEffect(() => {
@@ -4577,6 +4560,7 @@ function ReconciliationFlow({
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes resultsFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
       `), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 96,
@@ -4721,10 +4705,11 @@ function ReconciliationFlow({
       flexDirection: "column",
       width: resultsVisible ? chatWidth : "100%",
       flexShrink: 0,
-      transition: isDragging ? "none" : "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+      transition: isDragging ? "none" : "width 0.72s cubic-bezier(0.16, 1, 0.3, 1)",
       overflow: "hidden",
       willChange: "width",
-      position: "relative"
+      position: "relative",
+      zIndex: 1
     }
   }, resultsVisible && /*#__PURE__*/React.createElement("button", {
     onClick: () => {
@@ -4777,10 +4762,10 @@ function ReconciliationFlow({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      maxWidth: resultsVisible ? "100%" : 680,
+      maxWidth: 680,
       width: "100%",
       margin: "0 auto",
-      padding: resultsVisible ? "32px 24px 40px" : "40px 24px 40px",
+      padding: "40px 24px 40px",
       flex: 1,
       display: "flex",
       flexDirection: "column",
@@ -4885,7 +4870,8 @@ function ReconciliationFlow({
       marginTop: 16
     }
   }, /*#__PURE__*/React.createElement(UploadCard, {
-    onFileSelected: handleFileSelected
+    onFileSelected: handleFileSelected,
+    onOpenAllDocs: () => setAllDocsOpen(true)
   })), uploadedFiles && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -5105,7 +5091,8 @@ function ReconciliationFlow({
     onFileSelected: file => {
       handleFileSelected(file);
       setReuploadPhase(false);
-    }
+    },
+    onOpenAllDocs: () => setAllDocsOpen(true)
   })), startClicked && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -5304,29 +5291,20 @@ function ReconciliationFlow({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 14,
-        color: "#8C8C8B",
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
         lineHeight: "22px",
         flex: 1
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
-        display: "inline-flex",
-        gap: 3
-      }
-    }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("span", {
-      key: i,
-      style: {
-        width: 4,
-        height: 4,
-        borderRadius: "50%",
-        background: "#8C8C8B",
-        animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+        background: "linear-gradient(90deg, #9D9D9E 0%, #9D9D9E 30%, #2A2A2A 50%, #9D9D9E 70%, #9D9D9E 100%)",
+        backgroundSize: "200% auto",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        animation: "textShimmer 2s linear infinite",
         display: "inline-block"
       }
-    }))), "Preparing next step..."), /*#__PURE__*/React.createElement("button", {
+    }, "Preparing next step...")), /*#__PURE__*/React.createElement("button", {
       style: {
         display: "inline-flex",
         alignItems: "center",
@@ -5543,19 +5521,19 @@ function ReconciliationFlow({
       position: "absolute",
       top: 0,
       bottom: 0,
-      left: chatWidth + 6,
+      left: chatWidth,
       right: 0,
       background: "#FFFFFF",
       borderLeft: "1px solid #E9E9EB",
       overflowY: "auto",
       zIndex: 2,
-      transform: resultsVisible ? "translateX(0)" : "translateX(100vw)",
-      transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+      transform: resultsVisible ? "translateX(0)" : "translateX(100%)",
+      transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1)",
       willChange: "transform"
     }
   }, resultsVisible && (canvasReady ? /*#__PURE__*/React.createElement("div", {
     style: {
-      animation: "resultsFadeIn 0.5s ease both",
+      animation: "resultsFadeIn 0.4s ease 0.1s both",
       height: "100%"
     }
   }, false ? null : /*#__PURE__*/React.createElement(ResultsPanel, {
@@ -5596,7 +5574,15 @@ function ReconciliationFlow({
     onMouseLeave: e => {
       if (!isDragging) e.currentTarget.style.background = "transparent";
     }
-  })), " ", spendMoneySidebar && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  })), " ", allDocsOpen && /*#__PURE__*/React.createElement(AllDocumentsSidebar, {
+    onClose: () => setAllDocsOpen(false),
+    onSelect: docs => {
+      handleFileSelected(docs.map(d => ({
+        name: d.name
+      })));
+      setAllDocsOpen(false);
+    }
+  }), spendMoneySidebar && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     onClick: () => setSpendMoneySidebar(null),
     style: {
       position: "fixed",
