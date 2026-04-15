@@ -1982,7 +1982,8 @@ function AllDocumentsSidebar({
 // ── Upload card ───────────────────────────────────────────────────────────────
 function UploadCard({
   onFileSelected,
-  onOpenAllDocs
+  onOpenAllDocs,
+  title = "Upload bank statement"
 }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
@@ -2009,7 +2010,7 @@ function UploadCard({
       color: "#080908",
       marginBottom: 20
     }
-  }, "Upload bank statement"), /*#__PURE__*/React.createElement("input", {
+  }, title), /*#__PURE__*/React.createElement("input", {
     ref: fileInputRef,
     type: "file",
     style: {
