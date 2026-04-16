@@ -187,6 +187,7 @@ const STATUS_CONFIG = {
   reconciled:  { label: "Reconciled",  color: "#05A105", tooltip: "Account is fully reconciled in Xero" },
   suggestions: { label: "Suggestions", color: "#C8543A", tooltip: "Resolve suggestions to reconcile account" },
   completed:   { label: "Completed",   color: "#4C71DF", tooltip: "Account ready to be reconciled in Xero" },
+  reviewing:   { label: "In review",   color: "#D5A750", tooltip: "Reconciliation in progress — suggestions need review" },
 };
 
 function ReconciledCard({ date, status = "reconciled", suggestionCount, onPlay, onTipShow, onTipHide }) {
@@ -293,7 +294,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
     "Feed balance": "Real-time balance pulled directly from your bank feed",
     "Statement balance": "Closing balance from the uploaded bank statement",
     "GL balance": "Current balance recorded in your general ledger",
-    "Tr. matching": "Percentage of transactions automatically matched so far",
+    "Tr. matching": "Number of bank statement lines matched",
     "Bank statement": "The bank statement file used for this reconciliation",
     "Actions": "Run reconciliation or review results for this account",
   };
@@ -893,7 +894,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
 }
 
 // ── Upload card ───────────────────────────────────────────────────────────────
-function UploadCard({ onFileSelected, onOpenAllDocs }) {
+function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statement" }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const fileInputRef = useRef(null);
@@ -916,7 +917,7 @@ function UploadCard({ onFileSelected, onOpenAllDocs }) {
     }}>
       {/* Heading */}
       <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", marginBottom: 20 }}>
-        Upload bank statement
+        {title}
       </p>
 
       {/* Hidden file input */}
@@ -1600,7 +1601,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
         {/* ── Tabs ── */}
         <div style={{ display: "flex", borderBottom: "1px solid #ECECEC", marginTop: 4 }}>
           {tabs.map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+            <button key={tab} onClick={() => onTabChange(tab)} style={{
               padding: "10px 0", marginRight: 24, fontSize: 14, fontWeight: activeTab === tab ? 600 : 400,
               color: activeTab === tab ? "#080908" : "#7C7C7C", background: "none", border: "none",
               borderBottom: activeTab === tab ? "2px solid #05A105" : "2px solid transparent",
@@ -1680,56 +1681,12 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
 }
 
 // ── Results sidebar: Progress box ────────────────────────────────────────────
-function ResultsProgressBox({ isCleanReconcile, accountStatus, resolvedCount, totalSuggestions, categoryCounts, matchedTotal }) {
-  const [open, setOpen] = useState(true);
-  const isOpen = open;
+function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards }) {
   const color = accountStatus === "completed" ? "#4C71DF" : "#05A105";
   const bg    = accountStatus === "completed" ? "#EEF2FF" : "#EAF2E2";
   const label = accountStatus === "completed" ? "Completed" : "Reconciled";
   const msg   = accountStatus === "completed" ? "Ready to reconcile in Xero" : "Fully reconciled in Xero";
   const pct   = totalSuggestions > 0 ? Math.min(100, Math.round((resolvedCount / totalSuggestions) * 100)) : 0;
-  return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", marginBottom: 10, fontFamily: "'Inter', sans-serif" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit" }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Left to review</span>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: isOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
-          <path d="M2.5 4.5L7 9L11.5 4.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      {isOpen && (
-        <div style={{ borderTop: "1px solid #F0F0F0", padding: "16px" }}>
-          {isCleanReconcile ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center", paddingTop: 4 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 8.5L6.5 12L13 5" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <span style={{ fontSize: 14, fontWeight: 600, color }}>{label}</span>
-              <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "20px" }}>{msg}</span>
-              {matchedTotal && <span style={{ fontSize: 14, fontWeight: 500, color: "#4F4F4F", marginTop: 2 }}>{matchedTotal} transactions matched</span>}
-            </div>
-          ) : (
-            <>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 20, fontWeight: 600, color: "#080908" }}>{resolvedCount}</span>
-                <span style={{ fontSize: 14, color: "#8C8C8B" }}>{"\u2009"}/ {totalSuggestions} resolved</span>
-              </div>
-              <div style={{ height: 4, background: "#E9E9EB", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "#05A105", borderRadius: 2, transition: "width 0.4s ease" }} />
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Results sidebar: Navigation box ──────────────────────────────────────────
-function ResultsNavBox({ navCategories, resolvedCards }) {
-  const [open, setOpen] = useState(true);
-  const isOpen = open;
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1737,22 +1694,68 @@ function ResultsNavBox({ navCategories, resolvedCards }) {
   };
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
         <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Suggestions</span>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: isOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
-          <path d="M2.5 4.5L7 9L11.5 4.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      {isOpen && (
+      </div>
+      {/* Progress / clean state */}
+      <div style={{ borderTop: "1px solid #F0F0F0", padding: "16px" }}>
+        {allJustResolved ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Status row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#4C71DF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#4C71DF" }}>Ready to reconcile in Xero</span>
+            </div>
+            {/* Description */}
+            <span style={{ fontSize: 12, color: "#8C8C8B", lineHeight: "18px" }}>All suggestions resolved. Go to Xero to finalise and post the reconciliation.</span>
+            {/* Progress */}
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 600, color: "#080908" }}>{resolvedCount}</span>
+                <span style={{ fontSize: 14, color: "#8C8C8B" }}>{"\u2009"}/ {totalSuggestions} resolved</span>
+              </div>
+              <div style={{ height: 4, background: "#E9E9EB", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: "#4C71DF", borderRadius: 2, transition: "width 0.4s ease" }} />
+              </div>
+            </div>
+          </div>
+        ) : isCleanReconcile ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center", paddingTop: 4, paddingBottom: 4 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8.5L6.5 12L13 5" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color }}>{label}</span>
+            <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "20px" }}>{msg}</span>
+            {matchedTotal && <span style={{ fontSize: 14, fontWeight: 500, color: "#4F4F4F", marginTop: 2 }}>{matchedTotal} transactions matched</span>}
+          </div>
+        ) : (
+          <>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 600, color: "#080908" }}>{resolvedCount}</span>
+              <span style={{ fontSize: 14, color: "#8C8C8B" }}>{"\u2009"}/ {totalSuggestions} resolved</span>
+            </div>
+            <div style={{ height: 4, background: "#E9E9EB", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "#05A105", borderRadius: 2, transition: "width 0.4s ease" }} />
+            </div>
+          </>
+        )}
+      </div>
+      {/* Nav list */}
+      {!isCleanReconcile && (
         <div style={{ borderTop: "1px solid #F0F0F0", padding: "8px 6px 10px", maxHeight: 420, overflowY: "auto" }}>
           {navCategories.length === 0 ? (
             <div style={{ padding: "10px 10px", fontSize: 14, color: "#8C8C8B", textAlign: "center" }}>No suggestions</div>
           ) : (
             navCategories.map((cat, ci) => (
               <div key={ci} style={{ marginBottom: ci < navCategories.length - 1 ? 6 : 0 }}>
-                <div style={{ padding: "4px 10px 4px", fontSize: 14, fontWeight: 400, color: "#ADADAD" }}>
-                  {cat.label}
-                </div>
+                <div style={{ padding: "4px 10px 4px", fontSize: 14, fontWeight: 400, color: "#ADADAD" }}>{cat.label}</div>
                 {cat.items.map((item, ii) => {
                   const isResolved = resolvedCards.has(cat.baseIdx + ii);
                   return (
@@ -1789,13 +1792,15 @@ function ResultsNavBox({ navCategories, resolvedCards }) {
 }
 
 // ── Results panel ─────────────────────────────────────────────────────────────
-function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, onShowToast, isCleanReconcile = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true }) {
+function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const containerRef = useRef(null);
 
   const isHSBC = accountName === "HSBC - Business Transactions";
+  // When the user resolved all suggestions themselves, keep the full view — only the box header changes
+  const effectiveClean = isCleanReconcile && !allJustResolved;
 
-  const resultRows = isCleanReconcile ? [
+  const resultRows = effectiveClean ? [
     { description: "Missing entries",    issues: 0 },
     { description: "Anomalies",          issues: 0 },
     { description: "Duplicates",         issues: 0 },
@@ -1804,6 +1809,19 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { description: "General",            issues: 0 },
   ] : isHSBC ? [
     { description: "Missing entries", issues: 1 },
+  ] : accountName === "Barclays - Operations" ? [
+    { description: "Missing entries",    issues: 2 },
+    { description: "Anomalies",          issues: 1 },
+    { description: "Omitted",            issues: 1 },
+    { description: "General",            issues: 1 },
+  ] : accountName === "American Express OP GBP" ? [
+    { description: "Missing entries",    issues: 1 },
+    { description: "Date differences",   issues: 2 },
+    { description: "Duplicates",         issues: 1 },
+  ] : accountName === "Mastercard Business" ? [
+    { description: "Missing entries",    issues: 1 },
+    { description: "Anomalies",          issues: 1 },
+    { description: "Duplicates",         issues: 1 },
   ] : [
     { description: "Missing entries",    issues: 3 },
     { description: "Anomalies",          issues: 1 },
@@ -1813,78 +1831,60 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { description: "General",            issues: 1 },
   ];
 
-  const missingEntries = isHSBC ? [
-    {
-      state: "Open", contact: "Anchor & Webb Consulting", date: "21 Mar 2026", amount: "£875.00", email: "20 Mar, 10:30",
-      description: "A bank statement line for Anchor & Webb Consulting (£875.00) dated 21 Mar 2026 was found with no matching GL entry in Xero.",
-      primaryLabel: "Create spend money", external: false, fileAction: null,
-    },
-  ] : [
-    {
-      state: "Open",   contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "12 Mar, 09:00",
-      description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",
-      primaryLabel: "Create spend money", external: false, fileAction: null,
-    },
-    {
-      state: "Review", contact: "Clifton & Harrow Supplies", date: "14 Mar 2026", amount: "£1,180.00", email: "13 Mar, 10:15",
-      description: "A bank statement line for Clifton & Harrow Supplies (£1,180.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.",
-      primaryLabel: "Review and publish", external: false, fileAction: "CliftonHarrow-invoice.pdf",
-    },
-    {
-      state: "Ready",  contact: "Meridian Office Solutions", date: "9 Mar 2026", amount: "£530.00", email: "8 Mar, 16:40",
-      description: "A bank statement line for Meridian Office Solutions (£530.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",
-      primaryLabel: "Reconcile in Xero", external: true,  fileAction: "Meridian-invoice.pdf",
-    },
-  ];
+    // Per-account suggestion cards — idx must align with navCats baseIdx in boxes section
+  const ACCOUNT_CARDS = {
+    "HSBC - Business Transactions": [
+      { idx: 0, cat: "missing", contact: "Anchor & Webb Consulting", state: "Open", date: "21 Mar 2026", amount: "£875.00", email: "20 Mar, 10:30", description: "A bank statement line for Anchor & Webb Consulting (£875.00) dated 21 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+    ],
+    "Barclays - Operations": [
+      { idx: 0, cat: "missing",   contact: "Hillcrest Imports",    state: "Open",   date: "18 Mar 2026", amount: "£620.00",   email: "17 Mar, 09:15", description: "A bank statement line for Hillcrest Imports (£620.00) dated 18 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 1, cat: "missing",   contact: "NorthStar Media",      state: "Review", date: "11 Mar 2026", amount: "£1,450.00", email: "10 Mar, 14:30", description: "A bank statement line for NorthStar Media (£1,450.00) dated 11 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Review and publish", external: false, fileAction: "NorthStar-invoice.pdf" },
+      { idx: 2, cat: "anomaly",   contact: "Parkway Solutions",    state: "Open",   date: "15 Mar 2026", amount: "£7,200.00", email: "14 Mar, 11:00", description: "A transaction of £7,200.00 from Parkway Solutions is significantly above the account average. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      { idx: 3, cat: "omitted",   contact: "Central Freight Co",   state: "Open",   date: "5 Mar 2026",  amount: "£3,800.00", email: "5 Mar, 08:00",  description: "A bank statement line for Central Freight Co (£3,800.00) on 5 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      { idx: 4, cat: "general",   contact: "Unclassified",         state: "Open",   date: "20 Mar 2026", amount: "£140.00",   email: "19 Mar, 16:45", description: "A transaction of £140.00 on 20 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    ],
+    "American Express OP GBP": [
+      { idx: 0, cat: "missing",   contact: "Vantage Digital",      state: "Open",   date: "19 Mar 2026", amount: "£890.00",   email: "18 Mar, 10:00", description: "A bank statement line for Vantage Digital (£890.00) dated 19 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 1, cat: "date",      contact: "Apex Consulting",       state: "Open",   date: "13 Mar 2026", amount: "£2,100.00", email: "12 Mar, 09:30", description: "A bank statement entry for Apex Consulting dated 13 Mar 2026 is matched to a GL entry dated 18 Mar 2026 — a 5-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
+      { idx: 2, cat: "date",      contact: "BlueSky Events",        state: "Open",   date: "7 Mar 2026",  amount: "£560.00",   email: "6 Mar, 15:20",  description: "A bank statement entry for BlueSky Events dated 7 Mar 2026 is matched to a GL entry dated 10 Mar 2026 — a 3-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
+      { idx: 3, cat: "duplicate", contact: "Vantage Digital",       state: "Open",   date: "19 Mar 2026", amount: "£890.00",   email: "18 Mar, 10:00", description: "Two identical transactions of £890.00 from Vantage Digital were recorded on 19 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    ],
+    "Mastercard Business": [
+      { idx: 0, cat: "missing",   contact: "Harrison & Webb",       state: "Open",   date: "16 Mar 2026", amount: "£730.00",   email: "15 Mar, 11:00", description: "A bank statement line for Harrison & Webb (£730.00) dated 16 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 1, cat: "anomaly",   contact: "Clearpoint Services",   state: "Open",   date: "9 Mar 2026",  amount: "£5,500.00", email: "8 Mar, 14:15",  description: "A transaction of £5,500.00 from Clearpoint Services is significantly above the account average. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      { idx: 2, cat: "duplicate", contact: "Harrison & Webb",       state: "Open",   date: "16 Mar 2026", amount: "£730.00",   email: "15 Mar, 11:00", description: "Two identical transactions of £730.00 from Harrison & Webb were recorded on 16 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    ],
+  };
 
+  const CAT_LABELS = { missing: "Missing entry", anomaly: "Anomaly", duplicate: "Duplicate", date: "Date difference", omitted: "Omitted", general: "General" };
+
+  // Default (Lloyds Bank - Business) card lists
+  const missingEntries = [
+    { state: "Open",   contact: "Yorkshire Tea Estates",     date: "17 Mar 2026", amount: "£240.00",   email: "12 Mar, 09:00", description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",     primaryLabel: "Create spend money", external: false, fileAction: null },
+    { state: "Review", contact: "Clifton & Harrow Supplies", date: "14 Mar 2026", amount: "£1,180.00", email: "13 Mar, 10:15", description: "A bank statement line for Clifton & Harrow Supplies (£1,180.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Review and publish", external: false, fileAction: "CliftonHarrow-invoice.pdf" },
+    { state: "Ready",  contact: "Meridian Office Solutions", date: "9 Mar 2026",  amount: "£530.00",   email: "8 Mar, 16:40",  description: "A bank statement line for Meridian Office Solutions (£530.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",  primaryLabel: "Reconcile in Xero", external: true,  fileAction: "Meridian-invoice.pdf" },
+  ];
   const anomalies = [
-    {
-      state: "Open", contact: "Bakery & Food Supplies", date: "12 Mar 2026", amount: "£4,850.00", email: "10 Mar, 11:30",
-      description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.",
-      primaryLabel: "Remove in Xero", external: true, fileAction: null,
-    },
+    { state: "Open", contact: "Bakery & Food Supplies", date: "12 Mar 2026", amount: "£4,850.00", email: "10 Mar, 11:30", description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
-
   const duplicates = [
-    {
-      state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45",
-      description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.",
-      primaryLabel: "Remove in Xero", external: true, fileAction: null,
-    },
+    { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45", description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
-
   const dateDifferences = [
-    {
-      state: "Open", contact: "Direct Expenses", date: "14 Mar 2026", amount: "£320.00", email: "13 Mar, 14:00",
-      description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.",
-      primaryLabel: "Acknowledge", external: false, fileAction: null,
-    },
+    { state: "Open", contact: "Direct Expenses", date: "14 Mar 2026", amount: "£320.00", email: "13 Mar, 14:00", description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.", primaryLabel: "Acknowledge", external: false, fileAction: null },
   ];
-
   const omitted = [
-    {
-      state: "Open", contact: "Internal Transfer", date: "28 Feb 2026", amount: "£12,000.00", email: "28 Feb, 09:00",
-      description: "A bank statement line for an internal transfer of £12,000.00 on 28 Feb 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",
-      primaryLabel: "Remove in Xero", external: true, fileAction: null,
-    },
+    { state: "Open", contact: "Internal Transfer", date: "28 Feb 2026", amount: "£12,000.00", email: "28 Feb, 09:00", description: "A bank statement line for an internal transfer of £12,000.00 on 28 Feb 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
-
   const general = [
-    {
-      state: "Open", contact: "Unclassified", date: "22 Mar 2026", amount: "£85.00", email: "21 Mar, 17:20",
-      description: "A transaction of £85.00 on 22 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.",
-      primaryLabel: "Remove in Xero", external: true, fileAction: null,
-    },
+    { state: "Open", contact: "Unclassified", date: "22 Mar 2026", amount: "£85.00", email: "21 Mar, 17:20", description: "A transaction of £85.00 on 22 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
 
 
-  const bannerStatus = accountStatus === "completed" ? accountStatus : null;
-  const bannerConfig = bannerStatus ? STATUS_CONFIG[bannerStatus] : null;
-  const bannerBg    = "#EEF2FF";
-  const bannerBorder = "#C7D4F9";
+  const bannerConfig = null; // banner removed
 
   // Data for the sidebar boxes
-  const navCategories = isCleanReconcile ? [] : [
+  const navCategories = effectiveClean ? [] : [
     { key: "missing",   label: "Missing entries",   items: missingEntries,  baseIdx: 0 },
     { key: "anomaly",   label: "Anomalies",          items: isHSBC ? [] : anomalies,       baseIdx: 3 },
     { key: "duplicate", label: "Duplicates",         items: isHSBC ? [] : duplicates,      baseIdx: 4 },
@@ -1922,6 +1922,22 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       {/* Heading */}
       <h2 style={{ fontSize: 22, fontWeight: 600, color: "#080908", margin: "0 0 20px" }}>Results</h2>
 
+      {/* Matched box — shown at top for clean accounts */}
+      {effectiveClean && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 24px", textAlign: "center", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", marginBottom: 28 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#EAF2E2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4.5 11.5L8.5 15.5L17.5 7" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: 0 }}>All {matchedTotal ?? 420} transactions matched</p>
+          <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0, maxWidth: 520, lineHeight: "22px" }}>Every bank statement line has been matched and verified against GL records in Xero. No suggestions found.</p>
+          {onAccountsOverview && (
+            <PrimaryButton onClick={onAccountsOverview} style={{ marginTop: 8 }}>Accounts overview</PrimaryButton>
+          )}
+        </div>
+      )}
+
       {/* Results table (uses DataTable from Tables.jsx) */}
       <div style={{ marginBottom: 12 }}>
         <DataTable
@@ -1944,7 +1960,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         </button>
         {analysisOpen && (
           <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
-            {isCleanReconcile
+            {effectiveClean
               ? "The reconciliation completed successfully with no issues found. All 420 bank statement lines were matched to GL records in Xero. The account balance is confirmed with zero discrepancy."
               : "The reconciliation found 8 items requiring attention across 6 categories. The most significant issues are 3 missing entries totalling £720.00. Balance is confirmed matching at £12,439.00 with 361 of 380 bank statement lines matched to GL records."
             }
@@ -1952,26 +1968,45 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         )}
       </div>
 
-      {/* Suggestions */}
-      <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>
-      {isCleanReconcile && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 24px", textAlign: "center", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", marginBottom: 28 }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#EAF2E2", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M4.5 11.5L8.5 15.5L17.5 7" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: 0 }}>All {matchedTotal ?? 420} transactions matched</p>
-          <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0, maxWidth: 520, lineHeight: "22px" }}>Every bank statement line has been matched and verified against GL records in Xero. No suggestions found.</p>
-          {onAccountsOverview && (
-            <PrimaryButton onClick={onAccountsOverview} style={{ marginTop: 8 }}>Accounts overview</PrimaryButton>
-          )}
+      {/* Suggestions heading — hidden for clean accounts */}
+      {!effectiveClean && <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>}
+      {!effectiveClean && !ACCOUNT_CARDS[accountName] && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
+
+      {/* Per-account cards for Barclays, AmEx, Mastercard */}
+      {!effectiveClean && ACCOUNT_CARDS[accountName] && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {ACCOUNT_CARDS[accountName].map((entry) => {
+            const isResolved = resolvedCards.has(entry.idx);
+            const isIgnored  = false;
+            return (
+              <div key={entry.idx} id={`result-${entry.cat}-${entry.idx}`} style={{ scrollMarginTop: 64 }}>
+                <RecommendationCard
+                  title={`${CAT_LABELS[entry.cat] || entry.cat}: ${entry.contact}`}
+                  description={entry.description}
+                  statusLabel={isResolved ? "Resolved" : "Unresolved"}
+                  statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                  collapsed={isResolved}
+                  tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
+                  primaryLabel={entry.primaryLabel}
+                  external={entry.external}
+                  fileAction={entry.fileAction}
+                  onPrimaryAction={
+                    entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, entry.idx) :
+                    entry.primaryLabel === "Review and publish"  ? () => onOpenBatchDraft?.(entry, entry.idx) :
+                    entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
+                    () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
+                  }
+                  onMore={undefined}
+                  onIgnore={() => { onResolveCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
-      {!isCleanReconcile && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
 
       {/* Missing entry cards */}
-      {!isCleanReconcile && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {!effectiveClean && !ACCOUNT_CARDS[accountName] && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {missingEntries.map((entry, i) => {
           const isResolved = resolvedCards.has(i);
           return (
@@ -2001,7 +2036,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         })}
       </div>}
 
-      {!isCleanReconcile && !isHSBC && (<>
+      {!effectiveClean && !isHSBC && !ACCOUNT_CARDS[accountName] && (<>
       {/* Anomalies */}
       <p style={{ fontSize: 14, color: "#000000", margin: "24px 0 16px" }}>1 Anomaly</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2161,7 +2196,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [reuploadPhase, setReuploadPhase]     = useState(false);
   const [resultsVisible, setResultsVisible]   = useState(showResults);
   const [canvasReady, setCanvasReady]         = useState(showResults);
-  const [boxesOpen, setBoxesOpen]             = useState(true);
+  const [boxesOpen, setBoxesOpen]             = useState(false);
   const [chatWidth, setChatWidth]             = useState(400);
   const [isDragging, setIsDragging]           = useState(false);
   const [allDocsOpen, setAllDocsOpen]             = useState(false);
@@ -2169,7 +2204,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
   const [batchDraftSidebar, setBatchDraftSidebar] = useState(null);
-  const ACCOUNT_TOTAL_SUGGESTIONS = { "Lloyds Bank - Business": 8, "HSBC - Business Transactions": 1 };
+  const ACCOUNT_TOTAL_SUGGESTIONS = {
+    "Lloyds Bank - Business": 8,
+    "HSBC - Business Transactions": 1,
+    "Barclays - Operations": 5,
+    "American Express OP GBP": 4,
+    "Mastercard Business": 3,
+  };
   const totalSuggestions = ACCOUNT_TOTAL_SUGGESTIONS[accountName] ?? 8;
   const allResolvedSet = allResolved ? new Set(Array.from({ length: totalSuggestions }, (_, i) => i)) : new Set();
   const [resolvedCards, setResolvedCards] = useState(allResolvedSet);
@@ -2416,41 +2457,45 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         <div style={{ flex: 1 }} />
         {resultsVisible && canvasReady && !effectiveIsCleanReconcile && (() => {
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
-          const totalSugg = isHSBCCanvas ? 1 : 8;
+          const totalSugg = ACCOUNT_TOTAL_SUGGESTIONS[effectiveAccountName] ?? 8;
           const resolved = resolvedCards.size;
           const pct = totalSugg > 0 ? Math.min(100, Math.round((resolved / totalSugg) * 100)) : 0;
+          const allDone = resolved >= totalSugg;
           return (
             <button
               onClick={() => setBoxesOpen(o => !o)}
               style={{
                 display: "flex", alignItems: "center", gap: 0,
                 marginRight: 8, cursor: "pointer", fontFamily: "inherit",
-                border: boxesOpen ? "none" : "1px solid #E9E9EB",
-                borderRadius: boxesOpen ? 4 : 8,
-                background: boxesOpen ? "none" : "#FFFFFF",
-                height: boxesOpen ? 28 : 48,
-                padding: boxesOpen ? "0 4px" : "0 10px 0 0",
+                border: "1px solid #E9E9EB",
+                borderRadius: 8,
+                background: "#FFFFFF",
+                height: 48,
+                minWidth: 48,
+                padding: boxesOpen ? 0 : "0 12px 0 0",
                 overflow: "hidden",
-                transition: "height 0.35s cubic-bezier(0.16,1,0.3,1), border-radius 0.35s, padding 0.35s, border 0.15s",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s",
               }}
-              onMouseEnter={e => { if (boxesOpen) e.currentTarget.style.background = "#F0F0F0"; }}
-              onMouseLeave={e => { if (boxesOpen) e.currentTarget.style.background = "none"; }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
             >
               {/* Expandable text + progress — slides in/out */}
               <div style={{
                 maxWidth: boxesOpen ? 0 : 180,
                 opacity: boxesOpen ? 0 : 1,
                 overflow: "hidden",
-                transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s",
+                transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, padding 0.35s cubic-bezier(0.16,1,0.3,1)",
                 display: "flex", flexDirection: "column", gap: 4,
-                paddingLeft: 12, paddingRight: 10,
+                paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10,
               }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <span style={{ fontSize: 14, color: "#545453", whiteSpace: "nowrap" }}>Left to review</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolved}/{totalSugg}</span>
                 </div>
                 <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct}%`, background: "#05A105", borderRadius: 1, transition: "width 0.4s ease" }} />
+                  <div style={{ height: "100%", width: `${pct}%`, background: allDone ? "#4C71DF" : "#05A105", borderRadius: 1, transition: "width 0.4s ease, background 0.3s ease" }} />
                 </div>
               </div>
               {/* Icon — always in the same spot */}
@@ -2948,7 +2993,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             {false ? null : (
               <ResultsPanel
                 accountName={effectiveAccountName}
-                isCleanReconcile={effectiveIsCleanReconcile || (!allResolved && resolvedCards.size >= totalSuggestions && accountName !== "HSBC - Business Transactions")}
+                isCleanReconcile={effectiveIsCleanReconcile || (!allResolved && resolvedCards.size >= totalSuggestions)}
+                allJustResolved={!allResolved && resolvedCards.size >= totalSuggestions}
                 onAccountsOverview={() => onClose(true, false, effectiveAccountName)}
                 matchedTotal={reconciledMatchedStr ? parseInt(reconciledMatchedStr.split("/")[1]) || null : null}
                 onOpenSpendMoney={(entry, cardIndex) => setSpendMoneySidebar({ ...entry, cardIndex })}
@@ -2966,34 +3012,59 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         {/* Floating sidebar boxes — position:fixed is contained by canvas willChange:transform */}
         {resultsVisible && canvasReady && (() => {
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
-          const isClean = effectiveIsCleanReconcile || (!allResolved && resolvedCards.size >= totalSuggestions && accountName !== "HSBC - Business Transactions");
-          const navCats = isClean ? [] : [
-            { key: "missing", label: "Missing entries", baseIdx: 0, items: isHSBCCanvas
-              ? [{ contact: "Anchor & Webb Consulting" }]
-              : [{ contact: "Yorkshire Tea Estates" }, { contact: "Clifton & Harrow Supplies" }, { contact: "Meridian Office Solutions" }] },
-            ...(!isHSBCCanvas ? [
-              { key: "anomaly",   label: "Anomalies",        baseIdx: 3, items: [{ contact: "Bakery & Food Supplies" }] },
-              { key: "duplicate", label: "Duplicates",       baseIdx: 4, items: [{ contact: "Yorkshire Tea Estates" }] },
-              { key: "date",      label: "Date differences", baseIdx: 5, items: [{ contact: "Direct Expenses" }] },
-              { key: "omitted",   label: "Omitted",          baseIdx: 6, items: [{ contact: "Internal Transfer" }] },
-              { key: "general",   label: "General",          baseIdx: 7, items: [{ contact: "Unclassified" }] },
-            ] : []),
-          ];
+          // isPreClean: account was already reconciled before opening — no suggestions exist at all
+          const isPreClean = effectiveIsCleanReconcile;
+          // allJustResolved: user resolved every suggestion during this session, OR account was already completed on open
+          const allJustResolved = (
+            (!allResolved && resolvedCards.size >= totalSuggestions) ||
+            (allResolved && accountStatus === "completed")
+          );
+          const isClean = isPreClean || allJustResolved; // used by ResultsPanel for chat behaviour
+
+          // Build nav cats — always the full list so resolved items remain visible
+          const navCats = isPreClean ? []
+            : isHSBCCanvas ? [
+              { key: "missing", label: "Missing entries", baseIdx: 0, items: [{ contact: "Anchor & Webb Consulting" }] },
+            ]
+            : effectiveAccountName === "Barclays - Operations" ? [
+              { key: "missing", label: "Missing entries", baseIdx: 0, items: [{ contact: "Hillcrest Imports" }, { contact: "NorthStar Media" }] },
+              { key: "anomaly", label: "Anomalies",       baseIdx: 2, items: [{ contact: "Parkway Solutions" }] },
+              { key: "omitted", label: "Omitted",         baseIdx: 3, items: [{ contact: "Central Freight Co" }] },
+              { key: "general", label: "General",         baseIdx: 4, items: [{ contact: "Unclassified" }] },
+            ]
+            : effectiveAccountName === "American Express OP GBP" ? [
+              { key: "missing",   label: "Missing entries",   baseIdx: 0, items: [{ contact: "Vantage Digital" }] },
+              { key: "date",      label: "Date differences",  baseIdx: 1, items: [{ contact: "Apex Consulting" }, { contact: "BlueSky Events" }] },
+              { key: "duplicate", label: "Duplicates",        baseIdx: 3, items: [{ contact: "Vantage Digital" }] },
+            ]
+            : effectiveAccountName === "Mastercard Business" ? [
+              { key: "missing",   label: "Missing entries", baseIdx: 0, items: [{ contact: "Harrison & Webb" }] },
+              { key: "anomaly",   label: "Anomalies",       baseIdx: 1, items: [{ contact: "Clearpoint Services" }] },
+              { key: "duplicate", label: "Duplicates",      baseIdx: 2, items: [{ contact: "Harrison & Webb" }] },
+            ]
+            : [
+              { key: "missing",   label: "Missing entries",   baseIdx: 0, items: [{ contact: "Yorkshire Tea Estates" }, { contact: "Clifton & Harrow Supplies" }, { contact: "Meridian Office Solutions" }] },
+              { key: "anomaly",   label: "Anomalies",         baseIdx: 3, items: [{ contact: "Bakery & Food Supplies" }] },
+              { key: "duplicate", label: "Duplicates",        baseIdx: 4, items: [{ contact: "Yorkshire Tea Estates" }] },
+              { key: "date",      label: "Date differences",  baseIdx: 5, items: [{ contact: "Direct Expenses" }] },
+              { key: "omitted",   label: "Omitted",           baseIdx: 6, items: [{ contact: "Internal Transfer" }] },
+              { key: "general",   label: "General",           baseIdx: 7, items: [{ contact: "Unclassified" }] },
+            ];
           const totalSugg = navCats.reduce((s, c) => s + c.items.length, 0);
           const cats = navCats.map(c => ({ label: c.label, count: c.items.length }));
           const matchedTotalNum = reconciledMatchedStr ? parseInt(reconciledMatchedStr.split("/")[1]) || null : null;
-          if (isClean) return null;
+
+          // Hide boxes only for pre-reconciled accounts (no suggestions to show)
+          if (isPreClean) return null;
           return (
             <div style={{ position: "absolute", top: 94, right: 20, width: 290, zIndex: 20, fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
-              <ResultsProgressBox
-                isCleanReconcile={isClean}
+              <SuggestionsBox
+                isCleanReconcile={false}
+                allJustResolved={allJustResolved}
                 accountStatus={accountStatus}
                 resolvedCount={resolvedCards.size}
                 totalSuggestions={totalSugg}
-                categoryCounts={cats}
                 matchedTotal={matchedTotalNum}
-              />
-              <ResultsNavBox
                 navCategories={navCats}
                 resolvedCards={resolvedCards}
               />
@@ -3794,7 +3865,7 @@ function ExpandedRowContent({ row, comments = [], onAddComment }) {
 }
 
 // ── Balance Sheet: ReconciliationCell ────────────────────────────────────────
-function ReconciliationCell({ code, bsReconciledData, onViewResults }) {
+function ReconciliationCell({ code, account, bsReconciledData, onViewResults, onRunReconciliation }) {
   const data = bsReconciledData && bsReconciledData[code];
   if (data) {
     return (
@@ -3802,12 +3873,13 @@ function ReconciliationCell({ code, bsReconciledData, onViewResults }) {
         date={data.date}
         status={data.status || "reconciled"}
         suggestionCount={data.suggestionCount}
-        onPlay={() => onViewResults?.(code)}
+        onPlay={() => onRunReconciliation?.({ code, account })}
       />
     );
   }
   return (
     <button
+      onClick={e => { e.stopPropagation(); onRunReconciliation?.({ code, account }); }}
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,
         padding: "6px 12px", border: "1px solid #E9E9EB", borderRadius: 6,
@@ -3970,6 +4042,353 @@ const PAYROLL_RECONCILIATION_STEPS = [
 ];
 
 
+// ── Balance Sheet: Account-specific reconciliation data ──────────────────────
+const ACCOUNT_REC_DATA = {
+  // ── 0020 – Plant and machinery ──
+  "0020": {
+    steps: [
+      { title: "Reading source",                subtext: null,                                                       duration: 800  },
+      { title: "Syncing Xero",                  subtext: null,                                                       duration: 1000 },
+      { title: "Analysing fixed asset register", subtext: "Matched 47 assets to Xero records.",                      duration: 1200 },
+      { title: "Comparing balances",            subtext: "Xero: £87,200.00. Fixed asset register: £85,020.00.",      duration: 1000 },
+      { title: "Looking for variances",         subtext: "1 variance found (£2,180.00).",                            duration: 1500 },
+      { title: "Identifying root causes",       subtext: "Depreciation charge discrepancy on forklift (FA-031).",    duration: 1200 },
+      { title: "Suggesting actions",            subtext: null,                                                       duration: 800  },
+    ],
+    overviewRows: [
+      { account: "0020 – Plant and machinery", xeroBalance: "£87,200.00", sourceBalance: "£85,020.00", variance: "£2,180.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded fixed asset register against Xero account 0020 (Plant and machinery). Xero balance is £87,200.00 vs register total of £85,020.00, resulting in a variance of £2,180.00." },
+      { title: "Depreciation discrepancy", text: "A £2,180.00 difference relates to forklift FA-031. The fixed asset register shows accumulated depreciation of £14,520.00 while Xero shows £12,340.00, suggesting the March depreciation charge was not posted." },
+      { title: "Asset count", text: "All 47 assets on the register are present in Xero. No disposals or additions are unaccounted for." },
+    ],
+    suggestions: [
+      { id: 0, type: "Variance", state: "Open", contact: "Depreciation – forklift FA-031", date: "31 Mar 2026", amount: "£2,180.00", email: "—", description: "The fixed asset register shows accumulated depreciation of £14,520.00 for forklift FA-031, but Xero account 0020 only reflects £12,340.00. The March depreciation charge of £2,180.00 appears to be missing.", primaryLabel: "Post journal entry", external: false, fileAction: null, toastMessage: "Journal entry posted successfully" },
+      { id: 1, type: "Missing entry", state: "Open", contact: "Disposal – office printer FA-012", date: "28 Feb 2026", amount: "£0.00", email: "—", description: "Asset FA-012 (office printer) was marked as disposed on 28 Feb 2026 in the register but no disposal entry exists in Xero. The net book value at disposal was £0.00, so no P&L impact, but the cost and accumulated depreciation should be cleared.", primaryLabel: "Create disposal entry", external: false, fileAction: null, toastMessage: "Disposal entry created" },
+    ],
+    reconciledResult: { sourceBalance: "£85,020.00", variance: "£2,180.00" },
+  },
+  // ── 1100 – Trade debtors ──
+  "1100": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                                       duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                                       duration: 1000 },
+      { title: "Matching invoices to ledger",  subtext: "Matched 284 of 291 invoices.",                            duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £184,320.00. Aged debtors report: £181,070.00.",     duration: 1000 },
+      { title: "Looking for variances",       subtext: "2 variances found (£3,250.00 total).",                     duration: 1500 },
+      { title: "Identifying root causes",     subtext: "Unmatched credit note and duplicate posting identified.",   duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                                       duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1100 – Trade debtors", xeroBalance: "£184,320.00", sourceBalance: "£181,070.00", variance: "£3,250.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded aged debtors report against Xero account 1100 (Trade debtors). 284 of 291 invoices matched. Total variance is £3,250.00." },
+      { title: "Credit note not applied", text: "A credit note (CN-0482) for £1,750.00 issued to Greenfield Ltd on 22 Mar 2026 is recorded in Xero but does not appear on the aged debtors report. This may indicate a reporting timing difference." },
+      { title: "Duplicate posting", text: "Invoice INV-3847 for £1,500.00 (Harrison & Co) appears twice in Xero, inflating the Xero balance. The aged debtors report shows it only once." },
+    ],
+    suggestions: [
+      { id: 0, type: "Variance", state: "Open", contact: "Credit note CN-0482 – Greenfield Ltd", date: "22 Mar 2026", amount: "£1,750.00", email: "—", description: "Credit note CN-0482 for £1,750.00 issued to Greenfield Ltd is recorded in Xero but does not appear on the aged debtors report. Verify whether the credit note was applied to the correct customer account and reporting period.", primaryLabel: "Investigate credit note", external: false, fileAction: null, toastMessage: "Credit note investigation logged" },
+      { id: 1, type: "Duplicate", state: "Open", contact: "Invoice INV-3847 – Harrison & Co", date: "18 Mar 2026", amount: "£1,500.00", email: "—", description: "Invoice INV-3847 for £1,500.00 to Harrison & Co appears twice in Xero account 1100 but only once on the aged debtors report. The duplicate entry should be reversed to correct the Xero balance.", primaryLabel: "Reverse duplicate", external: false, fileAction: null, toastMessage: "Duplicate entry reversed" },
+      { id: 2, type: "Review", state: "Review", contact: "Overdue invoice INV-3612 – Baxter Group", date: "07 Feb 2026", amount: "£4,200.00", email: "—", description: "Invoice INV-3612 for £4,200.00 to Baxter Group has been outstanding for 68 days. Consider whether a bad debt provision should be made or whether the debt should be written off.", primaryLabel: "Create provision", external: false, fileAction: null, toastMessage: "Bad debt provision created" },
+    ],
+    reconciledResult: { sourceBalance: "£181,070.00", variance: "£3,250.00" },
+  },
+  // ── 1103 – Prepayments ──
+  "1103": {
+    steps: [
+      { title: "Reading source",                  subtext: null,                                                 duration: 800  },
+      { title: "Syncing Xero",                    subtext: null,                                                 duration: 1000 },
+      { title: "Matching prepayment schedule",     subtext: "Matched 12 prepayment items.",                      duration: 1200 },
+      { title: "Comparing balances",              subtext: "Xero: £23,400.00. Prepayments schedule: £23,400.00.", duration: 1000 },
+      { title: "Looking for variances",           subtext: "No variances found.",                                duration: 1500 },
+      { title: "Reviewing amortisation",          subtext: "2 items flagged for review.",                         duration: 1200 },
+      { title: "Suggesting actions",              subtext: null,                                                 duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1103 – Prepayments", xeroBalance: "£23,400.00", sourceBalance: "£23,400.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded prepayments schedule against Xero account 1103 (Prepayments). All 12 items matched with no balance discrepancy." },
+      { title: "Expired prepayment", text: "Annual software licence (PP-007, £3,600.00) expired on 28 Feb 2026 but the full amount remains on the balance sheet. The March amortisation journal of £300.00 has not been posted." },
+      { title: "Insurance renewal", text: "The buildings insurance prepayment (PP-002) is amortising correctly. The next renewal is due 1 May 2026 — the schedule confirms this is already accounted for." },
+    ],
+    suggestions: [
+      { id: 0, type: "Missing entry", state: "Open", contact: "Software licence amortisation – PP-007", date: "31 Mar 2026", amount: "£300.00", email: "—", description: "The annual software licence (PP-007, total £3,600.00) has not had its March amortisation posted. A journal of £300.00 should be posted to release the monthly portion from prepayments to the software expense account.", primaryLabel: "Post journal entry", external: false, fileAction: null, toastMessage: "Journal entry posted successfully" },
+      { id: 1, type: "Review", state: "Review", contact: "Insurance renewal approaching – PP-002", date: "01 May 2026", amount: "£12,000.00", email: "—", description: "The buildings insurance policy (PP-002) renews on 1 May 2026. The current annual premium is £12,000.00. Confirm whether the renewal quote has been received and whether the new premium amount will differ.", primaryLabel: "Acknowledge", external: false, fileAction: null, toastMessage: "Renewal noted" },
+    ],
+    reconciledResult: { sourceBalance: "£23,400.00", variance: "£0.00" },
+  },
+  // ── 1200 – Stock ──
+  "1200": {
+    steps: [
+      { title: "Reading source",               subtext: null,                                                      duration: 800  },
+      { title: "Syncing Xero",                 subtext: null,                                                      duration: 1000 },
+      { title: "Analysing stock valuation",    subtext: "Matched 156 stock lines to Xero inventory.",              duration: 1200 },
+      { title: "Comparing balances",           subtext: "Xero: £41,800.00. Stock count valuation: £41,800.00.",    duration: 1000 },
+      { title: "Looking for variances",        subtext: "No balance variance. 3 lines flagged.",                   duration: 1500 },
+      { title: "Reviewing stock ageing",       subtext: "Slow-moving stock identified.",                            duration: 1200 },
+      { title: "Suggesting actions",           subtext: null,                                                      duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1200 – Stock", xeroBalance: "£41,800.00", sourceBalance: "£41,800.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded stock count valuation against Xero account 1200 (Stock). All 156 stock lines matched with no balance discrepancy." },
+      { title: "Slow-moving stock", text: "Three stock lines totalling £4,200.00 have not moved in over 90 days. Under IAS 2, a net realisable value review may be required. Items: component brackets (£1,800.00), display panels (£1,400.00), and cable assemblies (£1,000.00)." },
+      { title: "Valuation method", text: "All items are valued on a weighted average cost basis, consistent with the prior period. No change in valuation method detected." },
+    ],
+    suggestions: [
+      { id: 0, type: "Review", state: "Review", contact: "Slow-moving stock – NRV review", date: "31 Mar 2026", amount: "£4,200.00", email: "—", description: "Three stock lines totalling £4,200.00 have not moved in over 90 days. Consider performing a net realisable value assessment and recording a write-down provision if NRV is below cost.", primaryLabel: "Create provision", external: false, fileAction: null, toastMessage: "Stock provision created" },
+      { id: 1, type: "Review", state: "Review", contact: "Obsolete item – cable assemblies", date: "31 Mar 2026", amount: "£1,000.00", email: "—", description: "Cable assemblies (SKU-4421, £1,000.00) have been discontinued by the supplier and are unlikely to be sold at cost. Recommend writing down to estimated scrap value of £150.00.", primaryLabel: "Post write-down", external: false, fileAction: null, toastMessage: "Write-down posted" },
+    ],
+    reconciledResult: { sourceBalance: "£41,800.00", variance: "£0.00" },
+  },
+  // ── 2100 – Trade creditors ──
+  "2100": {
+    steps: [
+      { title: "Reading source",                subtext: null,                                                       duration: 800  },
+      { title: "Syncing Xero",                  subtext: null,                                                       duration: 1000 },
+      { title: "Matching supplier invoices",     subtext: "Matched 198 of 203 invoices.",                            duration: 1200 },
+      { title: "Comparing balances",            subtext: "Xero: £98,450.00. Aged creditors report: £97,200.00.",     duration: 1000 },
+      { title: "Looking for variances",         subtext: "1 variance found (£1,250.00).",                            duration: 1500 },
+      { title: "Identifying root causes",       subtext: "Supplier invoice recorded in Xero but not on report.",     duration: 1200 },
+      { title: "Suggesting actions",            subtext: null,                                                       duration: 800  },
+    ],
+    overviewRows: [
+      { account: "2100 – Trade creditors", xeroBalance: "£98,450.00", sourceBalance: "£97,200.00", variance: "£1,250.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded aged creditors report against Xero account 2100 (Trade creditors). 198 of 203 invoices matched. Variance of £1,250.00." },
+      { title: "Unmatched invoice", text: "Invoice SI-7821 from DataLink Systems (£1,250.00, dated 29 Mar 2026) is in Xero but not on the aged creditors report. This is likely due to the report being generated before the invoice was entered." },
+      { title: "Disputed invoice", text: "Invoice SI-7340 from Apex Supplies (£780.00) has been in dispute since February 2026. The balance appears in both Xero and the creditors report but a credit note is expected." },
+    ],
+    suggestions: [
+      { id: 0, type: "Timing", state: "Open", contact: "Invoice SI-7821 – DataLink Systems", date: "29 Mar 2026", amount: "£1,250.00", email: "—", description: "Invoice SI-7821 from DataLink Systems for £1,250.00 is recorded in Xero but does not appear on the aged creditors report. This is likely a timing difference — confirm the report cut-off date aligns with the Xero posting date.", primaryLabel: "Acknowledge", external: false, fileAction: null, toastMessage: "Timing difference acknowledged" },
+      { id: 1, type: "Review", state: "Review", contact: "Disputed invoice SI-7340 – Apex Supplies", date: "12 Feb 2026", amount: "£780.00", email: "—", description: "Invoice SI-7340 from Apex Supplies for £780.00 has been in dispute since February. Contact the supplier to confirm whether a credit note will be issued or whether the invoice should be paid.", primaryLabel: "Contact supplier", external: false, fileAction: null, toastMessage: "Supplier contact logged" },
+    ],
+    reconciledResult: { sourceBalance: "£97,200.00", variance: "£1,250.00" },
+  },
+  // ── 2109 – Accruals ──
+  "2109": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                                  duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                                  duration: 1000 },
+      { title: "Matching accruals schedule",   subtext: "Matched 8 accrual items.",                           duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £31,200.00. Accruals schedule: £31,200.00.",    duration: 1000 },
+      { title: "Looking for variances",       subtext: "No variances found.",                                 duration: 1500 },
+      { title: "Reviewing accrual ageing",    subtext: "1 item flagged for review.",                          duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                                  duration: 800  },
+    ],
+    overviewRows: [
+      { account: "2109 – Accruals", xeroBalance: "£31,200.00", sourceBalance: "£31,200.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded accruals schedule against Xero account 2109 (Accruals). All 8 items matched with no balance discrepancy." },
+      { title: "Stale accrual", text: "An electricity accrual for £2,400.00 was posted in December 2025. The actual invoice has since been received (£2,380.00) but has not been matched against the accrual, resulting in both entries remaining on the ledger." },
+      { title: "Rent accrual", text: "The quarterly office rent accrual (£7,500.00) was posted correctly for Q1 2026. The corresponding invoice is due for payment on 1 Apr 2026." },
+    ],
+    suggestions: [
+      { id: 0, type: "Missing entry", state: "Open", contact: "Stale accrual – Electricity Q4", date: "31 Dec 2025", amount: "£2,400.00", email: "—", description: "An electricity accrual for £2,400.00 was posted in December 2025. The actual invoice for £2,380.00 has been received and posted to trade creditors, but the accrual has not been reversed. A journal is needed to clear the accrual and recognise the £20.00 difference.", primaryLabel: "Post reversal journal", external: false, fileAction: null, toastMessage: "Reversal journal posted" },
+    ],
+    reconciledResult: { sourceBalance: "£31,200.00", variance: "£0.00" },
+  },
+  // ── 2201 – VAT payable ──
+  "2201": {
+    steps: [
+      { title: "Reading source",             subtext: null,                                                 duration: 800  },
+      { title: "Syncing Xero",               subtext: null,                                                 duration: 1000 },
+      { title: "Matching VAT return figures", subtext: "Compared Box 1–9 to Xero VAT account.",             duration: 1200 },
+      { title: "Comparing balances",         subtext: "Xero: £36,900.00. VAT return: £36,900.00.",          duration: 1000 },
+      { title: "Looking for variances",      subtext: "No variances found.",                                duration: 1500 },
+      { title: "Reviewing VAT period",       subtext: "Q4 return submitted. Filing deadline met.",          duration: 1200 },
+      { title: "Suggesting actions",         subtext: null,                                                 duration: 800  },
+    ],
+    overviewRows: [
+      { account: "2201 – VAT payable", xeroBalance: "£36,900.00", sourceBalance: "£36,900.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded VAT return against Xero account 2201 (VAT payable). All nine boxes on the return agree with the Xero VAT report. No variance." },
+      { title: "Payment due", text: "The Q4 VAT liability of £36,900.00 is due for payment to HMRC by 7 May 2026. The return has been filed on time." },
+      { title: "Input VAT", text: "One claim for input VAT on client entertainment expenses (£890.00) was included in Box 4. Under HMRC rules, business entertainment is generally not recoverable — this should be reviewed." },
+    ],
+    suggestions: [
+      { id: 0, type: "Timing", state: "Open", contact: "HMRC payment due – Q4 VAT", date: "07 May 2026", amount: "£36,900.00", email: "—", description: "The Q4 VAT liability of £36,900.00 is due for payment to HMRC by 7 May 2026. Ensure the payment is scheduled in advance to avoid late payment penalties and interest.", primaryLabel: "Acknowledge", external: false, fileAction: null, toastMessage: "Payment deadline acknowledged" },
+      { id: 1, type: "Review", state: "Review", contact: "Input VAT claim – entertainment expenses", date: "31 Mar 2026", amount: "£890.00", email: "—", description: "An input VAT claim of £890.00 relates to client entertainment expenses. Under HMRC rules, VAT on business entertainment is generally not recoverable. If this claim is disallowed, a journal entry is needed to write off the £890.00.", primaryLabel: "Adjust VAT return", external: false, fileAction: null, toastMessage: "VAT adjustment posted" },
+    ],
+    reconciledResult: { sourceBalance: "£36,900.00", variance: "£0.00" },
+  },
+  // ── 2150 – Corporation tax ──
+  "2150": {
+    steps: [
+      { title: "Reading source",                subtext: null,                                                         duration: 800  },
+      { title: "Syncing Xero",                  subtext: null,                                                         duration: 1000 },
+      { title: "Matching tax computation",       subtext: "Compared CT600 computation to Xero tax account.",           duration: 1200 },
+      { title: "Comparing balances",            subtext: "Xero: £42,500.00. Tax computation: £42,500.00.",             duration: 1000 },
+      { title: "Looking for variances",         subtext: "No variances found.",                                        duration: 1500 },
+      { title: "Reviewing payment schedule",    subtext: "Instalment payments on track.",                               duration: 1200 },
+      { title: "Suggesting actions",            subtext: null,                                                         duration: 800  },
+    ],
+    overviewRows: [
+      { account: "2150 – Corporation tax", xeroBalance: "£42,500.00", sourceBalance: "£42,500.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded CT600 tax computation against Xero account 2150 (Corporation tax). The provision of £42,500.00 matches the computation exactly." },
+      { title: "Payment schedule", text: "Corporation tax for the year ending 31 Mar 2026 is due by 1 Jan 2027. No quarterly instalment payments are required as the company does not meet the large company threshold." },
+      { title: "Prior year", text: "The prior year corporation tax liability of £28,350.00 was settled on 15 Dec 2025. No outstanding balance remains from previous periods." },
+    ],
+    suggestions: [
+      { id: 0, type: "Review", state: "Review", contact: "R&D tax relief – potential claim", date: "31 Mar 2026", amount: "£6,400.00", email: "—", description: "Development costs of £32,000.00 were incurred in FY2025/26. These may qualify for R&D tax relief under the SME scheme, which could reduce the corporation tax liability by approximately £6,400.00. Consider engaging a specialist to review eligibility.", primaryLabel: "Flag for review", external: false, fileAction: null, toastMessage: "Flagged for R&D review" },
+    ],
+    reconciledResult: { sourceBalance: "£42,500.00", variance: "£0.00" },
+  },
+
+  // ── 1210 – Lloyds Bank - Operations GBP ──
+  "1210": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                                         duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                                         duration: 1000 },
+      { title: "Matching transactions",        subtext: "Matched 361 of 380 bank transactions.",                     duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £127,000.00. Bank feed: £125,460.00.",               duration: 1000 },
+      { title: "Looking for variances",       subtext: "1 variance found (£1,540.00).",                                 duration: 1500 },
+      { title: "Identifying root causes",     subtext: "Unreconciled bank charge and timing difference identified.", duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                                         duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1210 – Lloyds Bank - Operations GBP", xeroBalance: "£127,000.00", sourceBalance: "£125,460.00", variance: "£1,540.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the bank feed against Xero account 1210 (Lloyds Bank - Operations GBP). 361 of 380 transactions matched. Total variance is £1,540.00." },
+      { title: "Bank charge not posted", text: "A Lloyds bank service charge of £840.00 (29 Mar 2026) appears on the bank feed but has not been posted to Xero. This is the largest contributor to the variance." },
+      { title: "Timing difference", text: "A BACS payment of £700.00 to Hartfield Consulting (31 Mar 2026) cleared the bank on the last day of the period but is dated 1 Apr in Xero, creating a £700.00 timing difference." },
+    ],
+    suggestions: [
+      { id: 0, type: "Missing entry", state: "Open", contact: "Lloyds bank service charge", date: "29 Mar 2026", amount: "£840.00", email: "—", description: "A Lloyds bank service charge of £840.00 (ref: CHARGE-03/26) appears on the bank feed but has not been posted to Xero. Create a bank charges journal entry to record this expense.", primaryLabel: "Create journal entry", external: false, fileAction: null, toastMessage: "Journal entry created" },
+      { id: 1, type: "Timing", state: "Open", contact: "BACS payment – Hartfield Consulting", date: "31 Mar 2026", amount: "£700.00", email: "—", description: "A BACS payment of £700.00 cleared the bank on 31 Mar 2026 but is dated 1 Apr in Xero. Confirm the correct posting date to ensure the period-end balance is accurate.", primaryLabel: "Adjust posting date", external: false, fileAction: null, toastMessage: "Posting date updated" },
+    ],
+    reconciledResult: { sourceBalance: "£125,460.00", variance: "£1,540.00" },
+  },
+  // ── 1211 – Lloyds Bank - Business ──
+  "1211": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                               duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                               duration: 1000 },
+      { title: "Matching transactions",        subtext: "Matched all 241 bank transactions.",               duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £155,000.00. Bank feed: £155,000.00.",       duration: 1000 },
+      { title: "Looking for variances",       subtext: "No variances found.",                              duration: 1500 },
+      { title: "Reviewing transactions",      subtext: "1 item flagged for review.",                       duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                               duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1211 – Lloyds Bank - Business", xeroBalance: "£155,000.00", sourceBalance: "£155,000.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the bank feed against Xero account 1211 (Lloyds Bank - Business). All 241 transactions matched with no balance discrepancy." },
+      { title: "Large unclassified receipt", text: "A receipt of £18,500.00 (14 Mar 2026, ref: BACS-REF-8821) is posted to a holding account in Xero. The source of this payment is not yet identified and should be allocated to the correct income or liability account." },
+    ],
+    suggestions: [
+      { id: 0, type: "Review", state: "Review", contact: "Unclassified receipt – BACS-REF-8821", date: "14 Mar 2026", amount: "£18,500.00", email: "—", description: "A BACS receipt of £18,500.00 (ref: BACS-REF-8821) is currently posted to a holding account. Identify the payer and allocate the amount to the correct account — this may be a customer payment, director loan, or other income.", primaryLabel: "Allocate receipt", external: false, fileAction: null, toastMessage: "Receipt allocated" },
+    ],
+    reconciledResult: { sourceBalance: "£155,000.00", variance: "£0.00" },
+  },
+  // ── 1212 – HSBC - Business Transactions ──
+  "1212": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                                     duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                                     duration: 1000 },
+      { title: "Matching transactions",        subtext: "Matched 189 of 195 bank transactions.",                 duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £93,000.00. Bank feed: £92,180.00.",             duration: 1000 },
+      { title: "Looking for variances",       subtext: "1 variance found (£820.00).",                               duration: 1500 },
+      { title: "Identifying root causes",     subtext: "Direct debit not matched in Xero.",                     duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                                     duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1212 – HSBC - Business Transactions", xeroBalance: "£93,000.00", sourceBalance: "£92,180.00", variance: "£820.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the bank feed against Xero account 1212 (HSBC - Business Transactions). 189 of 195 transactions matched. Variance of £820.00." },
+      { title: "Unmatched direct debit", text: "A direct debit of £820.00 (28 Mar 2026, payee: HMRC CUMBERNAULD) appears on the HSBC feed but has no corresponding entry in Xero. This is likely a PAYE or NI payment that needs to be recorded." },
+      { title: "Minor timing items", text: "Five transactions totalling £4,200.00 are within a 2-day timing window and are expected to clear in the following period. No action needed." },
+    ],
+    suggestions: [
+      { id: 0, type: "Missing entry", state: "Open", contact: "Direct debit – HMRC CUMBERNAULD", date: "28 Mar 2026", amount: "£820.00", email: "—", description: "A direct debit of £820.00 to HMRC CUMBERNAULD on 28 Mar 2026 appears on the HSBC bank feed but is not recorded in Xero. This is likely a PAYE or NI payment — post the corresponding journal entry to account 2210.", primaryLabel: "Post journal entry", external: false, fileAction: null, toastMessage: "Journal entry posted" },
+      { id: 1, type: "Review", state: "Review", contact: "5 timing difference items", date: "31 Mar 2026", amount: "£4,200.00", email: "—", description: "Five transactions totalling £4,200.00 are within a 2-day clearing window at period end. These are expected to reconcile automatically in April. Confirm no manual adjustment is needed.", primaryLabel: "Acknowledge", external: false, fileAction: null, toastMessage: "Timing items acknowledged" },
+    ],
+    reconciledResult: { sourceBalance: "£92,180.00", variance: "£820.00" },
+  },
+  // ── 1213 – Barclays - Operations ──
+  "1213": {
+    steps: [
+      { title: "Reading source",              subtext: null,                                               duration: 800  },
+      { title: "Syncing Xero",                subtext: null,                                               duration: 1000 },
+      { title: "Matching transactions",        subtext: "Matched all 409 bank transactions.",               duration: 1200 },
+      { title: "Comparing balances",          subtext: "Xero: £374,000.00. Bank feed: £374,000.00.",       duration: 1000 },
+      { title: "Looking for variances",       subtext: "No variances found.",                              duration: 1500 },
+      { title: "Reviewing transactions",      subtext: "2 items flagged for review.",                      duration: 1200 },
+      { title: "Suggesting actions",          subtext: null,                                               duration: 800  },
+    ],
+    overviewRows: [
+      { account: "1213 – Barclays - Operations", xeroBalance: "£374,000.00", sourceBalance: "£374,000.00", variance: "£0.00" },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the bank feed against Xero account 1213 (Barclays - Operations). All 409 transactions matched with no balance discrepancy." },
+      { title: "Recurring payment review", text: "Two standing order payments totalling £4,800.00 per month are posting to a generic expenses account. Consider reviewing whether these should be allocated to more specific cost codes for accurate reporting." },
+    ],
+    suggestions: [
+      { id: 0, type: "Review", state: "Review", contact: "Standing order – recurring expenses allocation", date: "01 Mar 2026", amount: "£4,800.00", email: "—", description: "Two monthly standing orders totalling £4,800.00 (payees: Greenfield Facilities and Axis Property Management) are currently posting to a catch-all expenses code. Review and reclassify to more appropriate cost categories.", primaryLabel: "Reclassify", external: false, fileAction: null, toastMessage: "Transactions reclassified" },
+      { id: 1, type: "Review", state: "Review", contact: "Dormant sub-account balance", date: "31 Mar 2026", amount: "£12,400.00", email: "—", description: "A Barclays sub-account (sort code 20-44-18) shows a balance of £12,400.00 that has had no activity in over 90 days. Confirm whether this balance is correctly included in account 1213 or should be reclassified.", primaryLabel: "Acknowledge", external: false, fileAction: null, toastMessage: "Sub-account reviewed" },
+    ],
+    reconciledResult: { sourceBalance: "£374,000.00", variance: "£0.00" },
+  },
+};
+
+// Helper: get reconciliation data for an account, with generic fallback
+function getAccountRecData(code, account) {
+  if (ACCOUNT_REC_DATA[code]) return ACCOUNT_REC_DATA[code];
+
+  // Find the row in BS_SECTIONS to get balances
+  let rowData = null;
+  for (const section of BS_SECTIONS) {
+    for (const table of section.tables) {
+      const found = table.rows.find(r => r.code === code);
+      if (found) { rowData = found; break; }
+    }
+    if (rowData) break;
+  }
+  const xero = rowData ? rowData.xeroBalance : "—";
+  const source = rowData ? rowData.sourceBalance : "—";
+  const variance = rowData ? rowData.variance : "£0.00";
+  const hasVariance = variance !== "£0.00";
+
+  return {
+    steps: [
+      { title: "Reading source",          subtext: null,                                                           duration: 800  },
+      { title: "Syncing Xero",            subtext: null,                                                           duration: 1000 },
+      { title: "Analysing document",      subtext: "Matched source entries to Xero records.",                      duration: 1200 },
+      { title: "Comparing balances",      subtext: "Xero: " + xero + ". Source document: " + source + ".",        duration: 1000 },
+      { title: "Looking for variances",   subtext: hasVariance ? "Variance found (" + variance + ")." : "No variances found.", duration: 1500 },
+      { title: "Reviewing entries",       subtext: hasVariance ? "Investigating variance." : "All entries verified.", duration: 1200 },
+      { title: "Suggesting actions",      subtext: null,                                                           duration: 800  },
+    ],
+    overviewRows: [
+      { account: code + " – " + account, xeroBalance: xero, sourceBalance: source, variance: variance },
+    ],
+    analysis: [
+      { title: "Overview", text: "Reconciliation compared the uploaded document against Xero account " + code + " (" + account + "). Xero balance is " + xero + " vs source document of " + source + (hasVariance ? ", resulting in a variance of " + variance + "." : ". No variance was found.") },
+      { title: "Entries review", text: hasVariance ? "A variance of " + variance + " was identified between the source document and Xero. Review the individual transactions to determine whether this relates to a timing difference, posting error, or missing entry." : "All entries in the source document matched the corresponding Xero transactions. No discrepancies were identified." },
+    ],
+    suggestions: hasVariance ? [
+      { id: 0, type: "Variance", state: "Open", contact: code + " – " + account, date: "31 Mar 2026", amount: variance, email: "—", description: "A variance of " + variance + " was found between the Xero balance (" + xero + ") and the source document (" + source + ") for account " + code + " (" + account + "). Investigate the difference and post a correcting journal if necessary.", primaryLabel: "Investigate", external: false, fileAction: null, toastMessage: "Investigation logged" },
+      { id: 1, type: "Review", state: "Review", contact: "Period-end confirmation – " + code, date: "31 Mar 2026", amount: xero, email: "—", description: "Confirm that all transactions posted to account " + code + " (" + account + ") during the period have been reviewed and that the variance of " + variance + " has been fully explained before closing.", primaryLabel: "Confirm & close", external: false, fileAction: null, toastMessage: "Period-end confirmed" },
+    ] : [
+      { id: 0, type: "Review", state: "Review", contact: "Balance confirmed – " + code + " " + account, date: "31 Mar 2026", amount: xero, email: "—", description: "No variance was found for account " + code + " (" + account + "). The Xero balance of " + xero + " agrees with the source document. Review the account activity for the period to confirm there are no unusual or misposted transactions.", primaryLabel: "Confirm balance", external: false, fileAction: null, toastMessage: "Balance confirmed" },
+      { id: 1, type: "Review", state: "Review", contact: "Sign-off – " + account, date: "31 Mar 2026", amount: "—", email: "—", description: "All entries for account " + code + " (" + account + ") reconcile correctly. Acknowledge sign-off to mark this account as reviewed for the period.", primaryLabel: "Sign off", external: false, fileAction: null, toastMessage: "Account signed off" },
+    ],
+    reconciledResult: { sourceBalance: source, variance: variance },
+  };
+}
+
 // ── Balance Sheet: PayrollResultsPanel ───────────────────────────────────────
 function PayrollResultsPanel({ resolvedCards = new Set(), ignoredCards = new Set(), onResolveCard, onIgnoreCard, onShowToast }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -4109,27 +4528,130 @@ function PayrollResultsPanel({ resolvedCards = new Set(), ignoredCards = new Set
   );
 }
 
+// ── Balance Sheet: AccountResultsPanel (generic, data-driven) ────────────────
+function AccountResultsPanel({ config, resolvedCards = new Set(), ignoredCards = new Set(), onResolveCard, onIgnoreCard, onShowToast }) {
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const { overviewRows, analysis, suggestions } = config;
+
+  const getCardStatus = (id) => {
+    if (resolvedCards.has(id)) return "resolved";
+    if (ignoredCards.has(id)) return "ignored";
+    return "open";
+  };
+
+  return (
+    <div style={{ padding: "48px", fontFamily: "'Inter', sans-serif", minHeight: "100%" }}>
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+
+      {/* Heading */}
+      <h2 style={{ fontSize: 22, fontWeight: 600, color: "#080908", margin: "0 0 20px" }}>Overview</h2>
+
+      {/* Account balances table */}
+      <div style={{ marginBottom: 12 }}>
+        <DataTable
+          columns={[
+            { key: "account",       label: "Account",            width: "1.6fr" },
+            { key: "xeroBalance",   label: "Balance per Xero",   width: "1fr", align: "right" },
+            { key: "sourceBalance", label: "Balance per source",  width: "1fr", align: "right" },
+            { key: "variance",      label: "Variance",           width: "0.8fr", align: "right", render: (v) => (
+              <span style={{ color: v === "£0.00" ? "#080908" : "#C8543A", fontWeight: v === "£0.00" ? 400 : 500 }}>{v}</span>
+            )},
+            { key: "action", label: "Action", width: "100px", align: "right", render: () => (
+              <SecondaryButton style={{ padding: "4px 12px", fontSize: 13, whiteSpace: "nowrap" }}>Review</SecondaryButton>
+            )},
+          ]}
+          rows={overviewRows}
+        />
+      </div>
+
+      {/* Analysis & key findings */}
+      <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 8, marginBottom: 28 }}>
+        <button onClick={() => setAnalysisOpen(o => !o)}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
+          <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+            <ChevronUpIcon />
+          </div>
+        </button>
+        {analysisOpen && (
+          <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
+            {analysis.map((section, i) => (
+              <div key={i} style={{ marginBottom: i < analysis.length - 1 ? 14 : 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#080908", marginBottom: 2 }}>{section.title}</div>
+                <div>{section.text}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Suggestions */}
+      <h2 style={{ fontSize: 22, fontWeight: 600, color: "#080908", margin: "0 0 20px" }}>Suggestions</h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {suggestions.map((entry) => {
+          const status = getCardStatus(entry.id);
+          const isResolved = status === "resolved";
+          const isIgnored = status === "ignored";
+          const isClosed = isResolved || isIgnored;
+          return (
+            <RecommendationCard
+              key={entry.id}
+              title={entry.type + ": " + entry.contact}
+              description={entry.description}
+              statusLabel={isIgnored ? "Ignored" : isResolved ? "Resolved" : "Unresolved"}
+              statusStyle={isIgnored
+                ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" }
+                : isResolved
+                  ? { background: "#EAF2E2", border: "none", color: "#05A105" }
+                  : { background: "#FDF8EE", border: "none", color: "#D5A750" }
+              }
+              collapsed={isClosed}
+              tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
+              primaryLabel={entry.primaryLabel}
+              secondaryLabel="I have resolved this"
+              external={entry.external}
+              fileAction={entry.fileAction}
+              onPrimaryAction={() => { onResolveCard?.(entry.id); onShowToast?.(entry.toastMessage); }}
+              onSecondaryAction={() => { onResolveCard?.(entry.id); onShowToast?.("Marked as resolved"); }}
+              onIgnore={() => { onIgnoreCard?.(entry.id); onShowToast?.("Suggestion ignored"); }}
+            />
+          );
+        })}
+      </div>
+
+      <div style={{ paddingBottom: 32 }} />
+      </div>
+    </div>
+  );
+}
+
 // ── Balance Sheet: BSReconciliationFlow ──────────────────────────────────────
-function BSReconciliationFlow({ onClose, onMarkReconciled }) {
+function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedState }) {
+  const isDirectFlow = !!directAccount;
+  const isResume = !!savedState;
+  const accountRecData = isDirectFlow ? getAccountRecData(directAccount.code, directAccount.account) : null;
+  const activeSteps = isDirectFlow ? accountRecData.steps : PAYROLL_RECONCILIATION_STEPS;
   const reconciliationTypes = [
-    "Payroll", "Directors\u2019 loan account", "Fixed asset register",
-    "VAT", "Aged debtors", "Aged creditors", "Choose account from balance sheet",
+    "Payroll", "Choose account from balance sheet",
   ];
   const [selectedType, setSelectedType] = useState(null);
   const [typeSelected, setTypeSelected] = useState(false);
   const [accountChoiceSelected, setAccountChoiceSelected] = useState(null);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [prepDone, setPrepDone] = useState(false);
-  const [readyChoice, setReadyChoice] = useState(null);
-  const [stepStatuses, setStepStatuses] = useState([]);
-  const [stepSubtexts, setStepSubtexts] = useState([]);
-  const [resultsVisible, setResultsVisible] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(isResume ? { name: "Uploaded document.pdf", type: "application/pdf" } : null);
+  const [prepDone, setPrepDone] = useState(!!isResume);
+  const [readyChoice, setReadyChoice] = useState(isResume ? "Start reconciliation" : null);
+  const [stepStatuses, setStepStatuses] = useState(isResume ? activeSteps.map(() => "done") : []);
+  const [stepSubtexts, setStepSubtexts] = useState(isResume ? activeSteps.map(() => true) : []);
+  const [resultsVisible, setResultsVisible] = useState(!!isResume);
+  const [canvasReady, setCanvasReady] = useState(!!isResume);
   const [chatWidth, setChatWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
-  const [resolvedCards, setResolvedCards] = useState(new Set());
-  const [ignoredCards, setIgnoredCards] = useState(new Set());
+  const [resolvedCards, setResolvedCards] = useState(isResume && savedState.resolvedCards ? new Set(savedState.resolvedCards) : new Set());
+  const [ignoredCards, setIgnoredCards] = useState(isResume && savedState.ignoredCards ? new Set(savedState.ignoredCards) : new Set());
   const [toast, setToast] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerComment, setDrawerComment] = useState("");
   const chatScrollRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -4178,17 +4700,33 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
   const { done: line5Done } = useTypewriter(line4Done ? line5Text : "", 18);
 
   // Line 6 – after file uploaded + prep done: ready message
-  const line6Segments = prepDone ? [
+  const line6Segments = prepDone ? (isDirectFlow ? [
+    { text: "I have everything I need to reconcile ", bold: false },
+    { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
+    { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
+  ] : [
     { text: "I have everything I need to reconcile ", bold: false },
     { text: "Payroll",                                bold: true  },
     { text: " against the payroll report you provided. Tell me when you\u2019re ready to start.", bold: false },
-  ] : [];
+  ]) : [];
   const line6Full = line6Segments.map(s => s.text).join("");
   const { done: line6Done } = useTypewriter(prepDone ? line6Full : "", 18);
 
   // Line 7 – after canvasReady: ready for review message
   const line7Text = "Reconciliation is ready for your review. If something doesn\u2019t look right or is unclear simply ask me for any changes or information.";
   const { done: line7Done } = useTypewriter(canvasReady ? line7Text : "", 18);
+
+  // \u2500\u2500 Direct account flow lines \u2500\u2500
+  const directLine1Segments = isDirectFlow ? [
+    { text: "Let\u2019s reconcile ", bold: false },
+    { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
+    { text: ".",                     bold: false },
+  ] : [];
+  const directLine1Full = directLine1Segments.map(s => s.text).join("");
+  const { done: directLine1Done } = useTypewriter(isDirectFlow ? directLine1Full : "", 18);
+
+  const directLine2Text = "Please upload a document to reconcile this account.";
+  const { done: directLine2Done } = useTypewriter(isDirectFlow && directLine1Done ? directLine2Text : "", 18);
 
   const handleFileSelected = (file) => {
     setUploadedFile(file);
@@ -4204,11 +4742,12 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
   // Run reconciliation steps after "Start reconciliation"
   useEffect(() => {
     if (readyChoice !== "Start reconciliation") return;
-    setStepStatuses(PAYROLL_RECONCILIATION_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
-    setStepSubtexts(PAYROLL_RECONCILIATION_STEPS.map(() => false));
+    if (isResume) return; // Skip animation on resume \u2014 steps already done
+    setStepStatuses(activeSteps.map((_, i) => i === 0 ? "active" : "pending"));
+    setStepSubtexts(activeSteps.map(() => false));
     let cumulative = 0;
     const timers = [];
-    PAYROLL_RECONCILIATION_STEPS.forEach((step, i) => {
+    activeSteps.forEach((step, i) => {
       cumulative += step.duration;
       if (step.subtext) {
         timers.push(setTimeout(() => {
@@ -4219,7 +4758,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
         setStepStatuses(prev => {
           const next = [...prev];
           next[i] = "done";
-          if (i + 1 < PAYROLL_RECONCILIATION_STEPS.length) next[i + 1] = "active";
+          if (i + 1 < activeSteps.length) next[i + 1] = "active";
           return next;
         });
       }, cumulative));
@@ -4269,7 +4808,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [line1Done, line2Done, typeSelected, line3Done, accountChoiceSelected, line4Done, line5Done, uploadedFile, prepDone, line6Done, readyChoice, stepStatuses, line7Done]);
+  }, [line1Done, line2Done, typeSelected, line3Done, accountChoiceSelected, line4Done, line5Done, uploadedFile, prepDone, line6Done, readyChoice, stepStatuses, line7Done, directLine1Done, directLine2Done]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FBFBFB" }}>
@@ -4279,6 +4818,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
         @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes resultsFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes drawerSlideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
       `}</style>
 
       {/* Top bar */}
@@ -4286,14 +4826,31 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
         <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>Balance sheet reconciliation</span>
         <div style={{ flex: 1 }} />
         {resultsVisible && (() => {
-          const remaining = 3 - resolvedCards.size - ignoredCards.size;
+          const isAlreadyReconciled = savedState && savedState.status === "reconciled";
+          if (isAlreadyReconciled) {
+            return (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                height: 36, padding: "0 14px", borderRadius: 8,
+                background: "#EAF2E2", fontSize: 14, fontWeight: 500, color: "#05A105",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8.5L6.5 12L13 4" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Reconciled
+              </div>
+            );
+          }
+          const totalSuggestions = isDirectFlow && accountRecData ? accountRecData.suggestions.length : 3;
+          const remaining = totalSuggestions - resolvedCards.size - ignoredCards.size;
+          const allHandled = remaining <= 0;
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 14, color: "#545453", whiteSpace: "nowrap" }}>
-                Left to review: <strong style={{ color: "#080908" }}>{remaining} suggestion{remaining !== 1 ? "s" : ""}</strong>
+                Left to review: <strong style={{ color: "#080908" }}>{Math.max(0, remaining)} suggestion{remaining !== 1 ? "s" : ""}</strong>
               </span>
               <button
-                onClick={() => { onMarkReconciled?.(); }}
+                onClick={() => { allHandled ? onMarkReconciled?.() : setDrawerOpen(true); }}
                 style={{
                   height: 36, padding: "0 16px",
                   borderRadius: 8, border: "none",
@@ -4311,7 +4868,14 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
           );
         })()}
         {/* Close button */}
-        <button onClick={onClose} style={{
+        <button onClick={() => {
+          const isAlreadyReconciled = savedState && savedState.status === "reconciled";
+          if (resultsVisible && !isAlreadyReconciled) {
+            onClose?.({ resolvedCards: Array.from(resolvedCards), ignoredCards: Array.from(ignoredCards) });
+          } else {
+            onClose?.();
+          }
+        }} style={{
           display: "flex", alignItems: "center", justifyContent: "center",
           width: 36, height: 36, borderRadius: 8, border: "1px solid #E9E9EB",
           background: "#FFFFFF", cursor: "pointer",
@@ -4325,7 +4889,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
         </button>
       </div>
 
-      {/* Content area — position:relative so the canvas overlay can anchor to it */}
+      {/* Content area \u2014 position:relative so the canvas overlay can anchor to it */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
 
       {/* Left: chat panel */}
@@ -4342,6 +4906,182 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ maxWidth: resultsVisible ? "100%" : 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "32px 24px 40px" : "40px 24px 40px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
+          {/* \u2500\u2500 Direct account flow \u2500\u2500 */}
+          {isDirectFlow && (
+            <>
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                <p><StreamingMessage segments={directLine1Segments} speed={18} /></p>
+                {directLine1Done && (
+                  <p style={{ marginTop: 6 }}>
+                    <StreamingMessage key="directLine2" segments={[{ text: directLine2Text, bold: false }]} speed={18} />
+                  </p>
+                )}
+              </div>
+
+              {/* Upload card \u2014 appears after direct line 2 finishes */}
+              {directLine2Done && !uploadedFile && (
+                <div style={{ marginTop: 16 }}>
+                  <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
+                </div>
+              )}
+
+              {/* User bubble \u2014 file preview after upload */}
+              {uploadedFile && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 320 }}>
+                    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                        <FileIcon file={uploadedFile} width={20} height={24} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{directAccount.account} report</span>
+                      </div>
+                      <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                      {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                        <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                      <FileIcon file={uploadedFile} width={13} height={16} />
+                      <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{uploadedFile.name}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Preparing status */}
+              {uploadedFile && !prepDone && (
+                <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                  Preparing the document and getting ready for reconciliation
+                </p>
+              )}
+
+              {/* AI ready message \u2014 after prep done */}
+              {prepDone && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                  <p><StreamingMessage key="line6-direct" segments={line6Segments.length > 0 ? line6Segments : [
+                    { text: "I have everything I need to reconcile ", bold: false },
+                    { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
+                    { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
+                  ]} speed={18} /></p>
+                </div>
+              )}
+
+              {/* Choice: start \u2014 appears after ready message finishes */}
+              {prepDone && line6Done && !readyChoice && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #E9E9EB",
+                    borderRadius: 16,
+                    padding: "20px 20px 12px",
+                    maxWidth: 480,
+                    boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                  }}>
+                    {["Start reconciliation", "Add another document"].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => setReadyChoice(opt)}
+                        style={{
+                          display: "block", width: "100%", textAlign: "left",
+                          padding: "12px 16px", marginBottom: 8,
+                          background: "#F7F7F7", border: "none",
+                          borderRadius: 10, cursor: "pointer",
+                          fontSize: 14, fontWeight: 400, color: "#080908",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* User reply bubble for ready choice */}
+              {readyChoice && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    {readyChoice}
+                  </div>
+                </div>
+              )}
+
+              {/* Reconciliation progress steps */}
+              {readyChoice === "Start reconciliation" && stepStatuses.length > 0 && (
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+                    <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M6.50065 6.4987L10.6257 10.6237M6.50065 6.4987H3.75065L2.83398 3.7487L3.75065 2.83203L6.50065 3.7487V6.4987ZM18.6547 3.51129L16.2461 5.91994C15.8831 6.28296 15.7016 6.46446 15.6335 6.67377C15.5737 6.85787 15.5737 7.05619 15.6335 7.2403C15.7016 7.4496 15.8831 7.63111 16.2461 7.99412L16.4636 8.21161C16.8266 8.57462 17.0081 8.75613 17.2174 8.82414C17.4015 8.88396 17.5998 8.88396 17.7839 8.82414C17.9932 8.75613 18.1747 8.57462 18.5377 8.21161L20.7908 5.95852C21.0335 6.54901 21.1673 7.19573 21.1673 7.8737C21.1673 10.6581 18.9101 12.9154 16.1257 12.9154C15.79 12.9154 15.4619 12.8826 15.1446 12.82C14.699 12.7321 14.4761 12.6881 14.3411 12.7016C14.1975 12.7159 14.1267 12.7374 13.9995 12.8055C13.8798 12.8696 13.7597 12.9896 13.5196 13.2298L6.95898 19.7904C6.19959 20.5497 4.96838 20.5497 4.20899 19.7904C3.44959 19.031 3.44959 17.7997 4.20899 17.0403L10.7696 10.4798C11.0097 10.2396 11.1298 10.1196 11.1938 9.99989C11.2619 9.87265 11.2834 9.80188 11.2977 9.65827C11.3112 9.5232 11.2673 9.30038 11.1794 8.85475C11.1168 8.53742 11.084 8.20939 11.084 7.8737C11.084 5.08926 13.3412 2.83203 16.1257 2.83203C17.0474 2.83203 17.9113 3.07937 18.6547 3.51129ZM12.0007 14.7486L17.0423 19.7903C17.8017 20.5497 19.0329 20.5497 19.7923 19.7903C20.5517 19.0309 20.5517 17.7996 19.7923 17.0403L15.6447 12.8927C15.3511 12.8649 15.0648 12.812 14.788 12.736C14.4314 12.6381 14.0402 12.7092 13.7787 12.9707L12.0007 14.7486Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>{directAccount.code}{" – "}{directAccount.account} reconciliation</span>
+                      </div>
+                      <span style={{ fontSize: 13, color: "#8C8C8B" }}>
+                        {stepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {activeSteps.map((step, i) => {
+                    const status = stepStatuses[i] || "pending";
+                    const isLast = i === activeSteps.length - 1;
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+                          <div style={{
+                            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                            border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
+                            background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.4s ease",
+                          }}>
+                            {status === "done" && (
+                              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                            {status === "active" && (
+                              <div style={{
+                                width: 16, height: 16, borderRadius: "50%",
+                                border: "1.5px solid #ACD394",
+                                borderTopColor: "#05A105",
+                                animation: "spin 0.7s linear infinite",
+                              }} />
+                            )}
+                          </div>
+                          {!isLast && (
+                            <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />
+                          )}
+                        </div>
+                        <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
+                          <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                            {step.title}
+                          </div>
+                          {(stepSubtexts[i] || status === "done") && step.subtext && (
+                            <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>
+                              {step.subtext}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {canvasReady && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                  <p><StreamingMessage key="line7-direct" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* \u2500\u2500 Normal flow (type picker \u2192 accounts \u2192 upload) \u2500\u2500 */}
+          {!isDirectFlow && (
           <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px" }}>
             <p><StreamingMessage segments={line1Segments} speed={18} /></p>
             {line1Done && (
@@ -4350,9 +5090,10 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
               </p>
             )}
           </div>
+          )}
 
-          {/* Type picker — appears after AI finishes line 2, before user selects */}
-          {line2Done && !typeSelected && (
+          {/* Type picker \u2014 appears after AI finishes line 2, before user selects */}
+          {!isDirectFlow && line2Done && !typeSelected && (
             <div style={{ marginTop: 16 }}>
               <div style={{
                 background: "#FFFFFF",
@@ -4384,8 +5125,8 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* User reply bubble — after type is selected */}
-          {typeSelected && (
+          {/* User reply bubble \u2014 after type is selected */}
+          {!isDirectFlow && typeSelected && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
@@ -4402,11 +5143,11 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
           )}
 
           {/* AI message: accounts intro + bullet list (Payroll flow) */}
-          {typeSelected && selectedType === "Payroll" && (
+          {!isDirectFlow && typeSelected && selectedType === "Payroll" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
               <p><StreamingMessage key="line3" segments={line3Segments} speed={18} /></p>
 
-              {/* Account bullet list — appears after line3 finishes */}
+              {/* Account bullet list \u2014 appears after line3 finishes */}
               {line3Done && (
                 <ul style={{ margin: "8px 0 0", paddingLeft: 20, listStyleType: "disc" }}>
                   {payrollAccounts.map(acc => (
@@ -4421,8 +5162,8 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* Choice: how to continue — appears after account list */}
-          {typeSelected && selectedType === "Payroll" && line3Done && !accountChoiceSelected && (
+          {/* Choice: how to continue \u2014 appears after account list */}
+          {!isDirectFlow && typeSelected && selectedType === "Payroll" && line3Done && !accountChoiceSelected && (
             <div style={{ marginTop: 16 }}>
               <div style={{
                 background: "#FFFFFF",
@@ -4455,7 +5196,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
           )}
 
           {/* User reply bubble for account choice */}
-          {accountChoiceSelected && (
+          {!isDirectFlow && accountChoiceSelected && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
@@ -4471,8 +5212,8 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* AI confirmation message — after "Continue with suggested accounts" */}
-          {accountChoiceSelected === "Continue with suggested accounts" && (
+          {/* AI confirmation message \u2014 after "Continue with suggested accounts" */}
+          {!isDirectFlow && accountChoiceSelected === "Continue with suggested accounts" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
               <p><StreamingMessage key="line4" segments={line4Segments} speed={18} /></p>
               {line4Done && (
@@ -4483,15 +5224,15 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* Upload card — appears after "Please upload a payroll report" finishes */}
-          {line5Done && !uploadedFile && (
+          {/* Upload card \u2014 appears after "Please upload a payroll report" finishes */}
+          {!isDirectFlow && line5Done && !uploadedFile && (
             <div style={{ marginTop: 16 }}>
               <UploadCard onFileSelected={handleFileSelected} title="Upload payroll report" />
             </div>
           )}
 
-          {/* User bubble — file preview after upload */}
-          {uploadedFile && (
+          {/* User bubble \u2014 file preview after upload */}
+          {!isDirectFlow && uploadedFile && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{ maxWidth: 320 }}>
                 <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
@@ -4512,22 +5253,22 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* Preparing status — shows while waiting for prep */}
-          {uploadedFile && !prepDone && (
+          {/* Preparing status \u2014 shows while waiting for prep */}
+          {!isDirectFlow && uploadedFile && !prepDone && (
             <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
               Preparing the payroll report and getting ready for reconciliation
             </p>
           )}
 
-          {/* AI ready message — after prep done */}
-          {prepDone && (
+          {/* AI ready message \u2014 after prep done */}
+          {!isDirectFlow && prepDone && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
               <p><StreamingMessage key="line6" segments={line6Segments} speed={18} /></p>
             </div>
           )}
 
-          {/* Choice: start or add another — appears after ready message finishes */}
-          {line6Done && !readyChoice && (
+          {/* Choice: start or add another \u2014 appears after ready message finishes */}
+          {!isDirectFlow && line6Done && !readyChoice && (
             <div style={{ marginTop: 16 }}>
               <div style={{
                 background: "#FFFFFF",
@@ -4559,7 +5300,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
           )}
 
           {/* User reply bubble for ready choice */}
-          {readyChoice && (
+          {!isDirectFlow && readyChoice && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
@@ -4575,8 +5316,8 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {/* Reconciliation progress steps — after "Start reconciliation" */}
-          {readyChoice === "Start reconciliation" && stepStatuses.length > 0 && (
+          {/* Reconciliation progress steps \u2014 after "Start reconciliation" */}
+          {!isDirectFlow && readyChoice === "Start reconciliation" && stepStatuses.length > 0 && (
             <div style={{ marginTop: 24 }}>
               {/* Header */}
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
@@ -4654,7 +5395,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
             </div>
           )}
 
-          {canvasReady && (
+          {!isDirectFlow && canvasReady && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
               <p><StreamingMessage key="line7" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
             </div>
@@ -4664,7 +5405,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
         </div>
       </div>
 
-      {/* Chat input area — appears after canvas is ready */}
+      {/* Chat input area \u2014 appears after canvas is ready */}
       {canvasReady && (
         <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
           <div style={{ maxWidth: resultsVisible ? "100%" : 680, margin: "0 auto" }}>
@@ -4730,7 +5471,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
 
       </div> {/* end left chat panel */}
 
-      {/* Canvas — absolutely positioned overlay, slides in from right */}
+      {/* Canvas \u2014 absolutely positioned overlay, slides in from right */}
       <div style={{
         position: "absolute",
         top: 0,
@@ -4747,18 +5488,29 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
       }}>
         {resultsVisible && (canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.5s ease both", height: "100%" }}>
-            <PayrollResultsPanel
-              resolvedCards={resolvedCards}
-              ignoredCards={ignoredCards}
-              onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
-              onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
-              onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
-            />
+            {isDirectFlow && accountRecData ? (
+              <AccountResultsPanel
+                config={accountRecData}
+                resolvedCards={resolvedCards}
+                ignoredCards={ignoredCards}
+                onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
+                onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
+                onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
+              />
+            ) : (
+              <PayrollResultsPanel
+                resolvedCards={resolvedCards}
+                ignoredCards={ignoredCards}
+                onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
+                onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
+                onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
+              />
+            )}
           </div>
         ) : <CanvasLoader />)}
       </div>
 
-      {/* Drag handle — thin absolute strip between chat and canvas */}
+      {/* Drag handle \u2014 thin absolute strip between chat and canvas */}
       {resultsVisible && (
         <div
           onMouseDown={handleDragStart}
@@ -4780,6 +5532,102 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
 
       </div> {/* end content area */}
 
+      {/* Drawer overlay \u2014 review suggestions before reconciling */}
+      {drawerOpen && (() => {
+        const totalSuggestions = isDirectFlow && accountRecData ? accountRecData.suggestions.length : 3;
+        const unreviewed = totalSuggestions - resolvedCards.size - ignoredCards.size;
+        const variance = accountRecData && accountRecData.reconciledResult ? accountRecData.reconciledResult.variance : "\u00a30.00";
+        const hasVariance = variance && variance !== "\u00a30.00";
+        return (
+          <>
+            {/* Scrim */}
+            <div onClick={() => setDrawerOpen(false)} style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200,
+            }} />
+            {/* Drawer panel */}
+            <div style={{
+              position: "fixed", top: 0, right: 0, bottom: 0, width: 440,
+              background: "#FFFFFF", boxShadow: "-8px 0 24px rgba(0,0,0,0.08)",
+              zIndex: 201, display: "flex", flexDirection: "column",
+              animation: "drawerSlideIn 0.25s ease both",
+            }}>
+              {/* Drawer header */}
+              <div style={{ padding: "24px 24px 0", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
+                  <button onClick={() => setDrawerOpen(false)} style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 32, height: 32, borderRadius: 6, border: "1px solid #E9E9EB",
+                    background: "#FFFFFF", cursor: "pointer",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M12 4L4 12M4 4L12 12" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <p style={{ fontSize: 14, color: "#545453", lineHeight: "22px", margin: "0 0 24px" }}>
+                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "issue" : "issues"}</strong>
+                  {hasVariance && <> and a balance discrepancy of <strong style={{ color: "#C8543A" }}>{variance}</strong></>}
+                  . You can go back and review them, or mark the account as reconciled with a comment explaining why.
+                </p>
+              </div>
+              {/* Drawer body */}
+              <div style={{ flex: 1, padding: "0 24px", overflowY: "auto" }}>
+                <textarea
+                  value={drawerComment}
+                  onChange={e => setDrawerComment(e.target.value)}
+                  placeholder="Explain why this account is being marked as reconciled with outstanding issues"
+                  style={{
+                    width: "100%", minHeight: 120, padding: "12px 14px",
+                    border: "1px solid #E9E9EB", borderRadius: 8,
+                    fontSize: 14, fontFamily: "'Inter', sans-serif", color: "#080908",
+                    lineHeight: "22px", resize: "vertical", outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                  onFocus={e => e.currentTarget.style.borderColor = "#BCBCBC"}
+                  onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
+                />
+              </div>
+              {/* Drawer footer */}
+              <div style={{
+                padding: "16px 24px", borderTop: "1px solid #E9E9EB",
+                display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
+              }}>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    height: 40, padding: "0 18px", borderRadius: 8,
+                    border: "1px solid #E9E9EB", background: "#FFFFFF",
+                    fontSize: 14, fontWeight: 500, color: "#080908",
+                    cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
+                >
+                  Back to reconciliation
+                </button>
+                <button
+                  onClick={() => { onMarkReconciled?.(drawerComment); setDrawerOpen(false); }}
+                  style={{
+                    height: 40, padding: "0 18px", borderRadius: 8,
+                    border: "none", background: "#C8543A", color: "#FFFFFF",
+                    fontSize: 14, fontWeight: 500,
+                    cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#B04832"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#C8543A"}
+                >
+                  Mark as reconciled
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
       {/* Toast notification */}
       {toast && (
         <div style={{
@@ -4796,13 +5644,21 @@ function BSReconciliationFlow({ onClose, onMarkReconciled }) {
   );
 }
 
+
 // ── Balance Sheet Review page ─────────────────────────────────────────────
-function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, bsReconciledData }) {
-  const [activeTab, setActiveTab] = useState("Balance sheet");
+function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareValue, setCompareValue] = useState("Last month");
   const compareOptions = ["Last month", "Last quarter", "Last year", "Same month last year"];
   const tabs = ["Profit and Loss", "Balance sheet"];
+  const scrollRef = useRef(null);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (scrollRef.current && savedScrollTop) {
+      scrollRef.current.scrollTop = savedScrollTop;
+    }
+  }, []);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -4816,7 +5672,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
             return (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => onTabChange(tab)}
                 style={{
                   padding: "10px 20px",
                   fontSize: 14,
@@ -4836,7 +5692,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
           })}
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div ref={scrollRef} onScroll={e => onSaveScroll?.(e.currentTarget.scrollTop)} style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px", display: "flex", flexDirection: "column", gap: 24 }}>
         {activeTab === "Profit and Loss" ? (
           <div style={{
             background: "#FAFAFA", border: "1px solid #E9E9EB", borderRadius: 12,
@@ -4914,7 +5770,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
                 <DataTableV2
                   key={ti}
                   title={table.title}
-                  columns={BS_COLUMNS.map(col => col.key === "reconciliation" ? { ...col, render: (v, row) => React.createElement(ReconciliationCell, { code: row.code, bsReconciledData: bsReconciledData }) } : col)}
+                  columns={BS_COLUMNS.map(col => col.key === "reconciliation" ? { ...col, render: (v, row) => React.createElement(ReconciliationCell, { code: row.code, account: row.account, bsReconciledData: bsReconciledData, onRunReconciliation: onRunAccountReconciliation }) } : col)}
                   rows={table.rows.map(row => {
                     const rd = bsReconciledData && bsReconciledData[row.code];
                     if (!rd) return row;
@@ -4950,8 +5806,10 @@ export default function BankReconciliation() {
   const [reconciledCounts, setReconciledCounts] = useState({}); // { [accountName]: number | null }
   const [bankStatements, setBankStatements] = useState({}); // { [accountName]: { fileName, date } }
   const [rowComments, setRowComments] = useState({}); // { [accountCode]: [{user, timestamp, text}] }
-  const [bsReconciling, setBsReconciling] = useState(false); // true when BS reconciliation chat is open
+  const [bsReconciling, setBsReconciling] = useState(null); // null | true | { code, account } — when object, direct account flow
   const [bsReconciledData, setBsReconciledData] = useState({}); // { [code]: { date, status, suggestionCount, ... } }
+  const [bsActiveTab, setBsActiveTab] = useState("Profit and Loss"); // persisted tab across BS reconciliation opens/closes
+  const [bsScrollTop, setBsScrollTop] = useState(0); // persisted scroll position
 
   const handleUploadStatement = (accountName, fileInfo) => {
     setBankStatements(prev => ({ ...prev, [accountName]: fileInfo }));
@@ -4971,18 +5829,95 @@ export default function BankReconciliation() {
   };
 
   const handleRunBSReconciliation = () => setBsReconciling(true);
-  const handleCloseBS = () => setBsReconciling(false);
+  const handleRunAccountReconciliation = (acct) => setBsReconciling(acct); // { code, account }
 
-  const handleMarkBSReconciled = () => {
+  // Reset to Profit and Loss tab whenever the user navigates to Review
+  useEffect(() => {
+    if (activeNav === "Review") setBsActiveTab("Profit and Loss");
+  }, [activeNav]);
+
+  const handleCloseBS = (partialState) => {
+    const currentReconciling = bsReconciling;
+    if (partialState && typeof currentReconciling === "object" && currentReconciling) {
+      const data = getAccountRecData(currentReconciling.code, currentReconciling.account);
+      const result = data.reconciledResult || {};
+      const remaining = data.suggestions.length - (partialState.resolvedCards || []).length - (partialState.ignoredCards || []).length;
+      setBsReconciledData(prev => ({
+        ...prev,
+        [currentReconciling.code]: {
+          code: currentReconciling.code,
+          date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" }).replace(/ /g, " "),
+          status: "reviewing",
+          suggestionCount: remaining,
+          sourceBalance: result.sourceBalance || "—",
+          variance: result.variance || "£0.00",
+          resolvedCards: partialState.resolvedCards || [],
+          ignoredCards: partialState.ignoredCards || [],
+        },
+      }));
+    } else if (partialState && currentReconciling === true) {
+      const remaining = 3 - (partialState.resolvedCards || []).length - (partialState.ignoredCards || []).length;
+      setBsReconciledData(prev => {
+        const next = { ...prev };
+        ["2210", "2230"].forEach(code => {
+          if (!next[code] || next[code].status !== "reconciled") {
+            next[code] = {
+              code,
+              date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" }).replace(/ /g, " "),
+              status: "reviewing",
+              suggestionCount: remaining,
+              sourceBalance: code === "2210" ? "£22,180.00" : "£8,540.00",
+              variance: code === "2210" ? "£0.00" : "£100.00",
+              resolvedCards: partialState.resolvedCards || [],
+              ignoredCards: partialState.ignoredCards || [],
+            };
+          }
+        });
+        return next;
+      });
+    }
+    setBsActiveTab("Balance sheet");
+    setBsReconciling(null);
+  };
+
+  const handleMarkBSReconciled = (comment) => {
+    const currentReconciling = bsReconciling;
     setBsReconciledData(prev => {
       const next = { ...prev };
-      [
-        { code: "2210", date: "13 Apr", status: "reconciled", suggestionCount: 0, sourceBalance: "£22,180.00", variance: "£0.00" },
-        { code: "2230", date: "13 Apr", status: "reconciled", suggestionCount: 1, sourceBalance: "£8,540.00",  variance: "£100.00" },
-      ].forEach(acc => { next[acc.code] = acc; });
+      if (typeof currentReconciling === "object" && currentReconciling) {
+        const data = getAccountRecData(currentReconciling.code, currentReconciling.account);
+        const result = data.reconciledResult || {};
+        next[currentReconciling.code] = {
+          code: currentReconciling.code,
+          date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" }).replace(/ /g, " "),
+          status: "reconciled",
+          suggestionCount: data.suggestions.length,
+          sourceBalance: result.sourceBalance || "—",
+          variance: result.variance || "£0.00",
+          resolvedCards: data.suggestions.map((_, i) => i),
+          ignoredCards: [],
+        };
+      } else {
+        [
+          { code: "2210", date: "13 Apr", status: "reconciled", suggestionCount: 0, sourceBalance: "£22,180.00", variance: "£0.00", resolvedCards: [0, 1, 2], ignoredCards: [] },
+          { code: "2230", date: "13 Apr", status: "reconciled", suggestionCount: 1, sourceBalance: "£8,540.00",  variance: "£100.00", resolvedCards: [0, 1, 2], ignoredCards: [] },
+        ].forEach(acc => { next[acc.code] = acc; });
+      }
       return next;
     });
-    setBsReconciling(false);
+    if (comment && typeof currentReconciling === "object" && currentReconciling) {
+      const now = new Date();
+      const day = now.getDate();
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const hours = now.getHours().toString().padStart(2, "0");
+      const mins = now.getMinutes().toString().padStart(2, "0");
+      const timestamp = `${day} ${monthNames[now.getMonth()]} at ${hours}:${mins}`;
+      setRowComments(prev => ({
+        ...prev,
+        [currentReconciling.code]: [...(prev[currentReconciling.code] || []), { user: "Daniel Victorin", timestamp, text: comment }],
+      }));
+    }
+    setBsReconciling(null);
   };
 
   // Post-reconciliation data per account (statement balance, difference, matching)
@@ -4990,9 +5925,9 @@ export default function BankReconciliation() {
     "Lloyds Bank - Operations GBP":   { statementBalance: "£127,000.00", difference: "£27,000.00", matched: "361/380", suggestions: 3 },
     "Lloyds Bank - Business":          { statementBalance: "£152,500.00", difference: "£2,500.00",  matched: "241/244", suggestions: 2 },
     "HSBC - Business Transactions":   { statementBalance: "£95,500.00",  difference: "£2,500.00",  matched: "189/195", suggestions: 2 },
-    "Barclays - Operations":          { statementBalance: "£374,000.00", difference: "£6,000.00",  matched: "409/420", suggestions: 1 },
-    "American Express OP GBP":        { statementBalance: "£127,000.00", difference: "£27,000.00", matched: "98/105",  suggestions: 3 },
-    "Mastercard Business":            { statementBalance: "£152,500.00", difference: "£2,500.00",  matched: "53/56",   suggestions: 2 },
+    "Barclays - Operations":          { statementBalance: "£374,000.00", difference: "£6,000.00",  matched: "409/420", suggestions: 5 },
+    "American Express OP GBP":        { statementBalance: "£127,000.00", difference: "£27,000.00", matched: "98/105",  suggestions: 4 },
+    "Mastercard Business":            { statementBalance: "£152,500.00", difference: "£2,500.00",  matched: "53/56",   suggestions: 3 },
   };
 
   const bankAccounts = [
@@ -5009,6 +5944,9 @@ export default function BankReconciliation() {
   const ACCOUNT_OUTCOMES = {
     "Lloyds Bank - Business":       { status: "suggestions", count: 8 },
     "HSBC - Business Transactions": { status: "suggestions", count: 1 },
+    "Barclays - Operations":        { status: "suggestions", count: 5 },
+    "American Express OP GBP":      { status: "suggestions", count: 4 },
+    "Mastercard Business":          { status: "suggestions", count: 3 },
   };
 
   const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false) => {
@@ -5069,7 +6007,16 @@ export default function BankReconciliation() {
   }
 
   if (bsReconciling) {
-    return <BSReconciliationFlow onClose={handleCloseBS} onMarkReconciled={handleMarkBSReconciled} />;
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "#FBFBFB" }}>
+        <BSReconciliationFlow
+          onClose={handleCloseBS}
+          onMarkReconciled={handleMarkBSReconciled}
+          directAccount={typeof bsReconciling === "object" ? bsReconciling : null}
+          savedState={typeof bsReconciling === "object" && bsReconciling && bsReconciledData[bsReconciling.code] && (bsReconciledData[bsReconciling.code].status === "reviewing" || bsReconciledData[bsReconciling.code].status === "reconciled") ? bsReconciledData[bsReconciling.code] : null}
+        />
+      </div>
+    );
   }
 
   return (
@@ -5090,7 +6037,7 @@ export default function BankReconciliation() {
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Review" ? (
-          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} bsReconciledData={bsReconciledData} />
+          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} />
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
