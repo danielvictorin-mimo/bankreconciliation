@@ -7068,7 +7068,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
         <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Review</h1>
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 0, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
+        <div style={{ display: "flex", gap: 24, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
           {tabs.map(tab => {
             const isActive = tab === activeTab;
             return (
@@ -7076,13 +7076,13 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
                 key={tab}
                 onClick={() => onTabChange(tab)}
                 style={{
-                  padding: "10px 20px",
+                  padding: "10px 0 16px",
                   fontSize: 14,
                   fontWeight: 500,
                   color: isActive ? "#080908" : "#8C8C8B",
                   background: "none",
                   border: "none",
-                  borderBottom: isActive ? "2px solid #080908" : "2px solid transparent",
+                  borderBottom: isActive ? "2px solid #05A105" : "2px solid transparent",
                   cursor: "pointer",
                   marginBottom: -1,
                   transition: "color 0.15s, border-color 0.15s",
