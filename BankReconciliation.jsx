@@ -894,7 +894,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
 }
 
 // ── Upload card ───────────────────────────────────────────────────────────────
-function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statement" }) {
+function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Upload bank statement" }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const fileInputRef = useRef(null);
@@ -906,13 +906,26 @@ function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statem
     }
   };
 
+  const handleFiles = (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    if (onFilesSelected) {
+      setFileName(files.length === 1 ? files[0].name : files.length + " files");
+      onFilesSelected(files);
+    } else {
+      handleFile(files[0]);
+    }
+  };
+
   return (
     <div style={{
       background: "#FFFFFF",
       border: "1px solid #E9E9EB",
       borderRadius: 16,
       padding: "24px",
-      width: 480,
+      width: "100%",
+      maxWidth: 480,
+      boxSizing: "border-box",
       boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
     }}>
       {/* Heading */}
@@ -925,14 +938,15 @@ function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statem
         ref={fileInputRef}
         type="file"
         style={{ display: "none" }}
-        onChange={e => handleFile(e.target.files?.[0])}
+        multiple
+        onChange={e => handleFiles(e.target.files)}
       />
 
       {/* Drop zone */}
       <div
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
+        onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
         style={{
           border: `1.5px dashed ${dragging ? "#05A105" : "#DBDBDB"}`,
           borderRadius: 12,
@@ -998,11 +1012,11 @@ function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statem
         )}
 
         {/* Buttons row — inside the drop zone */}
-        <div style={{ display: "flex", gap: 10, width: "100%" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, width: "100%" }}>
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+              flex: "1 1 180px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
               padding: "10px 16px",
               background: "#05A105", border: "none", borderRadius: 8,
               cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF",
@@ -1018,7 +1032,7 @@ function UploadCard({ onFileSelected, onOpenAllDocs, title = "Upload bank statem
           <button
             onClick={() => onOpenAllDocs?.()}
             style={{
-              flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center",
+              flex: "1 1 180px", display: "inline-flex", alignItems: "center", justifyContent: "center",
               padding: "10px 16px",
               background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8,
               cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908",
@@ -2170,6 +2184,79 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
   );
 }
 
+// ── Account Picker (keyboard-navigable) ───────────────────────────────────────
+function AccountPicker({ accounts, highlightedAccount, setHighlightedAccount, onConfirm }) {
+  const [hoveredIndex, setHoveredIndex] = React.useState(-1);
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedAccount(i => Math.min(i + 1, accounts.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedAccount(i => Math.max(i - 1, 0));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirm(accounts[highlightedAccount]);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [highlightedAccount, accounts, onConfirm, setHighlightedAccount]);
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{
+        background: "#FFFFFF",
+        border: "1px solid #E9E9EB",
+        borderRadius: 16,
+        padding: "20px 20px 12px",
+        boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+      }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, marginTop: 0 }}>Select bank account</p>
+        {accounts.map((acc, i) => {
+          const isKeyActive = i === highlightedAccount;
+          const isHovered = i === hoveredIndex;
+          const bg = isKeyActive ? "#E3E3E3" : isHovered ? "#F0F0F0" : "#F7F7F7";
+          return (
+            <div
+              key={acc}
+              onClick={() => onConfirm(acc)}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(-1)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                padding: "12px 16px",
+                marginBottom: 8,
+                background: bg,
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: isKeyActive ? 600 : 400,
+                color: "#080908",
+                boxSizing: "border-box",
+                transition: "background 0.1s",
+              }}
+            >
+              <span>{acc}</span>
+              {isKeyActive && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                  <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                </svg>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Reconciliation flow ───────────────────────────────────────────────────────
 function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null }) {
   const accounts = [
@@ -2180,6 +2267,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const isPicker = accountName === "__picker__";
   const [selectedAccount, setSelectedAccount] = useState(isPicker ? null : accountName);
   const [accountSelected, setAccountSelected] = useState(!isPicker); // true when account already known or user picks one
+  const [highlightedAccount, setHighlightedAccount] = useState(isPicker ? 0 : -1); // keyboard cursor index in the picker
   const effectiveIsCleanReconcile = isCleanReconcile || (isPicker && selectedAccount === "Lloyds Bank - Operations GBP");
   const effectiveAccountName = selectedAccount || accountName;
   const [dropdownOpen, setDropdownOpen]       = useState(false);
@@ -2189,6 +2277,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [previewUrl, setPreviewUrl]           = useState(null);
   const [prepDone, setPrepDone]               = useState(showResults);
   const [startClicked, setStartClicked]       = useState(showResults);
+  const [highlightedStart, setHighlightedStart] = useState(0);
   const [stepStatuses, setStepStatuses]       = useState(showResults ? RECONCILIATION_STEPS.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts]       = useState(showResults ? RECONCILIATION_STEPS.map(s => s.subtext || "") : []);
   const [reconciliationCollapsed, setReconciliationCollapsed] = useState(showResults);
@@ -2396,6 +2485,22 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const line5Text = "Tell me whenever you're ready to start.";
   const { done: line5Done } = useTypewriter(line4Done ? line5Text : "", 18, showResults);
 
+  // Arrow key + Enter navigation for "Ready to start?" card
+  const startOptions = [
+    { label: "Start reconciliation", primary: true },
+    { label: "Upload another bank statement", primary: false },
+  ];
+  useEffect(() => {
+    if (!line5Done || startClicked) return;
+    const handler = (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedStart(i => Math.min(i + 1, startOptions.length - 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedStart(i => Math.max(i - 1, 0)); }
+      else if (e.key === "Enter") { e.preventDefault(); if (highlightedStart === 0) setStartClicked(true); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [line5Done, startClicked, highlightedStart]);
+
   // Auto-scroll chat to bottom whenever new content appears
   useEffect(() => {
     if (chatEndRef.current) {
@@ -2570,37 +2675,14 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             )}
           </div>
 
-          {/* Account picker — appears after AI finishes line 2, before user selects (picker flow only) */}
+          {/* Account picker — keyboard handler lives on window while picker is visible */}
           {isPicker && line2Done && !accountSelected && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{
-                background: "#FFFFFF",
-                border: "1px solid #E9E9EB",
-                borderRadius: 16,
-                padding: "20px 20px 12px",
-                width: "100%",
-                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12 }}>Select bank account</p>
-                {accounts.map(acc => (
-                  <button
-                    key={acc}
-                    onClick={() => { setSelectedAccount(acc); setAccountSelected(true); }}
-                    style={{
-                      display: "block", width: "100%", textAlign: "left",
-                      padding: "12px 16px", marginBottom: 8,
-                      background: "#F7F7F7", border: "none",
-                      borderRadius: 10, cursor: "pointer",
-                      fontSize: 14, fontWeight: 400, color: "#080908",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                  >
-                    {acc}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <AccountPicker
+              accounts={accounts}
+              highlightedAccount={highlightedAccount}
+              setHighlightedAccount={setHighlightedAccount}
+              onConfirm={(acc) => { setSelectedAccount(acc); setAccountSelected(true); }}
+            />
           )}
 
           {/* User reply bubble — appears after account is selected and line1 is done */}
@@ -2707,27 +2789,33 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 width: "100%",
                 boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
               }}>
-                <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", marginBottom: 16 }}>Ready to start?</p>
-                {[
-                  { label: "Start reconciliation", primary: true },
-                  { label: "Upload another bank statement", primary: false },
-                ].map(({ label, primary }) => (
-                  <button
-                    key={label}
-                    onClick={() => { if (label === "Start reconciliation") setStartClicked(true); }}
-                    style={{
-                      display: "block", width: "100%", textAlign: "left",
-                      padding: "16px 18px", marginBottom: 8,
-                      background: "#F7F7F7", border: "none",
-                      borderRadius: 10, cursor: "pointer",
-                      fontSize: 15, fontWeight: 400, color: "#080908",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Ready to start?</p>
+                {startOptions.map(({ label, primary }, i) => {
+                  const isKeyActive = i === highlightedStart;
+                  return (
+                    <div
+                      key={label}
+                      onClick={() => { if (label === "Start reconciliation") setStartClicked(true); }}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        width: "100%", padding: "14px 18px", marginBottom: 8,
+                        background: isKeyActive ? "#E3E3E3" : "#F7F7F7",
+                        border: "none", borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: isKeyActive ? 600 : 400, color: "#080908",
+                        boxSizing: "border-box", transition: "background 0.1s",
+                      }}
+                      onMouseEnter={e => { if (!isKeyActive) e.currentTarget.style.background = "#F0F0F0"; }}
+                      onMouseLeave={e => { if (!isKeyActive) e.currentTarget.style.background = "#F7F7F7"; }}
+                    >
+                      <span>{label}</span>
+                      {isKeyActive && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                          <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -4627,20 +4715,64 @@ function AccountResultsPanel({ config, resolvedCards = new Set(), ignoredCards =
 }
 
 // ── Balance Sheet: BSReconciliationFlow ──────────────────────────────────────
-function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedState }) {
+function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, directAccount, savedState, bsReconciledData }) {
   const isDirectFlow = !!directAccount;
   const isResume = !!savedState;
-  const accountRecData = isDirectFlow ? getAccountRecData(directAccount.code, directAccount.account) : null;
-  const activeSteps = isDirectFlow ? accountRecData.steps : PAYROLL_RECONCILIATION_STEPS;
-  const reconciliationTypes = [
-    "Payroll", "Choose account from balance sheet",
-  ];
   const [selectedType, setSelectedType] = useState(null);
   const [typeSelected, setTypeSelected] = useState(false);
   const [accountChoiceSelected, setAccountChoiceSelected] = useState(null);
-  const [uploadedFile, setUploadedFile] = useState(isResume ? { name: "Uploaded document.pdf", type: "application/pdf" } : null);
+  const [pickedBSAccount, setPickedBSAccount] = useState(null);
+  const [pickedAccountAction, setPickedAccountAction] = useState(null); // "View reconciliation results" | "Restart reconciliation" | null
+  const [accountSearch, setAccountSearch] = useState("");
+  const [bsDropdownOpen, setBsDropdownOpen] = useState(false);
+  const [bsDropdownSearch, setBsDropdownSearch] = useState("");
+  // Effective direct account: either from prop (table click) or from chat picker
+  const effectiveDirectAccount = directAccount || pickedBSAccount;
+  const accountRecData = effectiveDirectAccount ? getAccountRecData(effectiveDirectAccount.code, effectiveDirectAccount.account) : null;
+  const activeSteps = effectiveDirectAccount ? accountRecData.steps : PAYROLL_RECONCILIATION_STEPS;
+  const reconciliationTypes = [
+    "Payroll", "Choose account from balance sheet",
+  ];
+  const [uploadedFiles, setUploadedFiles] = useState(isResume ? [{ name: "Uploaded document.pdf", type: "application/pdf", label: "Reconciliation document" }] : []);
+  const uploadedFile = uploadedFiles.length > 0 ? uploadedFiles[0] : null; // compat alias
   const [prepDone, setPrepDone] = useState(!!isResume);
   const [readyChoice, setReadyChoice] = useState(isResume ? "Start reconciliation" : null);
+  // "Add another document" loop state
+  const [addMoreRound, setAddMoreRound] = useState(0); // increments each "Add another document"
+  const [addMorePrepDone, setAddMorePrepDone] = useState(false);
+  const [startAfterMore, setStartAfterMore] = useState(false); // true when user clicks Start after adding files
+  const [addMoreWaitingUpload, setAddMoreWaitingUpload] = useState(false); // true after user clicks "Add another document", reset when file uploaded
+
+  // Restart reconciliation flow state
+  const [restartMode, setRestartMode] = useState(null); // null | "choosing" | "same_file" | "new_file"
+  const [restartChoice, setRestartChoice] = useState(null); // "Reconcile against the same file" | "Reconcile against another file"
+  const [restartUploadedFiles, setRestartUploadedFiles] = useState([]);
+  const [restartPrepDone, setRestartPrepDone] = useState(false);
+  const [restartReadyChoice, setRestartReadyChoice] = useState(null);
+  const [restartStepStatuses, setRestartStepStatuses] = useState([]);
+  const [restartStepSubtexts, setRestartStepSubtexts] = useState([]);
+  const [restartCanvasReady, setRestartCanvasReady] = useState(false);
+  const [restartResultsVisible, setRestartResultsVisible] = useState(false);
+  const [restartAddMoreRound, setRestartAddMoreRound] = useState(0);
+  const [restartAddMorePrepDone, setRestartAddMorePrepDone] = useState(false);
+  const [restartStartAfterMore, setRestartStartAfterMore] = useState(false);
+
+  // File label helpers — context-based placeholder names
+  const FILE_LABELS = ["Reconciliation document", "Supporting document", "Additional document"];
+  const getFileLabel = (index) => index < FILE_LABELS.length ? FILE_LABELS[index] : "Document " + (index + 1);
+
+  // Handler for adding files (single or multi-drop)
+  const handleFilesAdded = (files) => {
+    const labelled = files.map((f, i) => ({ ...f, label: getFileLabel(uploadedFiles.length + i) }));
+    setUploadedFiles(prev => [...prev, ...labelled]);
+  };
+  const handleFirstFile = (file) => {
+    setUploadedFiles([{ ...file, label: getFileLabel(0) }]);
+  };
+  const handleAddMoreFiles = (files) => {
+    const labelled = files.map((f, i) => ({ ...f, label: getFileLabel(uploadedFiles.length + i) }));
+    setUploadedFiles(prev => [...prev, ...labelled]);
+  };
   const [stepStatuses, setStepStatuses] = useState(isResume ? activeSteps.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts] = useState(isResume ? activeSteps.map(() => true) : []);
   const [resultsVisible, setResultsVisible] = useState(!!isResume);
@@ -4661,26 +4793,40 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     { code: "2230", name: "Pension contributions" },
   ];
 
+  // All balance sheet accounts for the picker
+  const allBSAccounts = [];
+  for (const section of BS_SECTIONS) {
+    for (const table of section.tables) {
+      for (const row of table.rows) {
+        allBSAccounts.push({ code: row.code, account: row.account });
+      }
+    }
+  }
+
   // Line 1 – opening AI message
   const line1Segments = [
     { text: "Great, let\u2019s reconcile the ", bold: false },
     { text: "balance sheet.",                    bold: true  },
   ];
   const line1Full = line1Segments.map(s => s.text).join("");
-  const { done: line1Done } = useTypewriter(line1Full, 18);
+  const { done: line1Done } = useTypewriter(line1Full, 18, isResume);
 
   // Line 2 – prompt to pick type
   const line2Text = "Tell me what you\u2019d like to reconcile";
-  const { done: line2Done } = useTypewriter(line1Done ? line2Text : "", 18);
+  const { done: line2Done } = useTypewriter(line1Done ? line2Text : "", 18, isResume);
 
-  // Line 3 – after type selected: accounts intro message
+  // Line 3 – after type selected: accounts intro message (Payroll)
   const line3Segments = selectedType === "Payroll" ? [
     { text: "I will look at the following accounts to reconcile ", bold: false },
     { text: "Payroll",                                             bold: true  },
     { text: ":",                                                   bold: false },
   ] : [];
   const line3Full = line3Segments.map(s => s.text).join("");
-  const { done: line3Done } = useTypewriter(typeSelected ? line3Full : "", 18);
+  const { done: line3Done } = useTypewriter(typeSelected ? line3Full : "", 18, isResume);
+
+  // Line 3b – after "Choose account from balance sheet" selected
+  const line3bText = "Which account would you like to reconcile?";
+  const { done: line3bDone } = useTypewriter(typeSelected && selectedType === "Choose account from balance sheet" ? line3bText : "", 18, isResume);
 
   // Line 4 – confirmation after "Continue with suggested accounts"
   const line4Segments = accountChoiceSelected === "Continue with suggested accounts" ? [
@@ -4693,16 +4839,20 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     { text: ".",                         bold: false },
   ] : [];
   const line4Full = line4Segments.map(s => s.text).join("");
-  const { done: line4Done } = useTypewriter(accountChoiceSelected === "Continue with suggested accounts" ? line4Full : "", 18);
+  const { done: line4Done } = useTypewriter(accountChoiceSelected === "Continue with suggested accounts" ? line4Full : "", 18, isResume);
 
   // Line 5 – "Please upload a payroll report"
   const line5Text = "Please upload a payroll report.";
-  const { done: line5Done } = useTypewriter(line4Done ? line5Text : "", 18);
+  const { done: line5Done } = useTypewriter(line4Done ? line5Text : "", 18, isResume);
 
   // Line 6 – after file uploaded + prep done: ready message
   const line6Segments = prepDone ? (isDirectFlow ? [
     { text: "I have everything I need to reconcile ", bold: false },
     { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
+    { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
+  ] : pickedBSAccount ? [
+    { text: "I have everything I need to reconcile ", bold: false },
+    { text: `${pickedBSAccount.code} \u2013 ${pickedBSAccount.account}`, bold: true },
     { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
   ] : [
     { text: "I have everything I need to reconcile ", bold: false },
@@ -4710,11 +4860,11 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     { text: " against the payroll report you provided. Tell me when you\u2019re ready to start.", bold: false },
   ]) : [];
   const line6Full = line6Segments.map(s => s.text).join("");
-  const { done: line6Done } = useTypewriter(prepDone ? line6Full : "", 18);
+  const { done: line6Done } = useTypewriter(prepDone ? line6Full : "", 18, isResume);
 
   // Line 7 – after canvasReady: ready for review message
   const line7Text = "Reconciliation is ready for your review. If something doesn\u2019t look right or is unclear simply ask me for any changes or information.";
-  const { done: line7Done } = useTypewriter(canvasReady ? line7Text : "", 18);
+  const { done: line7Done } = useTypewriter(canvasReady ? line7Text : "", 18, isResume);
 
   // \u2500\u2500 Direct account flow lines \u2500\u2500
   const directLine1Segments = isDirectFlow ? [
@@ -4723,26 +4873,38 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     { text: ".",                     bold: false },
   ] : [];
   const directLine1Full = directLine1Segments.map(s => s.text).join("");
-  const { done: directLine1Done } = useTypewriter(isDirectFlow ? directLine1Full : "", 18);
+  const { done: directLine1Done } = useTypewriter(isDirectFlow ? directLine1Full : "", 18, isResume);
 
   const directLine2Text = "Please upload a document to reconcile this account.";
-  const { done: directLine2Done } = useTypewriter(isDirectFlow && directLine1Done ? directLine2Text : "", 18);
+  const { done: directLine2Done } = useTypewriter(isDirectFlow && directLine1Done ? directLine2Text : "", 18, isResume);
 
   const handleFileSelected = (file) => {
-    setUploadedFile(file);
+    handleFirstFile(file);
   };
 
-  // After file is selected, wait 2.2s then mark prep done
+  // After first file is selected, wait 2.2s then mark prep done
   useEffect(() => {
     if (!uploadedFile) return;
     const t = setTimeout(() => setPrepDone(true), 2200);
     return () => clearTimeout(t);
   }, [uploadedFile]);
 
+  // After "Add another document" round: prep timer for added files
+  useEffect(() => {
+    if (addMoreRound === 0) return;
+    setAddMorePrepDone(false);
+    const t = setTimeout(() => setAddMorePrepDone(true), 2200);
+    return () => clearTimeout(t);
+  }, [addMoreRound]);
+
+  // Determine effective start trigger: direct start or after adding more files
+  const effectiveStart = (readyChoice === "Start reconciliation") || startAfterMore;
+
   // Run reconciliation steps after "Start reconciliation"
   useEffect(() => {
-    if (readyChoice !== "Start reconciliation") return;
+    if (!effectiveStart) return;
     if (isResume) return; // Skip animation on resume \u2014 steps already done
+    if (pickedAccountAction === "View reconciliation results") return; // Skip for view results
     setStepStatuses(activeSteps.map((_, i) => i === 0 ? "active" : "pending"));
     setStepSubtexts(activeSteps.map(() => false));
     let cumulative = 0;
@@ -4764,7 +4926,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
       }, cumulative));
     });
     return () => timers.forEach(clearTimeout);
-  }, [readyChoice]);
+  }, [readyChoice, startAfterMore]);
 
   const reconciliationComplete = stepStatuses.length > 0 && stepStatuses.every(s => s === "done");
 
@@ -4772,13 +4934,76 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     if (reconciliationComplete) setResultsVisible(true);
   }, [reconciliationComplete]);
 
-  // Delay canvas content until panel has slid in
+  // Delay canvas content until panel has slid in (skip delay on resume)
   useEffect(() => {
     if (!resultsVisible) return;
+    if (isResume) { setCanvasReady(true); return; }
     setCanvasReady(false);
     const t = setTimeout(() => setCanvasReady(true), 3200);
     return () => clearTimeout(t);
   }, [resultsVisible]);
+
+  // ─── Restart reconciliation effects ───
+
+  // Restart: prep timer for uploaded file (new_file path)
+  useEffect(() => {
+    if (restartMode !== "new_file" || restartUploadedFiles.length === 0) return;
+    setRestartPrepDone(false);
+    const t = setTimeout(() => setRestartPrepDone(true), 2200);
+    return () => clearTimeout(t);
+  }, [restartUploadedFiles.length]);
+
+  // Restart: add more round prep
+  useEffect(() => {
+    if (restartAddMoreRound === 0) return;
+    setRestartAddMorePrepDone(false);
+    const t = setTimeout(() => setRestartAddMorePrepDone(true), 2200);
+    return () => clearTimeout(t);
+  }, [restartAddMoreRound]);
+
+  // Restart: run reconciliation steps animation
+  useEffect(() => {
+    const shouldRun = restartMode === "same_file" || (restartMode === "new_file" && (restartReadyChoice === "Start reconciliation" || restartStartAfterMore));
+    if (!shouldRun) return;
+    // Reset canvas states for fresh results
+    setResultsVisible(false);
+    setCanvasReady(false);
+    setResolvedCards(new Set());
+    setIgnoredCards(new Set());
+    setRestartStepStatuses(activeSteps.map((_, i) => i === 0 ? "active" : "pending"));
+    setRestartStepSubtexts(activeSteps.map(() => false));
+    let cumulative = 0;
+    const timers = [];
+    activeSteps.forEach((step, i) => {
+      cumulative += step.duration;
+      if (step.subtext) {
+        timers.push(setTimeout(() => {
+          setRestartStepSubtexts(prev => { const next = [...prev]; next[i] = true; return next; });
+        }, cumulative - 400));
+      }
+      timers.push(setTimeout(() => {
+        setRestartStepStatuses(prev => {
+          const next = [...prev];
+          next[i] = "done";
+          if (i + 1 < activeSteps.length) next[i + 1] = "active";
+          return next;
+        });
+      }, cumulative));
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [restartMode, restartReadyChoice, restartStartAfterMore]);
+
+  // Restart: when all steps done, show results
+  const restartReconciliationComplete = restartStepStatuses.length > 0 && restartStepStatuses.every(s => s === "done");
+  useEffect(() => {
+    if (!restartReconciliationComplete) return;
+    const t = setTimeout(() => {
+      setCanvasReady(true);
+      setResultsVisible(true);
+      setRestartResultsVisible(true);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [restartReconciliationComplete]);
 
   // Drag handler for resizable chat panel
   const handleDragStart = (e) => {
@@ -4808,7 +5033,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [line1Done, line2Done, typeSelected, line3Done, accountChoiceSelected, line4Done, line5Done, uploadedFile, prepDone, line6Done, readyChoice, stepStatuses, line7Done, directLine1Done, directLine2Done]);
+  }, [line1Done, line2Done, typeSelected, line3Done, line3bDone, accountChoiceSelected, line4Done, line5Done, uploadedFile, prepDone, line6Done, readyChoice, stepStatuses, line7Done, directLine1Done, directLine2Done, pickedBSAccount, pickedAccountAction, uploadedFiles.length, addMoreRound, addMorePrepDone, startAfterMore, restartMode, restartChoice, restartUploadedFiles.length, restartPrepDone, restartReadyChoice, restartStepStatuses, restartAddMoreRound, restartAddMorePrepDone, restartStartAfterMore]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FBFBFB" }}>
@@ -4824,6 +5049,54 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
       {/* Top bar */}
       <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
         <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>Balance sheet reconciliation</span>
+
+        {/* Account selector dropdown — appears once an account is active */}
+        {effectiveDirectAccount && (
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => { setBsDropdownOpen(o => !o); setBsDropdownSearch(""); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+            >
+              <span style={{ color: "#080908" }}>
+                {effectiveDirectAccount.code} &ndash; {effectiveDirectAccount.account}
+              </span>
+              <Chevron color="#080908" />
+            </button>
+            {bsDropdownOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 100, minWidth: 300, maxHeight: 360, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <div style={{ padding: "8px 8px 4px", flexShrink: 0 }}>
+                  <input
+                    value={bsDropdownSearch}
+                    onChange={e => setBsDropdownSearch(e.target.value)}
+                    placeholder="Search accounts..."
+                    autoFocus
+                    style={{ width: "100%", padding: "8px 10px", border: "1px solid #E9E9EB", borderRadius: 6, fontSize: 13, color: "#080908", outline: "none", boxSizing: "border-box", fontFamily: "'Inter', sans-serif" }}
+                  />
+                </div>
+                <div style={{ overflowY: "auto", maxHeight: 300 }}>
+                  {BS_ALL_ACCOUNTS.filter(a => {
+                    if (!bsDropdownSearch) return true;
+                    const q = bsDropdownSearch.toLowerCase();
+                    return a.code.toLowerCase().includes(q) || a.account.toLowerCase().includes(q);
+                  }).map(acc => {
+                    const isCurrent = acc.code === effectiveDirectAccount.code;
+                    return (
+                      <button key={acc.code} onClick={() => {
+                        setBsDropdownOpen(false);
+                        if (!isCurrent) onSwitchAccount?.(acc);
+                      }}
+                        style={{ width: "100%", display: "block", textAlign: "left", padding: "10px 14px", fontSize: 14, color: isCurrent ? "#080908" : "#4F4F4F", fontWeight: isCurrent ? 500 : 400, background: isCurrent ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer" }}
+                        onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = "#FAFAFA"; }}
+                        onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = isCurrent ? "#F5F5F5" : "transparent"; }}
+                      >{acc.code} &ndash; {acc.account}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ flex: 1 }} />
         {resultsVisible && (() => {
           const isAlreadyReconciled = savedState && savedState.status === "reconciled";
@@ -4841,7 +5114,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
               </div>
             );
           }
-          const totalSuggestions = isDirectFlow && accountRecData ? accountRecData.suggestions.length : 3;
+          const totalSuggestions = effectiveDirectAccount && accountRecData ? accountRecData.suggestions.length : 3;
           const remaining = totalSuggestions - resolvedCards.size - ignoredCards.size;
           const allHandled = remaining <= 0;
           return (
@@ -4850,7 +5123,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
                 Left to review: <strong style={{ color: "#080908" }}>{Math.max(0, remaining)} suggestion{remaining !== 1 ? "s" : ""}</strong>
               </span>
               <button
-                onClick={() => { allHandled ? onMarkReconciled?.() : setDrawerOpen(true); }}
+                onClick={() => { allHandled ? onMarkReconciled?.(null, effectiveDirectAccount) : setDrawerOpen(true); }}
                 style={{
                   height: 36, padding: "0 16px",
                   borderRadius: 8, border: "none",
@@ -4871,9 +5144,9 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
         <button onClick={() => {
           const isAlreadyReconciled = savedState && savedState.status === "reconciled";
           if (resultsVisible && !isAlreadyReconciled) {
-            onClose?.({ resolvedCards: Array.from(resolvedCards), ignoredCards: Array.from(ignoredCards) });
+            onClose?.({ resolvedCards: Array.from(resolvedCards), ignoredCards: Array.from(ignoredCards) }, effectiveDirectAccount);
           } else {
-            onClose?.();
+            onClose?.(null, effectiveDirectAccount);
           }
         }} style={{
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -4910,10 +5183,10 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
           {isDirectFlow && (
             <>
               <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px" }}>
-                <p><StreamingMessage segments={directLine1Segments} speed={18} /></p>
+                <p><StreamingMessage segments={directLine1Segments} speed={18} instant={isResume} /></p>
                 {directLine1Done && (
                   <p style={{ marginTop: 6 }}>
-                    <StreamingMessage key="directLine2" segments={[{ text: directLine2Text, bold: false }]} speed={18} />
+                    <StreamingMessage key="directLine2" segments={[{ text: directLine2Text, bold: false }]} speed={18} instant={isResume} />
                   </p>
                 )}
               </div>
@@ -4957,7 +5230,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
               {/* AI ready message \u2014 after prep done */}
               {prepDone && (
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-                  <p><StreamingMessage key="line6-direct" segments={line6Segments.length > 0 ? line6Segments : [
+                  <p><StreamingMessage key="line6-direct" instant={isResume} segments={line6Segments.length > 0 ? line6Segments : [
                     { text: "I have everything I need to reconcile ", bold: false },
                     { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
                     { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
@@ -5006,8 +5279,117 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
                 </div>
               )}
 
+              {/* Add another document flow (direct) */}
+              {readyChoice === "Add another document" && (
+                <>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"add-doc-direct-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+                  </div>
+                  {addMoreRound === 0 && !addMoreWaitingUpload && (
+                    <div style={{ marginTop: 16 }}>
+                      <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+                    </div>
+                  )}
+                  {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
+                    <div key={"add-preview-direct-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                      <div style={{ maxWidth: 320 }}>
+                        <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                            <FileIcon file={file} width={20} height={24} />
+                            <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{file.label}</span>
+                          </div>
+                          <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                          {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                            <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                          <FileIcon file={file} width={13} height={16} />
+                          <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{file.label}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {uploadedFiles.length > 1 && !addMorePrepDone && !addMoreWaitingUpload && (
+                    <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                      Preparing the document and getting ready for reconciliation
+                    </p>
+                  )}
+                  {addMorePrepDone && (() => {
+                    const labels = uploadedFiles.map(f => f.label);
+                    const docSegments = [];
+                    labels.forEach((lbl, i) => {
+                      if (i > 0) {
+                        if (i === labels.length - 1) docSegments.push({ text: " and ", bold: false });
+                        else docSegments.push({ text: ", ", bold: false });
+                      }
+                      docSegments.push({ text: lbl, bold: true });
+                    });
+                    return (
+                      <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                        <p><StreamingMessage key={"add-doc-direct-ready-" + addMoreRound} segments={[
+                          { text: "I have everything I need to reconcile ", bold: false },
+                          { text: `${directAccount.code} \u2013 ${directAccount.account}`, bold: true },
+                          { text: " against ", bold: false },
+                          ...docSegments,
+                          { text: ". Tell me when you\u2019re ready to start.", bold: false },
+                        ]} speed={18} /></p>
+                      </div>
+                    );
+                  })()}
+                  {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{
+                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                        padding: "20px 20px 12px", maxWidth: 480,
+                        boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                      }}>
+                        {["Start reconciliation", "Add another document"].map(opt => (
+                          <button key={opt} onClick={() => {
+                            if (opt === "Start reconciliation") { setStartAfterMore(true); }
+                            else { setAddMoreWaitingUpload(true); }
+                          }} style={{
+                            display: "block", width: "100%", textAlign: "left",
+                            padding: "12px 16px", marginBottom: 8,
+                            background: "#F7F7F7", border: "none",
+                            borderRadius: 10, cursor: "pointer",
+                            fontSize: 14, fontWeight: 400, color: "#080908",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                          >{opt}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* User chose "Add another document" — new upload round */}
+                  {addMoreWaitingUpload && (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                        <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                          Add another document
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                        <p><StreamingMessage key={"add-doc-direct-waiting-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+                      </div>
+                      <div style={{ marginTop: 16 }}>
+                        <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+              {readyChoice === "Add another document" && startAfterMore && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    Start reconciliation
+                  </div>
+                </div>
+              )}
+
               {/* Reconciliation progress steps */}
-              {readyChoice === "Start reconciliation" && stepStatuses.length > 0 && (
+              {effectiveStart && stepStatuses.length > 0 && (
                 <div style={{ marginTop: 24 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
                     <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -5017,7 +5399,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
                     </div>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>{directAccount.code}{" – "}{directAccount.account} reconciliation</span>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Reconciliation</span>
                       </div>
                       <span style={{ fontSize: 13, color: "#8C8C8B" }}>
                         {stepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
@@ -5074,7 +5456,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
 
               {canvasReady && (
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-                  <p><StreamingMessage key="line7-direct" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+                  <p><StreamingMessage key="line7-direct" segments={[{ text: line7Text, bold: false }]} speed={18} instant={isResume} /></p>
                 </div>
               )}
             </>
@@ -5083,10 +5465,10 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
           {/* \u2500\u2500 Normal flow (type picker \u2192 accounts \u2192 upload) \u2500\u2500 */}
           {!isDirectFlow && (
           <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px" }}>
-            <p><StreamingMessage segments={line1Segments} speed={18} /></p>
+            <p><StreamingMessage segments={line1Segments} speed={18} instant={isResume} /></p>
             {line1Done && (
               <p style={{ marginTop: 6 }}>
-                <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} />
+                <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={isResume} />
               </p>
             )}
           </div>
@@ -5142,10 +5524,484 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
             </div>
           )}
 
+          {/* ── "Choose account from balance sheet" flow ── */}
+          {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+              <p><StreamingMessage key="line3b" segments={[{ text: line3bText, bold: false }]} speed={18} instant={isResume} /></p>
+            </div>
+          )}
+
+          {/* BS Account picker card */}
+          {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && line3bDone && !pickedBSAccount && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{
+                background: "#FFFFFF",
+                border: "1px solid #E9E9EB",
+                borderRadius: 16,
+                padding: "20px 20px 12px",
+                maxWidth: 480,
+                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                height: 400,
+                display: "flex",
+                flexDirection: "column",
+              }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, flexShrink: 0 }}>Select an account</p>
+                <input
+                  type="text"
+                  placeholder="Search accounts..."
+                  value={accountSearch}
+                  onChange={e => setAccountSearch(e.target.value)}
+                  style={{
+                    width: "100%", padding: "10px 12px", marginBottom: 10,
+                    border: "1px solid #E9E9EB", borderRadius: 8,
+                    fontSize: 14, color: "#080908", outline: "none",
+                    fontFamily: "'Inter', sans-serif",
+                    boxSizing: "border-box",
+                    flexShrink: 0,
+                  }}
+                  onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
+                  onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
+                />
+                <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+                  {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).map(acc => (
+                    <button
+                      key={acc.code}
+                      onClick={() => setPickedBSAccount(acc)}
+                      style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "10px 16px", marginBottom: 6,
+                        background: "#F7F7F7", border: "none",
+                        borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: 400, color: "#080908",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                    >
+                      <span style={{ fontWeight: 500 }}>{acc.code}</span>
+                      <span style={{ margin: "0 6px" }}>{"\u2013"}</span>
+                      <span>{acc.account}</span>
+                    </button>
+                  ))}
+                  {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).length === 0 && (
+                    <p style={{ fontSize: 14, color: "#8C8C8B", padding: "20px 16px", textAlign: "center" }}>No accounts found</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* User reply bubble for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{
+                maxWidth: 400,
+                background: "#EAF2E2",
+                borderRadius: "12px 12px 2px 12px",
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "#080908",
+                lineHeight: "22px",
+              }}>
+                {pickedBSAccount.code} {"\u2013"} {pickedBSAccount.account}
+              </div>
+            </div>
+          )}
+
+          {/* After picking BS account: check if previously reconciled */}
+          {!isDirectFlow && pickedBSAccount && (() => {
+            const pickedRecData = bsReconciledData && bsReconciledData[pickedBSAccount.code];
+            const isPreviouslyReconciled = pickedRecData && (pickedRecData.status === "reconciled" || pickedRecData.status === "reviewing");
+
+            // If previously reconciled and no action chosen yet, show choice
+            if (isPreviouslyReconciled && !pickedAccountAction) {
+              const statusLabel = pickedRecData.status === "reconciled" ? "reconciled" : "in review";
+              return (
+                <>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"bs-pick-status-" + pickedBSAccount.code} segments={[
+                      { text: pickedBSAccount.code + " \u2013 " + pickedBSAccount.account, bold: true },
+                      { text: " has already been " + statusLabel + ". Would you like to view the results or start fresh?", bold: false },
+                    ]} speed={18} /></p>
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{
+                      background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                      padding: "20px 20px 12px", maxWidth: 480,
+                      boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                    }}>
+                      {["View reconciliation results", "Restart reconciliation"].map(opt => (
+                        <button key={opt} onClick={() => {
+                          setPickedAccountAction(opt);
+                          if (opt === "View reconciliation results") {
+                            // Jump to results immediately
+                            const data = getAccountRecData(pickedBSAccount.code, pickedBSAccount.account);
+                            setStepStatuses(data.steps.map(() => "done"));
+                            setStepSubtexts(data.steps.map(() => true));
+                            setUploadedFile({ name: "Uploaded document.pdf", type: "application/pdf" });
+                            setPrepDone(true);
+                            setReadyChoice("Start reconciliation");
+                            setResultsVisible(true);
+                            setCanvasReady(true);
+                            // Restore resolved/ignored cards from saved data
+                            if (pickedRecData.resolvedCards) setResolvedCards(new Set(pickedRecData.resolvedCards));
+                            if (pickedRecData.ignoredCards) setIgnoredCards(new Set(pickedRecData.ignoredCards));
+                          }
+                        }}
+                        style={{
+                          display: "block", width: "100%", textAlign: "left",
+                          padding: "12px 16px", marginBottom: 8,
+                          background: "#F7F7F7", border: "none",
+                          borderRadius: 10, cursor: "pointer",
+                          fontSize: 14, fontWeight: 400, color: "#080908",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                        >{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            }
+
+            // If "View reconciliation results" chosen, show the view results message
+            if (pickedAccountAction === "View reconciliation results") {
+              return (
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                      View reconciliation results
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"bs-pick-viewresults-" + pickedBSAccount.code} segments={[
+                      { text: "Here are the reconciliation results for ", bold: false },
+                      { text: pickedBSAccount.code + " \u2013 " + pickedBSAccount.account, bold: true },
+                      { text: ". If something doesn\u2019t look right or is unclear simply ask me for any changes or information.", bold: false },
+                    ]} speed={18} instant={true} /></p>
+                  </div>
+                </>
+              );
+            }
+
+            // If "Restart reconciliation" chosen, show the normal flow
+            if (pickedAccountAction === "Restart reconciliation") {
+              const bsDirectLine1Segments = [
+                { text: "Let\u2019s reconcile ", bold: false },
+                { text: pickedBSAccount.code + " \u2013 " + pickedBSAccount.account, bold: true },
+                { text: ".", bold: false },
+              ];
+              const bsDirectLine2Text = "Please upload a document to reconcile this account.";
+              return (
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                      Restart reconciliation
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"bs-pick-line1-" + pickedBSAccount.code} segments={bsDirectLine1Segments} speed={18} /></p>
+                    <p style={{ marginTop: 6 }}>
+                      <StreamingMessage key={"bs-pick-line2-" + pickedBSAccount.code} segments={[{ text: bsDirectLine2Text, bold: false }]} speed={18} />
+                    </p>
+                  </div>
+                </>
+              );
+            }
+
+            // Not previously reconciled – show normal upload flow
+            const bsDirectLine1Segments = [
+              { text: "Let\u2019s reconcile ", bold: false },
+              { text: pickedBSAccount.code + " \u2013 " + pickedBSAccount.account, bold: true },
+              { text: ".", bold: false },
+            ];
+            const bsDirectLine2Text = "Please upload a document to reconcile this account.";
+            return (
+              <>
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                  <p><StreamingMessage key={"bs-pick-line1-" + pickedBSAccount.code} segments={bsDirectLine1Segments} speed={18} /></p>
+                  <p style={{ marginTop: 6 }}>
+                    <StreamingMessage key={"bs-pick-line2-" + pickedBSAccount.code} segments={[{ text: bsDirectLine2Text, bold: false }]} speed={18} />
+                  </p>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* Upload card for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && !uploadedFile && (
+            <div style={{ marginTop: 16 }}>
+              <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
+            </div>
+          )}
+
+          {/* File preview for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && uploadedFile && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ maxWidth: 320 }}>
+                <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <FileIcon file={uploadedFile} width={20} height={24} />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{pickedBSAccount.account} report</span>
+                  </div>
+                  <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                  {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                    <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                  <FileIcon file={uploadedFile} width={13} height={16} />
+                  <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{uploadedFile.name}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Preparing status for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && uploadedFile && !prepDone && (
+            <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+              Preparing the document and getting ready for reconciliation
+            </p>
+          )}
+
+          {/* Ready message for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && prepDone && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+              <p><StreamingMessage key={"bs-pick-ready-" + pickedBSAccount.code} segments={[
+                { text: "I have everything I need to reconcile ", bold: false },
+                { text: pickedBSAccount.code + " \u2013 " + pickedBSAccount.account, bold: true },
+                { text: " against the document you provided. Tell me when you\u2019re ready to start.", bold: false },
+              ]} speed={18} /></p>
+            </div>
+          )}
+
+          {/* Start choice for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && prepDone && line6Done && !readyChoice && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{
+                background: "#FFFFFF",
+                border: "1px solid #E9E9EB",
+                borderRadius: 16,
+                padding: "20px 20px 12px",
+                maxWidth: 480,
+                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+              }}>
+                {["Start reconciliation", "Add another document"].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setReadyChoice(opt)}
+                    style={{
+                      display: "block", width: "100%", textAlign: "left",
+                      padding: "12px 16px", marginBottom: 8,
+                      background: "#F7F7F7", border: "none",
+                      borderRadius: 10, cursor: "pointer",
+                      fontSize: 14, fontWeight: 400, color: "#080908",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* User reply for start choice (picked BS account) */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && readyChoice && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                {readyChoice}
+              </div>
+            </div>
+          )}
+
+          {/* Add another document flow (picked BS account) */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && readyChoice === "Add another document" && (
+            <>
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                <p><StreamingMessage key={"add-doc-bs-" + pickedBSAccount.code + "-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+              </div>
+              {addMoreRound === 0 && !addMoreWaitingUpload && (
+                <div style={{ marginTop: 16 }}>
+                  <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+                </div>
+              )}
+              {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
+                <div key={"add-preview-bs-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 320 }}>
+                    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                        <FileIcon file={file} width={20} height={24} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{file.label}</span>
+                      </div>
+                      <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                      {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                        <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                      <FileIcon file={file} width={13} height={16} />
+                      <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{file.label}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {uploadedFiles.length > 1 && !addMorePrepDone && !addMoreWaitingUpload && (
+                <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                  Preparing the document and getting ready for reconciliation
+                </p>
+              )}
+              {addMorePrepDone && (() => {
+                const labels = uploadedFiles.map(f => f.label);
+                const docSegments = [];
+                labels.forEach((lbl, i) => {
+                  if (i > 0) {
+                    if (i === labels.length - 1) docSegments.push({ text: " and ", bold: false });
+                    else docSegments.push({ text: ", ", bold: false });
+                  }
+                  docSegments.push({ text: lbl, bold: true });
+                });
+                return (
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"add-doc-bs-ready-" + pickedBSAccount.code + "-" + addMoreRound} segments={[
+                      { text: "I have everything I need to reconcile ", bold: false },
+                      { text: `${pickedBSAccount.code} \u2013 ${pickedBSAccount.account}`, bold: true },
+                      { text: " against ", bold: false },
+                      ...docSegments,
+                      { text: ". Tell me when you\u2019re ready to start.", bold: false },
+                    ]} speed={18} /></p>
+                  </div>
+                );
+              })()}
+              {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{
+                    background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                    padding: "20px 20px 12px", maxWidth: 480,
+                    boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                  }}>
+                    {["Start reconciliation", "Add another document"].map(opt => (
+                      <button key={opt} onClick={() => {
+                        if (opt === "Start reconciliation") { setStartAfterMore(true); }
+                        else { setAddMoreWaitingUpload(true); }
+                      }} style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "12px 16px", marginBottom: 8,
+                        background: "#F7F7F7", border: "none",
+                        borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: 400, color: "#080908",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                      >{opt}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* User chose "Add another document" — new upload round */}
+              {addMoreWaitingUpload && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                      Add another document
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"add-doc-bs-waiting-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          {!isDirectFlow && pickedBSAccount && readyChoice === "Add another document" && startAfterMore && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                Start reconciliation
+              </div>
+            </div>
+          )}
+
+          {/* Reconciliation steps for picked BS account */}
+          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && effectiveStart && stepStatuses.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M6.50065 6.4987L10.6257 10.6237M6.50065 6.4987H3.75065L2.83398 3.7487L3.75065 2.83203L6.50065 3.7487V6.4987ZM18.6547 3.51129L16.2461 5.91994C15.8831 6.28296 15.7016 6.46446 15.6335 6.67377C15.5737 6.85787 15.5737 7.05619 15.6335 7.2403C15.7016 7.4496 15.8831 7.63111 16.2461 7.99412L16.4636 8.21161C16.8266 8.57462 17.0081 8.75613 17.2174 8.82414C17.4015 8.88396 17.5998 8.88396 17.7839 8.82414C17.9932 8.75613 18.1747 8.57462 18.5377 8.21161L20.7908 5.95852C21.0335 6.54901 21.1673 7.19573 21.1673 7.8737C21.1673 10.6581 18.9101 12.9154 16.1257 12.9154C15.79 12.9154 15.4619 12.8826 15.1446 12.82C14.699 12.7321 14.4761 12.6881 14.3411 12.7016C14.1975 12.7159 14.1267 12.7374 13.9995 12.8055C13.8798 12.8696 13.7597 12.9896 13.5196 13.2298L6.95898 19.7904C6.19959 20.5497 4.96838 20.5497 4.20899 19.7904C3.44959 19.031 3.44959 17.7997 4.20899 17.0403L10.7696 10.4798C11.0097 10.2396 11.1298 10.1196 11.1938 9.99989C11.2619 9.87265 11.2834 9.80188 11.2977 9.65827C11.3112 9.5232 11.2673 9.30038 11.1794 8.85475C11.1168 8.53742 11.084 8.20939 11.084 7.8737C11.084 5.08926 13.3412 2.83203 16.1257 2.83203C17.0474 2.83203 17.9113 3.07937 18.6547 3.51129ZM12.0007 14.7486L17.0423 19.7903C17.8017 20.5497 19.0329 20.5497 19.7923 19.7903C20.5517 19.0309 20.5517 17.7996 19.7923 17.0403L15.6447 12.8927C15.3511 12.8649 15.0648 12.812 14.788 12.736C14.4314 12.6381 14.0402 12.7092 13.7787 12.9707L12.0007 14.7486Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Reconciliation</span>
+                  </div>
+                  <span style={{ fontSize: 13, color: "#8C8C8B" }}>
+                    {stepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
+                  </span>
+                </div>
+              </div>
+
+              {activeSteps.map((step, i) => {
+                const status = stepStatuses[i] || "pending";
+                const isLast = i === activeSteps.length - 1;
+                return (
+                  <div key={i} style={{ display: "flex", gap: 16 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                        border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
+                        background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "all 0.4s ease",
+                      }}>
+                        {status === "done" && (
+                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                            <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                        {status === "active" && (
+                          <div style={{
+                            width: 16, height: 16, borderRadius: "50%",
+                            border: "1.5px solid #ACD394",
+                            borderTopColor: "#05A105",
+                            animation: "spin 0.7s linear infinite",
+                          }} />
+                        )}
+                      </div>
+                      {!isLast && (
+                        <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />
+                      )}
+                    </div>
+                    <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
+                      <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                        {step.title}
+                      </div>
+                      {(stepSubtexts[i] || status === "done") && step.subtext && (
+                        <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>
+                          {step.subtext}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ready for review message (picked BS account) */}
+          {!isDirectFlow && pickedBSAccount && canvasReady && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+              <p><StreamingMessage key={"bs-pick-review-" + pickedBSAccount.code} segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+            </div>
+          )}
+
           {/* AI message: accounts intro + bullet list (Payroll flow) */}
           {!isDirectFlow && typeSelected && selectedType === "Payroll" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-              <p><StreamingMessage key="line3" segments={line3Segments} speed={18} /></p>
+              <p><StreamingMessage key="line3" segments={line3Segments} speed={18} instant={isResume} /></p>
 
               {/* Account bullet list \u2014 appears after line3 finishes */}
               {line3Done && (
@@ -5215,24 +6071,24 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
           {/* AI confirmation message \u2014 after "Continue with suggested accounts" */}
           {!isDirectFlow && accountChoiceSelected === "Continue with suggested accounts" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-              <p><StreamingMessage key="line4" segments={line4Segments} speed={18} /></p>
+              <p><StreamingMessage key="line4" segments={line4Segments} speed={18} instant={isResume} /></p>
               {line4Done && (
                 <p style={{ marginTop: 6 }}>
-                  <StreamingMessage key="line5" segments={[{ text: line5Text, bold: false }]} speed={18} />
+                  <StreamingMessage key="line5" segments={[{ text: line5Text, bold: false }]} speed={18} instant={isResume} />
                 </p>
               )}
             </div>
           )}
 
           {/* Upload card \u2014 appears after "Please upload a payroll report" finishes */}
-          {!isDirectFlow && line5Done && !uploadedFile && (
+          {!isDirectFlow && !pickedBSAccount && line5Done && !uploadedFile && (
             <div style={{ marginTop: 16 }}>
               <UploadCard onFileSelected={handleFileSelected} title="Upload payroll report" />
             </div>
           )}
 
           {/* User bubble \u2014 file preview after upload */}
-          {!isDirectFlow && uploadedFile && (
+          {!isDirectFlow && !pickedBSAccount && uploadedFile && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{ maxWidth: 320 }}>
                 <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
@@ -5254,21 +6110,21 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
           )}
 
           {/* Preparing status \u2014 shows while waiting for prep */}
-          {!isDirectFlow && uploadedFile && !prepDone && (
+          {!isDirectFlow && !pickedBSAccount && uploadedFile && !prepDone && (
             <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
               Preparing the payroll report and getting ready for reconciliation
             </p>
           )}
 
           {/* AI ready message \u2014 after prep done */}
-          {!isDirectFlow && prepDone && (
+          {!isDirectFlow && !pickedBSAccount && prepDone && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-              <p><StreamingMessage key="line6" segments={line6Segments} speed={18} /></p>
+              <p><StreamingMessage key="line6" segments={line6Segments} speed={18} instant={isResume} /></p>
             </div>
           )}
 
           {/* Choice: start or add another \u2014 appears after ready message finishes */}
-          {!isDirectFlow && line6Done && !readyChoice && (
+          {!isDirectFlow && !pickedBSAccount && line6Done && !readyChoice && (
             <div style={{ marginTop: 16 }}>
               <div style={{
                 background: "#FFFFFF",
@@ -5300,7 +6156,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
           )}
 
           {/* User reply bubble for ready choice */}
-          {!isDirectFlow && readyChoice && (
+          {!isDirectFlow && !pickedBSAccount && readyChoice && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
@@ -5316,8 +6172,117 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
             </div>
           )}
 
+          {/* Add another payroll report flow */}
+          {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && (
+            <>
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                <p><StreamingMessage key={"add-doc-payroll-" + addMoreRound} segments={[{ text: "Upload another payroll report and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+              </div>
+              {addMoreRound === 0 && !addMoreWaitingUpload && (
+                <div style={{ marginTop: 16 }}>
+                  <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
+                </div>
+              )}
+              {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
+                <div key={"add-preview-payroll-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 320 }}>
+                    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                        <FileIcon file={file} width={20} height={24} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{file.label}</span>
+                      </div>
+                      <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                      {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                        <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                      <FileIcon file={file} width={13} height={16} />
+                      <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{file.label}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {uploadedFiles.length > 1 && !addMorePrepDone && !addMoreWaitingUpload && (
+                <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                  Preparing the payroll report and getting ready for reconciliation
+                </p>
+              )}
+              {addMorePrepDone && (() => {
+                const labels = uploadedFiles.map(f => f.label);
+                const docSegments = [];
+                labels.forEach((lbl, i) => {
+                  if (i > 0) {
+                    if (i === labels.length - 1) docSegments.push({ text: " and ", bold: false });
+                    else docSegments.push({ text: ", ", bold: false });
+                  }
+                  docSegments.push({ text: lbl, bold: true });
+                });
+                return (
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"add-doc-payroll-ready-" + addMoreRound} segments={[
+                      { text: "I have everything I need to reconcile ", bold: false },
+                      { text: "Payroll", bold: true },
+                      { text: " against ", bold: false },
+                      ...docSegments,
+                      { text: ". Tell me when you\u2019re ready to start.", bold: false },
+                    ]} speed={18} /></p>
+                  </div>
+                );
+              })()}
+              {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{
+                    background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                    padding: "20px 20px 12px", maxWidth: 480,
+                    boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                  }}>
+                    {["Start reconciliation", "Add another payroll report"].map(opt => (
+                      <button key={opt} onClick={() => {
+                        if (opt === "Start reconciliation") { setStartAfterMore(true); }
+                        else { setAddMoreWaitingUpload(true); }
+                      }} style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "12px 16px", marginBottom: 8,
+                        background: "#F7F7F7", border: "none",
+                        borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: 400, color: "#080908",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                      >{opt}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* User chose "Add another payroll report" — new upload round */}
+              {addMoreWaitingUpload && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                      Add another payroll report
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key={"add-doc-payroll-waiting-" + addMoreRound} segments={[{ text: "Upload another payroll report and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && startAfterMore && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                Start reconciliation
+              </div>
+            </div>
+          )}
+
           {/* Reconciliation progress steps \u2014 after "Start reconciliation" */}
-          {!isDirectFlow && readyChoice === "Start reconciliation" && stepStatuses.length > 0 && (
+          {!isDirectFlow && !pickedBSAccount && effectiveStart && stepStatuses.length > 0 && (
             <div style={{ marginTop: 24 }}>
               {/* Header */}
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
@@ -5328,7 +6293,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Payroll reconciliation</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Reconciliation</span>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                       <path d="M3 8.5L7 4.5L11 8.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -5395,10 +6360,396 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
             </div>
           )}
 
-          {!isDirectFlow && canvasReady && (
+          {!isDirectFlow && !pickedBSAccount && canvasReady && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
-              <p><StreamingMessage key="line7" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+              <p><StreamingMessage key="line7" segments={[{ text: line7Text, bold: false }]} speed={18} instant={isResume} /></p>
             </div>
+          )}
+
+          {/* ─── Restart reconciliation flow ─── */}
+          {restartMode && (
+            <>
+              {/* User bubble: Restart reconciliation */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                  Restart reconciliation
+                </div>
+              </div>
+
+              {/* AI message: how would you like to restart? */}
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                <p><StreamingMessage key="restart-ask" segments={[{ text: "How would you like to restart the reconciliation?", bold: false }]} speed={18} /></p>
+              </div>
+
+              {/* Choice card: same file vs new file */}
+              {restartMode === "choosing" && !restartChoice && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{
+                    background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                    padding: "20px 20px 12px", maxWidth: 480,
+                    boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                  }}>
+                    {["Reconcile against the same file", "Reconcile against another file"].map(opt => (
+                      <button key={opt} onClick={() => {
+                        setRestartChoice(opt);
+                        if (opt === "Reconcile against the same file") {
+                          setRestartMode("same_file");
+                        } else {
+                          setRestartMode("new_file");
+                        }
+                      }} style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "12px 16px", marginBottom: 8,
+                        background: "#F7F7F7", border: "none",
+                        borderRadius: 10, cursor: "pointer",
+                        fontSize: 14, fontWeight: 400, color: "#080908",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                      >{opt}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* User bubble for restart choice */}
+              {restartChoice && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    {restartChoice}
+                  </div>
+                </div>
+              )}
+
+              {/* ─── SAME FILE path: progress steps immediately ─── */}
+              {restartMode === "same_file" && restartStepStatuses.length > 0 && (
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+                    <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M6.50065 6.4987L10.6257 10.6237M6.50065 6.4987H3.75065L2.83398 3.7487L3.75065 2.83203L6.50065 3.7487V6.4987ZM18.6547 3.51129L16.2461 5.91994C15.8831 6.28296 15.7016 6.46446 15.6335 6.67377C15.5737 6.85787 15.5737 7.05619 15.6335 7.2403C15.7016 7.4496 15.8831 7.63111 16.2461 7.99412L16.4636 8.21161C16.8266 8.57462 17.0081 8.75613 17.2174 8.82414C17.4015 8.88396 17.5998 8.88396 17.7839 8.82414C17.9932 8.75613 18.1747 8.57462 18.5377 8.21161L20.7908 5.95852C21.0335 6.54901 21.1673 7.19573 21.1673 7.8737C21.1673 10.6581 18.9101 12.9154 16.1257 12.9154C15.79 12.9154 15.4619 12.8826 15.1446 12.82C14.699 12.7321 14.4761 12.6881 14.3411 12.7016C14.1975 12.7159 14.1267 12.7374 13.9995 12.8055C13.8798 12.8696 13.7597 12.9896 13.5196 13.2298L6.95898 19.7904C6.19959 20.5497 4.96838 20.5497 4.20899 19.7904C3.44959 19.031 3.44959 17.7997 4.20899 17.0403L10.7696 10.4798C11.0097 10.2396 11.1298 10.1196 11.1938 9.99989C11.2619 9.87265 11.2834 9.80188 11.2977 9.65827C11.3112 9.5232 11.2673 9.30038 11.1794 8.85475C11.1168 8.53742 11.084 8.20939 11.084 7.8737C11.084 5.08926 13.3412 2.83203 16.1257 2.83203C17.0474 2.83203 17.9113 3.07937 18.6547 3.51129ZM12.0007 14.7486L17.0423 19.7903C17.8017 20.5497 19.0329 20.5497 19.7923 19.7903C20.5517 19.0309 20.5517 17.7996 19.7923 17.0403L15.6447 12.8927C15.3511 12.8649 15.0648 12.812 14.788 12.736C14.4314 12.6381 14.0402 12.7092 13.7787 12.9707L12.0007 14.7486Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Reconciliation</span>
+                      </div>
+                      <span style={{ fontSize: 13, color: "#8C8C8B" }}>
+                        {restartStepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
+                      </span>
+                    </div>
+                  </div>
+                  {activeSteps.map((step, i) => {
+                    const status = restartStepStatuses[i] || "pending";
+                    const isLast = i === activeSteps.length - 1;
+                    return (
+                      <div key={"restart-step-" + i} style={{ display: "flex", gap: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+                          <div style={{
+                            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                            border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
+                            background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.4s ease",
+                          }}>
+                            {status === "done" && (
+                              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                                <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                            {status === "active" && (
+                              <div style={{
+                                width: 16, height: 16, borderRadius: "50%",
+                                border: "1.5px solid #ACD394",
+                                borderTopColor: "#05A105",
+                                animation: "spin 0.7s linear infinite",
+                              }} />
+                            )}
+                          </div>
+                          {!isLast && (
+                            <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />
+                          )}
+                        </div>
+                        <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
+                          <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                            {step.title}
+                          </div>
+                          {(restartStepSubtexts[i] || status === "done") && step.subtext && (
+                            <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>
+                              {step.subtext}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {restartMode === "same_file" && canvasReady && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                  <p><StreamingMessage key="restart-line7-same" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+                </div>
+              )}
+
+              {/* ─── NEW FILE path: upload flow ─── */}
+              {restartMode === "new_file" && (
+                <>
+                  {/* AI message: upload a document */}
+                  <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                    <p><StreamingMessage key="restart-upload-msg" segments={[
+                      { text: "Upload a document and I\u2019ll reconcile ", bold: false },
+                      { text: `${effectiveDirectAccount.code} \u2013 ${effectiveDirectAccount.account}`, bold: true },
+                      { text: " against it.", bold: false },
+                    ]} speed={18} /></p>
+                  </div>
+
+                  {/* Upload card */}
+                  {restartUploadedFiles.length === 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <UploadCard onFileSelected={(file) => { setRestartUploadedFiles([{ ...file, label: "Reconciliation document" }]); }} title="Upload file" />
+                    </div>
+                  )}
+
+                  {/* File preview (user bubble) */}
+                  {restartUploadedFiles.length > 0 && restartUploadedFiles.map((file, idx) => (
+                    <div key={"restart-file-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                      <div style={{ maxWidth: 320 }}>
+                        <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: "12px 12px 2px 12px", padding: "20px 16px 16px", width: 260 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                            <FileIcon file={file} width={20} height={24} />
+                            <span style={{ fontSize: 12, fontWeight: 500, color: "#080908" }}>{file.label}</span>
+                          </div>
+                          <div style={{ height: 1, background: "#F0F0F0", marginBottom: 10 }} />
+                          {[100, 80, 95, 70, 85, 60, 90].map((w, i) => (
+                            <div key={i} style={{ height: 6, borderRadius: 3, background: "#F0F0F0", width: `${w}%`, marginBottom: 6 }} />
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, justifyContent: "flex-end" }}>
+                          <FileIcon file={file} width={13} height={16} />
+                          <span style={{ fontSize: 12, color: "#545453", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{file.label}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Prep status */}
+                  {restartUploadedFiles.length > 0 && !restartPrepDone && (
+                    <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                      Preparing the document and getting ready for reconciliation
+                    </p>
+                  )}
+
+                  {/* AI ready message */}
+                  {restartPrepDone && !restartReadyChoice && !restartStartAfterMore && (() => {
+                    const labels = restartUploadedFiles.map(f => f.label);
+                    const docSegments = [];
+                    labels.forEach((lbl, i) => {
+                      if (i > 0) {
+                        if (i === labels.length - 1) docSegments.push({ text: " and ", bold: false });
+                        else docSegments.push({ text: ", ", bold: false });
+                      }
+                      docSegments.push({ text: lbl, bold: true });
+                    });
+                    return (
+                      <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                        <p><StreamingMessage key={"restart-ready-" + restartAddMoreRound} segments={[
+                          { text: "I have everything I need to reconcile ", bold: false },
+                          { text: `${effectiveDirectAccount.code} \u2013 ${effectiveDirectAccount.account}`, bold: true },
+                          { text: " against ", bold: false },
+                          ...docSegments,
+                          { text: ". Tell me when you\u2019re ready to start.", bold: false },
+                        ]} speed={18} /></p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Choice: start or add another */}
+                  {restartPrepDone && !restartReadyChoice && !restartStartAfterMore && restartAddMoreRound === 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{
+                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                        padding: "20px 20px 12px", maxWidth: 480,
+                        boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                      }}>
+                        {["Start reconciliation", "Add another document"].map(opt => (
+                          <button key={opt} onClick={() => {
+                            if (opt === "Start reconciliation") { setRestartReadyChoice("Start reconciliation"); }
+                            else {
+                              setRestartAddMorePrepDone(false);
+                              setRestartAddMoreRound(prev => prev + 1);
+                            }
+                          }} style={{
+                            display: "block", width: "100%", textAlign: "left",
+                            padding: "12px 16px", marginBottom: 8,
+                            background: "#F7F7F7", border: "none",
+                            borderRadius: 10, cursor: "pointer",
+                            fontSize: 14, fontWeight: 400, color: "#080908",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                          >{opt}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User bubble for start choice */}
+                  {(restartReadyChoice === "Start reconciliation" || restartStartAfterMore) && (
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                      <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                        Start reconciliation
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add another document sub-flow */}
+                  {restartAddMoreRound > 0 && !restartReadyChoice && !restartStartAfterMore && (
+                    <>
+                      {/* AI message */}
+                      <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                        <p><StreamingMessage key={"restart-add-doc-" + restartAddMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
+                      </div>
+                      {/* Upload card for additional file */}
+                      {!restartAddMorePrepDone && (
+                        <div style={{ marginTop: 16 }}>
+                          <UploadCard onFileSelected={(file) => {
+                            const label = restartUploadedFiles.length < 3 ? ["Reconciliation document", "Supporting document", "Additional document"][restartUploadedFiles.length] : "Document " + (restartUploadedFiles.length + 1);
+                            setRestartUploadedFiles(prev => [...prev, { ...file, label }]);
+                          }} title="Upload file" />
+                        </div>
+                      )}
+                      {/* Prep status for add-more */}
+                      {restartUploadedFiles.length > 1 && !restartAddMorePrepDone && (
+                        <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
+                          Preparing the document and getting ready for reconciliation
+                        </p>
+                      )}
+                      {/* Ready message after add-more prep */}
+                      {restartAddMorePrepDone && (() => {
+                        const labels = restartUploadedFiles.map(f => f.label);
+                        const docSegments = [];
+                        labels.forEach((lbl, i) => {
+                          if (i > 0) {
+                            if (i === labels.length - 1) docSegments.push({ text: " and ", bold: false });
+                            else docSegments.push({ text: ", ", bold: false });
+                          }
+                          docSegments.push({ text: lbl, bold: true });
+                        });
+                        return (
+                          <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                            <p><StreamingMessage key={"restart-add-ready-" + restartAddMoreRound} segments={[
+                              { text: "I have everything I need to reconcile ", bold: false },
+                              { text: `${effectiveDirectAccount.code} \u2013 ${effectiveDirectAccount.account}`, bold: true },
+                              { text: " against ", bold: false },
+                              ...docSegments,
+                              { text: ". Tell me when you\u2019re ready to start.", bold: false },
+                            ]} speed={18} /></p>
+                          </div>
+                        );
+                      })()}
+                      {/* Choice after add-more */}
+                      {restartAddMorePrepDone && (
+                        <div style={{ marginTop: 16 }}>
+                          <div style={{
+                            background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                            padding: "20px 20px 12px", maxWidth: 480,
+                            boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                          }}>
+                            {["Start reconciliation", "Add another document"].map(opt => (
+                              <button key={opt} onClick={() => {
+                                if (opt === "Start reconciliation") { setRestartStartAfterMore(true); }
+                                else { setRestartAddMorePrepDone(false); setRestartAddMoreRound(prev => prev + 1); }
+                              }} style={{
+                                display: "block", width: "100%", textAlign: "left",
+                                padding: "12px 16px", marginBottom: 8,
+                                background: "#F7F7F7", border: "none",
+                                borderRadius: 10, cursor: "pointer",
+                                fontSize: 14, fontWeight: 400, color: "#080908",
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                              >{opt}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Progress steps for new file restart */}
+                  {(restartReadyChoice === "Start reconciliation" || restartStartAfterMore) && restartStepStatuses.length > 0 && (
+                    <div style={{ marginTop: 24 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+                        <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M6.50065 6.4987L10.6257 10.6237M6.50065 6.4987H3.75065L2.83398 3.7487L3.75065 2.83203L6.50065 3.7487V6.4987ZM18.6547 3.51129L16.2461 5.91994C15.8831 6.28296 15.7016 6.46446 15.6335 6.67377C15.5737 6.85787 15.5737 7.05619 15.6335 7.2403C15.7016 7.4496 15.8831 7.63111 16.2461 7.99412L16.4636 8.21161C16.8266 8.57462 17.0081 8.75613 17.2174 8.82414C17.4015 8.88396 17.5998 8.88396 17.7839 8.82414C17.9932 8.75613 18.1747 8.57462 18.5377 8.21161L20.7908 5.95852C21.0335 6.54901 21.1673 7.19573 21.1673 7.8737C21.1673 10.6581 18.9101 12.9154 16.1257 12.9154C15.79 12.9154 15.4619 12.8826 15.1446 12.82C14.699 12.7321 14.4761 12.6881 14.3411 12.7016C14.1975 12.7159 14.1267 12.7374 13.9995 12.8055C13.8798 12.8696 13.7597 12.9896 13.5196 13.2298L6.95898 19.7904C6.19959 20.5497 4.96838 20.5497 4.20899 19.7904C3.44959 19.031 3.44959 17.7997 4.20899 17.0403L10.7696 10.4798C11.0097 10.2396 11.1298 10.1196 11.1938 9.99989C11.2619 9.87265 11.2834 9.80188 11.2977 9.65827C11.3112 9.5232 11.2673 9.30038 11.1794 8.85475C11.1168 8.53742 11.084 8.20939 11.084 7.8737C11.084 5.08926 13.3412 2.83203 16.1257 2.83203C17.0474 2.83203 17.9113 3.07937 18.6547 3.51129ZM12.0007 14.7486L17.0423 19.7903C17.8017 20.5497 19.0329 20.5497 19.7923 19.7903C20.5517 19.0309 20.5517 17.7996 19.7923 17.0403L15.6447 12.8927C15.3511 12.8649 15.0648 12.812 14.788 12.736C14.4314 12.6381 14.0402 12.7092 13.7787 12.9707L12.0007 14.7486Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Reconciliation</span>
+                          </div>
+                          <span style={{ fontSize: 13, color: "#8C8C8B" }}>
+                            {restartStepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
+                          </span>
+                        </div>
+                      </div>
+                      {activeSteps.map((step, i) => {
+                        const status = restartStepStatuses[i] || "pending";
+                        const isLast = i === activeSteps.length - 1;
+                        return (
+                          <div key={"restart-newfile-step-" + i} style={{ display: "flex", gap: 16 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+                              <div style={{
+                                width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                                border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
+                                background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                transition: "all 0.4s ease",
+                              }}>
+                                {status === "done" && (
+                                  <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                                    <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                )}
+                                {status === "active" && (
+                                  <div style={{
+                                    width: 16, height: 16, borderRadius: "50%",
+                                    border: "1.5px solid #ACD394",
+                                    borderTopColor: "#05A105",
+                                    animation: "spin 0.7s linear infinite",
+                                  }} />
+                                )}
+                              </div>
+                              {!isLast && (
+                                <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />
+                              )}
+                            </div>
+                            <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                                {step.title}
+                              </div>
+                              {(restartStepSubtexts[i] || status === "done") && step.subtext && (
+                                <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>
+                                  {step.subtext}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {(restartReadyChoice === "Start reconciliation" || restartStartAfterMore) && canvasReady && (
+                    <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
+                      <p><StreamingMessage key="restart-line7-newfile" segments={[{ text: line7Text, bold: false }]} speed={18} /></p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
 
           <div ref={chatEndRef} style={{ height: 32, flexShrink: 0 }} />
@@ -5410,22 +6761,40 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
         <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
           <div style={{ maxWidth: resultsVisible ? "100%" : 680, margin: "0 auto" }}>
             {/* Restart reconciliation button */}
-            <button
-              onClick={onClose}
-              style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
-                height: 40, padding: "0 16px", marginBottom: 10,
-                border: "1px solid #E9E9EB", borderRadius: 8,
-                background: "#FFFFFF", cursor: "pointer",
-                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                fontSize: 14, fontWeight: 500, color: "#080908",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
-            >
-              <PlayCircleIcon color="#080908" size={20} />
-              Restart reconciliation
-            </button>
+            {(!restartMode || restartResultsVisible) && (
+              <button
+                onClick={() => {
+                  if (restartMode) {
+                    // Reset all restart state for a fresh restart
+                    setRestartChoice(null);
+                    setRestartUploadedFiles([]);
+                    setRestartPrepDone(false);
+                    setRestartReadyChoice(null);
+                    setRestartStepStatuses([]);
+                    setRestartStepSubtexts([]);
+                    setRestartCanvasReady(false);
+                    setRestartResultsVisible(false);
+                    setRestartAddMoreRound(0);
+                    setRestartAddMorePrepDone(false);
+                    setRestartStartAfterMore(false);
+                  }
+                  setRestartMode("choosing");
+                }}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  height: 40, padding: "0 16px", marginBottom: 10,
+                  border: "1px solid #E9E9EB", borderRadius: 8,
+                  background: "#FFFFFF", cursor: "pointer",
+                  boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+                  fontSize: 14, fontWeight: 500, color: "#080908",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
+              >
+                <PlayCircleIcon color="#080908" size={20} />
+                Restart reconciliation
+              </button>
+            )}
             <div style={{
               borderRadius: 16, padding: "14px 14px 12px", background: "#FFFFFF",
               boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB",
@@ -5488,7 +6857,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
       }}>
         {resultsVisible && (canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.5s ease both", height: "100%" }}>
-            {isDirectFlow && accountRecData ? (
+            {effectiveDirectAccount && accountRecData ? (
               <AccountResultsPanel
                 config={accountRecData}
                 resolvedCards={resolvedCards}
@@ -5534,7 +6903,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
 
       {/* Drawer overlay \u2014 review suggestions before reconciling */}
       {drawerOpen && (() => {
-        const totalSuggestions = isDirectFlow && accountRecData ? accountRecData.suggestions.length : 3;
+        const totalSuggestions = effectiveDirectAccount && accountRecData ? accountRecData.suggestions.length : 3;
         const unreviewed = totalSuggestions - resolvedCards.size - ignoredCards.size;
         const variance = accountRecData && accountRecData.reconciledResult ? accountRecData.reconciledResult.variance : "\u00a30.00";
         const hasVariance = variance && variance !== "\u00a30.00";
@@ -5546,52 +6915,60 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
             }} />
             {/* Drawer panel */}
             <div style={{
-              position: "fixed", top: 0, right: 0, bottom: 0, width: 440,
-              background: "#FFFFFF", boxShadow: "-8px 0 24px rgba(0,0,0,0.08)",
+              position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
+              background: "#FFFFFF",
+              borderLeft: "1px solid #E9E9EB",
+              boxShadow: "-4px 0 16px rgba(0,0,0,0.06)",
               zIndex: 201, display: "flex", flexDirection: "column",
               animation: "drawerSlideIn 0.25s ease both",
             }}>
               {/* Drawer header */}
-              <div style={{ padding: "24px 24px 0", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
-                  <button onClick={() => setDrawerOpen(false)} style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    width: 32, height: 32, borderRadius: 6, border: "1px solid #E9E9EB",
-                    background: "#FFFFFF", cursor: "pointer",
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M12 4L4 12M4 4L12 12" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
+              <div style={{
+                height: 48, padding: "0 16px", flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                borderBottom: "1px solid #F5F5F5",
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
+                <button onClick={() => setDrawerOpen(false)} style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 28, height: 28, borderRadius: 6, border: "none",
+                  background: "transparent", cursor: "pointer",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M12 4L4 12M4 4L12 12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Drawer body */}
+              <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
                 <p style={{ fontSize: 14, color: "#545453", lineHeight: "22px", margin: "0 0 24px" }}>
-                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "issue" : "issues"}</strong>
-                  {hasVariance && <> and a balance discrepancy of <strong style={{ color: "#C8543A" }}>{variance}</strong></>}
+                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>
+                  {hasVariance && <> and a balance discrepancy of <strong style={{ color: "#080908" }}>{variance}</strong></>}
                   . You can go back and review them, or mark the account as reconciled with a comment explaining why.
                 </p>
-              </div>
-              {/* Drawer body */}
-              <div style={{ flex: 1, padding: "0 24px", overflowY: "auto" }}>
+
+                <label style={{ display: "block", fontSize: 12, color: "#8C8C8B", marginBottom: 4 }}>Comment</label>
                 <textarea
                   value={drawerComment}
                   onChange={e => setDrawerComment(e.target.value)}
-                  placeholder="Explain why this account is being marked as reconciled with outstanding issues"
+                  placeholder="Explain why this account is being reconciled with unreviewed suggestions…"
                   style={{
-                    width: "100%", minHeight: 120, padding: "12px 14px",
-                    border: "1px solid #E9E9EB", borderRadius: 8,
+                    width: "100%", minHeight: 120, padding: "8px 10px",
+                    border: "1px solid #E9E9EB", borderRadius: 6,
                     fontSize: 14, fontFamily: "'Inter', sans-serif", color: "#080908",
                     lineHeight: "22px", resize: "vertical", outline: "none",
-                    boxSizing: "border-box",
+                    boxSizing: "border-box", background: "#FFFFFF",
                   }}
-                  onFocus={e => e.currentTarget.style.borderColor = "#BCBCBC"}
+                  onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
                   onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
                 />
               </div>
-              {/* Drawer footer */}
+
+              {/* Drawer footer — equal-width buttons */}
               <div style={{
                 padding: "16px 24px", borderTop: "1px solid #E9E9EB",
                 display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
@@ -5599,26 +6976,26 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
                 <button
                   onClick={() => setDrawerOpen(false)}
                   style={{
-                    height: 40, padding: "0 18px", borderRadius: 8,
+                    flex: 1, height: 40, borderRadius: 6,
                     border: "1px solid #E9E9EB", background: "#FFFFFF",
                     fontSize: 14, fontWeight: 500, color: "#080908",
                     cursor: "pointer", whiteSpace: "nowrap",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
                 >
                   Back to reconciliation
                 </button>
                 <button
-                  onClick={() => { onMarkReconciled?.(drawerComment); setDrawerOpen(false); }}
+                  onClick={() => { onMarkReconciled?.(drawerComment, effectiveDirectAccount); setDrawerOpen(false); }}
                   style={{
-                    height: 40, padding: "0 18px", borderRadius: 8,
-                    border: "none", background: "#C8543A", color: "#FFFFFF",
+                    flex: 1, height: 40, borderRadius: 6,
+                    border: "none", background: "#FCEFEC", color: "#C8543A",
                     fontSize: 14, fontWeight: 500,
                     cursor: "pointer", whiteSpace: "nowrap",
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#B04832"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#C8543A"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
                 >
                   Mark as reconciled
                 </button>
@@ -5643,6 +7020,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, directAccount, savedS
     </div>
   );
 }
+
 
 
 // ── Balance Sheet Review page ─────────────────────────────────────────────
@@ -5774,7 +7152,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
                   rows={table.rows.map(row => {
                     const rd = bsReconciledData && bsReconciledData[row.code];
                     if (!rd) return row;
-                    return { ...row, reconciled: true, sourceBalance: rd.sourceBalance, variance: rd.variance, suggestions: rd.suggestions, status: rd.statusLabel || "Reconciled" };
+                    return { ...row, reconciled: true, sourceBalance: rd.sourceBalance, variance: rd.variance, suggestions: rd.suggestions, status: (STATUS_CONFIG[rd.status] && STATUS_CONFIG[rd.status].label) || "Reconciled" };
                   })}
                   footerLabel={table.footer}
                   showExpandColumn={true}
@@ -5793,6 +7171,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
   );
 }
 
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Bank reconciliation");
@@ -5810,6 +7189,7 @@ export default function BankReconciliation() {
   const [bsReconciledData, setBsReconciledData] = useState({}); // { [code]: { date, status, suggestionCount, ... } }
   const [bsActiveTab, setBsActiveTab] = useState("Profit and Loss"); // persisted tab across BS reconciliation opens/closes
   const [bsScrollTop, setBsScrollTop] = useState(0); // persisted scroll position
+  const [bsReconciledAlert, setBsReconciledAlert] = useState(null); // { code, account } for success toast after marking reconciled
 
   const handleUploadStatement = (accountName, fileInfo) => {
     setBankStatements(prev => ({ ...prev, [accountName]: fileInfo }));
@@ -5836,8 +7216,8 @@ export default function BankReconciliation() {
     if (activeNav === "Review") setBsActiveTab("Profit and Loss");
   }, [activeNav]);
 
-  const handleCloseBS = (partialState) => {
-    const currentReconciling = bsReconciling;
+  const handleCloseBS = (partialState, accountFromChild) => {
+    const currentReconciling = (typeof bsReconciling !== "object" && accountFromChild) ? accountFromChild : bsReconciling;
     if (partialState && typeof currentReconciling === "object" && currentReconciling) {
       const data = getAccountRecData(currentReconciling.code, currentReconciling.account);
       const result = data.reconciledResult || {};
@@ -5880,8 +7260,8 @@ export default function BankReconciliation() {
     setBsReconciling(null);
   };
 
-  const handleMarkBSReconciled = (comment) => {
-    const currentReconciling = bsReconciling;
+  const handleMarkBSReconciled = (comment, accountFromChild) => {
+    const currentReconciling = (typeof bsReconciling !== "object" && accountFromChild) ? accountFromChild : bsReconciling;
     setBsReconciledData(prev => {
       const next = { ...prev };
       if (typeof currentReconciling === "object" && currentReconciling) {
@@ -5916,6 +7296,12 @@ export default function BankReconciliation() {
         ...prev,
         [currentReconciling.code]: [...(prev[currentReconciling.code] || []), { user: "Daniel Victorin", timestamp, text: comment }],
       }));
+    }
+    // Show success alert with account info
+    const alertAccount = (typeof currentReconciling === "object" && currentReconciling) ? currentReconciling : accountFromChild;
+    if (alertAccount) {
+      setBsReconciledAlert({ code: alertAccount.code, account: alertAccount.account });
+      setTimeout(() => setBsReconciledAlert(null), 4000);
     }
     setBsReconciling(null);
   };
@@ -6010,10 +7396,13 @@ export default function BankReconciliation() {
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "#FBFBFB" }}>
         <BSReconciliationFlow
+          key={typeof bsReconciling === "object" ? bsReconciling.code : "general"}
           onClose={handleCloseBS}
           onMarkReconciled={handleMarkBSReconciled}
+          onSwitchAccount={(acc) => setBsReconciling(acc)}
           directAccount={typeof bsReconciling === "object" ? bsReconciling : null}
           savedState={typeof bsReconciling === "object" && bsReconciling && bsReconciledData[bsReconciling.code] && (bsReconciledData[bsReconciling.code].status === "reviewing" || bsReconciledData[bsReconciling.code].status === "reconciled") ? bsReconciledData[bsReconciling.code] : null}
+          bsReconciledData={bsReconciledData}
         />
       </div>
     );
@@ -6084,6 +7473,24 @@ export default function BankReconciliation() {
         </div>
         )}
       </div>
+
+      {/* BS reconciled success toast */}
+      {bsReconciledAlert && (
+        <div style={{
+          position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
+          background: "#05A105", color: "#FFFFFF", padding: "12px 20px",
+          borderRadius: 10, fontSize: 14, fontWeight: 500,
+          display: "flex", alignItems: "center", gap: 10,
+          zIndex: 300, animation: "toastIn 0.35s ease",
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" fill="rgba(255,255,255,0.25)"/>
+            <path d="M6.66667 10L8.88889 12.2222L13.3333 7.77778" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          {bsReconciledAlert.code} – {bsReconciledAlert.account} reconciled
+        </div>
+      )}
     </>
   );
 }
