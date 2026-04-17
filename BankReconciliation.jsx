@@ -584,7 +584,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
               {/* Bank statement */}
               <div style={cell({ display: "flex", alignItems: "center", padding: "14px 16px", borderRight: "1px solid #E9E9EB", overflow: "hidden", minWidth: 0 })} {...cellProps}>
                 {isDragOver && !bankStatements[row.name] ? (
-                  <span style={{ fontSize: 13, color: "#05A105", fontWeight: 500, whiteSpace: "nowrap" }}>Drop to upload</span>
+                  <span style={{ fontSize: 13, color: "#05A105", fontWeight: 500, whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>Drop to upload</span>
                 ) : bankStatements[row.name] ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, width: "100%" }}>
                     <DocIcon />
@@ -3554,7 +3554,7 @@ function MainMenu({
 
       {/* Mimo logo — 96px header */}
       <div style={{ height: 96, display: "flex", alignItems: "center", padding: "0 32px", flexShrink: 0 }}>
-        <svg width="130" height="28" viewBox="0 0 98 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="110" height="24" viewBox="0 0 98 21" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clipPath="url(#mimoClip)">
             <path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/>
             <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/>
