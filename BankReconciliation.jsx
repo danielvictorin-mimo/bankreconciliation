@@ -187,7 +187,7 @@ function CsvIcon({ width = 20, height = 24 }) {
 
 const STATUS_CONFIG = {
   reconciled:  { label: "Reconciled",  color: "#05A105", tooltip: "Account is fully reconciled in Xero" },
-  suggestions: { label: "Suggestions", color: "#C8543A", tooltip: "Resolve suggestions to reconcile account" },
+  suggestions: { label: "suggestions", color: "#C8543A", tooltip: "Resolve suggestions to reconcile account" },
   completed:   { label: "Completed",   color: "#4C71DF", tooltip: "Account ready to be reconciled in Xero" },
   reviewing:   { label: "In review",   color: "#D5A750", tooltip: "Reconciliation in progress — suggestions need review" },
 };
@@ -1065,7 +1065,9 @@ function RecommendationCard({
   statusLabel = "Unresolved",
   statusStyle = { background: "#FDF8EE", border: "none", color: "#D5A750" },
   collapsed = false,
+  isIgnored = false,
   tableRow = {},
+  tableRows = null,
   primaryLabel = "Create spend money",
   secondaryLabel = "Upload document",
   external = false,
@@ -1076,11 +1078,16 @@ function RecommendationCard({
   onIgnore,
   onMore,
 }) {
-  const [expanded, setExpanded] = useState(!collapsed);
-  // Sync expanded state when collapsed prop changes (e.g. after publish)
-  useEffect(() => { setExpanded(!collapsed); }, [collapsed]);
-  const isResolved = collapsed;
+  const [expanded, setExpanded] = useState(!collapsed && !isIgnored);
+  // Sync expanded state when collapsed/ignored prop changes
+  useEffect(() => { setExpanded(!collapsed && !isIgnored); }, [collapsed, isIgnored]);
+  const isResolved = collapsed && !isIgnored;
   const showBody = expanded;
+
+  const effectiveStatusLabel = isIgnored ? "Ignored" : statusLabel;
+  const effectiveStatusStyle = isIgnored
+    ? { background: "#F0F0F0", border: "none", color: "#8C8C8B" }
+    : statusStyle;
 
   const PdfIcon = () => <InvoiceIcon width={14} height={17} />;
   const ExternalIcon = () => (
@@ -1101,20 +1108,26 @@ function RecommendationCard({
       <path d="M6.66667 10L8.88889 12.2222L13.3333 7.77778" stroke="#05A105" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
+  const IgnoredIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M15 9L9 15M9 9L15 15M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 12, padding: "20px", overflow: "hidden", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showBody ? 10 : 0, transition: "margin 0.35s ease", cursor: isResolved ? "pointer" : "default" }}
-        onClick={isResolved ? () => setExpanded(o => !o) : undefined}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showBody ? 10 : 0, transition: "margin 0.35s ease", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
+        onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isResolved && <SuccessIcon />}
+          {isIgnored && <IgnoredIcon />}
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, padding: "2px 8px", borderRadius: 4, background: statusStyle.background, border: statusStyle.border, color: statusStyle.color, whiteSpace: "nowrap", transition: "all 0.3s ease" }}>
-            {statusLabel}
+          <span style={{ fontSize: 12, fontWeight: 500, padding: "2px 8px", borderRadius: 4, background: effectiveStatusStyle.background, border: effectiveStatusStyle.border, color: effectiveStatusStyle.color, whiteSpace: "nowrap", transition: "all 0.3s ease" }}>
+            {effectiveStatusLabel}
           </span>
           <div style={{ display: "flex", transform: showBody ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
             <ChevronUpIcon />
@@ -1135,36 +1148,36 @@ function RecommendationCard({
             { key: "amount",  label: "Amount",    width: "0.8fr" },
             { key: "email",   label: "Email b...", width: "0.9fr" },
           ]}
-          rows={[tableRow]}
+          rows={tableRows && tableRows.length ? tableRows : [tableRow]}
         />
       </div>
-      {!isResolved && (
+      {(!isResolved || isIgnored) && (
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 13, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
           {primaryLabel}
         </PrimaryButton>
-        {fileAction ? (
+        {!isIgnored && fileAction ? (
           <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 13, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
             <PdfIcon />{fileAction}
           </SecondaryButton>
-        ) : (
+        ) : !isIgnored && secondaryLabel ? (
           <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 13, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
             {secondaryLabel}
           </SecondaryButton>
-        )}
-        {onMore && (
+        ) : null}
+        {!isIgnored && onMore && (
           <button style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
             onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
             onClick={onMore}
           ><MoreIcon /></button>
         )}
-        <div style={{ flex: 1 }} />
+        {!isIgnored && <><div style={{ flex: 1 }} />
         <button style={{ height: 40, padding: "0 12px", border: "none", borderRadius: 8, background: "#FCEFEC", fontSize: 13, fontWeight: 500, color: "#C8543A", cursor: "pointer", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"}
           onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
           onClick={onIgnore}
-        >Ignore suggestion</button>
+        >Ignore suggestion</button></>}
       </div>
       )}
       </>
@@ -1695,7 +1708,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
 }
 
 // ── Results sidebar: Progress box ────────────────────────────────────────────
-function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards }) {
+function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards, ignoredCards = new Set() }) {
   const color = accountStatus === "completed" ? "#4C71DF" : "#05A105";
   const bg    = accountStatus === "completed" ? "#EEF2FF" : "#EAF2E2";
   const label = accountStatus === "completed" ? "Completed" : "Reconciled";
@@ -1772,6 +1785,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                 <div style={{ padding: "4px 10px 4px", fontSize: 14, fontWeight: 400, color: "#ADADAD" }}>{cat.label}</div>
                 {cat.items.map((item, ii) => {
                   const isResolved = resolvedCards.has(cat.baseIdx + ii);
+                  const isIgnored  = ignoredCards.has(cat.baseIdx + ii);
                   return (
                     <button
                       key={ii}
@@ -1785,12 +1799,17 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                           <circle cx="8" cy="8" r="7.25" stroke="#05A105" strokeWidth="1.25"/>
                           <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
+                      ) : isIgnored ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                          <circle cx="8" cy="8" r="7.25" stroke="#ADADAD" strokeWidth="1.25"/>
+                          <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="#ADADAD" strokeWidth="1.25" strokeLinecap="round"/>
+                        </svg>
                       ) : (
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
                           <circle cx="8" cy="8" r="7.25" stroke="#D1D1D1" strokeWidth="1"/>
                         </svg>
                       )}
-                      <span style={{ fontSize: 14, color: isResolved ? "#ADADAD" : "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 14, color: (isResolved || isIgnored) ? "#ADADAD" : "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {item.contact}
                       </span>
                     </button>
@@ -1806,7 +1825,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
 }
 
 // ── Results panel ─────────────────────────────────────────────────────────────
-function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true }) {
+function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -1882,7 +1901,11 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { state: "Open", contact: "Bakery & Food Supplies", date: "12 Mar 2026", amount: "£4,850.00", email: "10 Mar, 11:30", description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
   const duplicates = [
-    { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45", description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45", description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null,
+      extraRows: [
+        { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45" },
+      ]
+    },
   ];
   const dateDifferences = [
     { state: "Open", contact: "Direct Expenses", date: "14 Mar 2026", amount: "£320.00", email: "13 Mar, 14:00", description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.", primaryLabel: "Acknowledge", external: false, fileAction: null },
@@ -1991,7 +2014,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {ACCOUNT_CARDS[accountName].map((entry) => {
             const isResolved = resolvedCards.has(entry.idx);
-            const isIgnored  = false;
+            const isIgnored  = ignoredCards.has(entry.idx);
             return (
               <div key={entry.idx} id={`result-${entry.cat}-${entry.idx}`} style={{ scrollMarginTop: 64 }}>
                 <RecommendationCard
@@ -1999,7 +2022,8 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                   description={entry.description}
                   statusLabel={isResolved ? "Resolved" : "Unresolved"}
                   statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-                  collapsed={isResolved}
+                  collapsed={isResolved || isIgnored}
+                  isIgnored={isIgnored}
                   tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
                   primaryLabel={entry.primaryLabel}
                   external={entry.external}
@@ -2011,7 +2035,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                     () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
                   }
                   onMore={undefined}
-                  onIgnore={() => { onResolveCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
+                  onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
                 />
               </div>
             );
@@ -2023,6 +2047,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {missingEntries.map((entry, i) => {
           const isResolved = resolvedCards.has(i);
+          const isIgnored  = ignoredCards.has(i);
           return (
             <div key={i} id={`result-missing-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2033,7 +2058,8 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 ? { background: "#EAF2E2", border: "none", color: "#05A105" }
                 : { background: "#FDF8EE", border: "none", color: "#D5A750" }
               }
-              collapsed={isResolved}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
               external={entry.external}
@@ -2044,6 +2070,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(i); onShowToast?.("Reconciled in Xero successfully"); } :
                 undefined
               }
+              onIgnore={() => { onIgnoreCard?.(i); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2057,6 +2084,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         {anomalies.map((entry, i) => {
           const cardIdx = 3 + i;
           const isResolved = resolvedCards.has(cardIdx);
+          const isIgnored  = ignoredCards.has(cardIdx);
           return (
             <div key={i} id={`result-anomaly-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2064,12 +2092,14 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-              collapsed={isResolved}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2082,6 +2112,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         {duplicates.map((entry, i) => {
           const cardIdx = 4 + i;
           const isResolved = resolvedCards.has(cardIdx);
+          const isIgnored  = ignoredCards.has(cardIdx);
           return (
             <div key={i} id={`result-duplicate-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2089,12 +2120,18 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-              collapsed={isResolved}
-              tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
+              tableRows={[
+                { state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email },
+                ...(entry.extraRows || []),
+              ]}
               primaryLabel={entry.primaryLabel}
+              secondaryLabel={null}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2107,6 +2144,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         {dateDifferences.map((entry, i) => {
           const cardIdx = 5 + i;
           const isResolved = resolvedCards.has(cardIdx);
+          const isIgnored  = ignoredCards.has(cardIdx);
           return (
             <div key={i} id={`result-date-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2114,12 +2152,15 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-              collapsed={isResolved}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
+              secondaryLabel={null}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Date difference acknowledged"); }}
+              onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2132,6 +2173,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         {omitted.map((entry, i) => {
           const cardIdx = 6 + i;
           const isResolved = resolvedCards.has(cardIdx);
+          const isIgnored  = ignoredCards.has(cardIdx);
           return (
             <div key={i} id={`result-omitted-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2139,12 +2181,15 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-              collapsed={isResolved}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
+              secondaryLabel={null}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2157,6 +2202,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         {general.map((entry, i) => {
           const cardIdx = 7 + i;
           const isResolved = resolvedCards.has(cardIdx);
+          const isIgnored  = ignoredCards.has(cardIdx);
           return (
             <div key={i} id={`result-general-${i}`} style={{ scrollMarginTop: 64 }}>
             <RecommendationCard
@@ -2164,12 +2210,14 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-              collapsed={isResolved}
+              collapsed={isResolved || isIgnored}
+              isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
           );
@@ -2306,7 +2354,7 @@ function BSOptionPicker({ title, options, onSelect }) {
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
-function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {} }) {
+function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026" }) {
   const accounts = [
     "Lloyds Bank - Business", "Lloyds Bank - Operations GBP",
     "HSBC - Business Transactions", "Barclays - Operations",
@@ -2335,6 +2383,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [resultsVisible, setResultsVisible]   = useState(showResults);
   const [canvasReady, setCanvasReady]         = useState(showResults);
   const [boxesOpen, setBoxesOpen]             = useState(false);
+  const [creditCardBannerDismissed, setCreditCardBannerDismissed] = useState(false);
+  const addStatementInputRef = useRef(null);
   const [chatWidth, setChatWidth]             = useState(400);
   const [isDragging, setIsDragging]           = useState(false);
   const [allDocsOpen, setAllDocsOpen]             = useState(false);
@@ -2354,6 +2404,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const totalSuggestions = ACCOUNT_TOTAL_SUGGESTIONS[accountName] ?? 8;
   const allResolvedSet = allResolved ? new Set(Array.from({ length: totalSuggestions }, (_, i) => i)) : new Set();
   const [resolvedCards, setResolvedCards] = useState(allResolvedSet);
+  const [ignoredCards, setIgnoredCards] = useState(new Set());
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -2395,11 +2446,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       if (allDocsOpen)        { setAllDocsOpen(false); return; }
       if (spendMoneySidebar)  { setSpendMoneySidebar(null); return; }
       if (batchDraftSidebar)  { setBatchDraftSidebar(null); return; }
-      onClose(canvasReady, resolvedCards.size >= totalSuggestions, effectiveAccountName);
+      const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size);
+      onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [allDocsOpen, spendMoneySidebar, batchDraftSidebar, canvasReady, resolvedCards, totalSuggestions, effectiveAccountName]);
+  }, [allDocsOpen, spendMoneySidebar, batchDraftSidebar, canvasReady, resolvedCards, ignoredCards, totalSuggestions, effectiveAccountName]);
 
   // Delay canvas content until panel has slid in
   useEffect(() => {
@@ -2432,6 +2484,28 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     setInputValue("");
     // Unmount canvas content only after the slide-out animation finishes (720ms)
     setTimeout(() => setCanvasReady(false), 720);
+  };
+
+  const handleAddStatementFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const newFiles = [...(uploadedFiles || []), { name: file.name, type: file.type }];
+    // Restart reconciliation with the combined files
+    setResultsVisible(false);
+    setPreviewUrl(null);
+    setPrepDone(false);
+    setStartClicked(false);
+    setStepStatuses([]);
+    setStepSubtexts([]);
+    setUserMessages([]);
+    setReuploadPhase(false);
+    setInputValue("");
+    setCreditCardBannerDismissed(false);
+    setTimeout(() => {
+      setCanvasReady(false);
+      setUploadedFiles(newFiles);
+    }, 50);
   };
 
   const handleReplaceStatement = () => {
@@ -2677,7 +2751,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         {resultsVisible && canvasReady && !effectiveIsCleanReconcile && (() => {
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
           const totalSugg = ACCOUNT_TOTAL_SUGGESTIONS[effectiveAccountName] ?? 8;
-          const resolved = resolvedCards.size;
+          const resolved = resolvedCards.size + ignoredCards.size;
           const pct = totalSugg > 0 ? Math.min(100, Math.round((resolved / totalSugg) * 100)) : 0;
           const allDone = resolved >= totalSugg;
           return (
@@ -2724,7 +2798,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </button>
           );
         })()}
-        <button onClick={() => onClose(canvasReady, resolvedCards.size >= totalSuggestions, effectiveAccountName)}
+        <button onClick={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining); }}
           style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}
         >
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
@@ -3246,17 +3320,53 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       }}>
         {canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
+            {/* Credit card statement warning banner */}
+            {effectiveAccountName === "American Express OP GBP" && !creditCardBannerDismissed && (() => {
+              const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+              const parts = selectedPeriod.split(" ");
+              const mIdx = MONTHS.indexOf(parts[0]);
+              const yr = parseInt(parts[1]);
+              const prevM = MONTHS[(mIdx - 1 + 12) % 12];
+              const nextM = MONTHS[(mIdx + 1) % 12];
+              const nextY = mIdx === 11 ? yr + 1 : yr;
+              const period1 = `${prevM} 15 – ${parts[0]} 14, ${yr}`;
+              const period2 = `${parts[0]} 15 – ${nextM} 14, ${nextY}`;
+              return (
+                <div style={{ padding: "20px 48px 0" }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                  {/* info-circle icon */}
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M9.99984 13.3334V10.0001M9.99984 6.66675H10.0082M18.3332 10.0001C18.3332 14.6025 14.6022 18.3334 9.99984 18.3334C5.39746 18.3334 1.6665 14.6025 1.6665 10.0001C1.6665 5.39771 5.39746 1.66675 9.99984 1.66675C14.6022 1.66675 18.3332 5.39771 18.3332 10.0001Z" stroke="#EAB758" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p style={{ flex: 1, fontSize: 14, fontWeight: 400, color: "#2A2A2A", margin: 0, lineHeight: "22px" }}>
+                    Credit card statements cover a mid-month to mid-month period. To reconcile <strong>{parts[0]} {yr}</strong> in full, upload two files: <strong>{period1}</strong> and <strong>{period2}</strong>.
+                  </p>
+                  <input ref={addStatementInputRef} type="file" accept=".pdf,.csv,.xlsx,.xls" style={{ display: "none" }} onChange={handleAddStatementFile} />
+                  <button onClick={() => addStatementInputRef.current?.click()} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", transition: "background 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+                    Add statement
+                  </button>
+                  <button onClick={() => setCreditCardBannerDismissed(true)} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#2A2A2A", whiteSpace: "nowrap", transition: "border-color 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = "#CFCFD1"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = "#DBDBDB"}>
+                    Dismiss
+                  </button>
+                </div></div>
+              );
+            })()}
             {false ? null : (
               <ResultsPanel
                 accountName={effectiveAccountName}
-                isCleanReconcile={effectiveIsCleanReconcile || (!allResolved && resolvedCards.size >= totalSuggestions)}
-                allJustResolved={!allResolved && resolvedCards.size >= totalSuggestions}
-                onAccountsOverview={() => onClose(true, false, effectiveAccountName)}
+                isCleanReconcile={effectiveIsCleanReconcile || (!allResolved && (resolvedCards.size + ignoredCards.size) >= totalSuggestions)}
+                allJustResolved={!allResolved && (resolvedCards.size + ignoredCards.size) >= totalSuggestions}
+                onAccountsOverview={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(true, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining); }}
                 matchedTotal={reconciledMatchedStr ? parseInt(reconciledMatchedStr.split("/")[1]) || null : null}
                 onOpenSpendMoney={(entry, cardIndex) => setSpendMoneySidebar({ ...entry, cardIndex })}
                 onOpenBatchDraft={(entry, cardIndex) => setBatchDraftSidebar({ ...entry, cardIndex })}
                 resolvedCards={resolvedCards}
                 onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
+                ignoredCards={ignoredCards}
+                onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
                 onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
                 accountStatus={accountStatus}
                 boxesOpen={boxesOpen}
@@ -3270,9 +3380,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
           // isPreClean: account was already reconciled before opening — no suggestions exist at all
           const isPreClean = effectiveIsCleanReconcile;
-          // allJustResolved: user resolved every suggestion during this session, OR account was already completed on open
+          // allJustResolved: user resolved/ignored every suggestion during this session, OR account was already completed on open
           const allJustResolved = (
-            (!allResolved && resolvedCards.size >= totalSuggestions) ||
+            (!allResolved && (resolvedCards.size + ignoredCards.size) >= totalSuggestions) ||
             (allResolved && accountStatus === "completed")
           );
           const isClean = isPreClean || allJustResolved; // used by ResultsPanel for chat behaviour
@@ -3318,11 +3428,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 isCleanReconcile={false}
                 allJustResolved={allJustResolved}
                 accountStatus={accountStatus}
-                resolvedCount={resolvedCards.size}
+                resolvedCount={resolvedCards.size + ignoredCards.size}
                 totalSuggestions={totalSugg}
                 matchedTotal={matchedTotalNum}
                 navCategories={navCats}
                 resolvedCards={resolvedCards}
+                ignoredCards={ignoredCards}
               />
             </div>
           );
@@ -3447,8 +3558,9 @@ function TopBar({
 
   return (
     <div style={{ height: 60, background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
-      <div ref={ref} style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 14, color: "#8C8C8B" }}>{contextLabel}</span>
+        <div ref={ref} style={{ position: "relative" }}>
         <button onClick={() => setDropdownOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
           onMouseEnter={e => e.currentTarget.style.borderColor = "#CFCFD1"}
           onMouseLeave={e => e.currentTarget.style.borderColor = "#E9E9EB"}>
@@ -3466,6 +3578,7 @@ function TopBar({
             ))}
           </div>
         )}
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 14, color: "#8C8C8B" }}>{syncStatus}</span>
@@ -7287,13 +7400,13 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 48, paddingTop: 0, background: "#FFFFFF" }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: 48, paddingTop: 0, background: "#FFFFFF" }}>
 
         {/* Two-column layout */}
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", minWidth: 0 }}>
 
           {/* LEFT — Month-end close card */}
-          <div style={{ flex: "0 0 800px", border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
+          <div style={{ flex: "1 1 500px", minWidth: 0, maxWidth: 800, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
 
             {/* Card header: badge + buttons */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 24px 16px 20px" }}>
@@ -7364,7 +7477,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
           </div>
 
           {/* RIGHT column */}
-          <div style={{ width: 450, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ flex: "0 0 450px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Client context card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
@@ -7574,7 +7687,7 @@ export default function BankReconciliation() {
     "Mastercard Business":          { status: "suggestions", count: 3 },
   };
 
-  const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false) => {
+  const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false, remainingCount = null) => {
     if (completed) {
       setReconciledAccounts(prev => new Set([...prev, accountName]));
       setReconciledDates(prev => ({ ...prev, [accountName]: getDateLabel() }));
@@ -7589,10 +7702,15 @@ export default function BankReconciliation() {
           : accountName === "Lloyds Bank - Operations GBP"
           ? "reconciled"
           : "suggestions";
-        const resolvedCount = (resolvedStatus === "completed" || resolvedStatus === "reconciled") ? null : (outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3);
+        const resolvedCount = (resolvedStatus === "completed" || resolvedStatus === "reconciled") ? null
+          : remainingCount !== null ? remainingCount
+          : (outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3);
         setReconciledStatuses(prev => ({ ...prev, [accountName]: resolvedStatus }));
         setReconciledCounts(prev => ({ ...prev, [accountName]: resolvedCount }));
       }
+    } else if (remainingCount !== null && reconciledAccounts.has(accountName)) {
+      // Already-reconciled account viewed in results mode — update count if user resolved/ignored some
+      setReconciledCounts(prev => ({ ...prev, [accountName]: remainingCount }));
     }
     setReconciling(null);
     setShowResultsMode(false);
@@ -7628,7 +7746,7 @@ export default function BankReconciliation() {
   };
 
   if (reconciling) {
-    return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved)} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} />;
+    return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved)} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
   }
 
   if (bsReconciling) {
