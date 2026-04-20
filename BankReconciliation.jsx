@@ -3510,9 +3510,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         borderLeft: "1px solid #E9E9EB",
         overflow: "hidden",
         zIndex: 2,
-        transform: resultsVisible ? "translateX(0)" : "translateX(100%)",
+        transform: resultsVisible ? "none" : "translateX(100%)",
         transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1)",
-        willChange: "transform",
+        willChange: resultsVisible ? "auto" : "transform",
         position: "absolute",
       }}>
         {canvasReady ? (
@@ -7186,9 +7186,9 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
         borderLeft: "1px solid #E9E9EB",
         overflowY: "auto",
         zIndex: 2,
-        transform: resultsVisible ? "translateX(0)" : "translateX(100vw)",
+        transform: resultsVisible ? "none" : "translateX(100vw)",
         transition: isDragging ? "none" : "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        willChange: "transform",
+        willChange: resultsVisible ? "auto" : "transform",
       }}>
         {resultsVisible && (canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.5s ease both", height: "100%" }}>
