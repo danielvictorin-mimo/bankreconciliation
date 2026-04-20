@@ -7396,7 +7396,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
 
       {/* Page header */}
       <div style={{ padding: "32px 48px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "#FFFFFF" }}>
-        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Smoking Gun Ltd.</h1>
+        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
       </div>
 
       {/* Scrollable content */}
