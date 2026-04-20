@@ -921,7 +921,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
     <div style={{
       background: "#FFFFFF",
       border: "1px solid #E9E9EB",
-      borderRadius: 16,
+      borderRadius: 8,
       padding: "24px",
       width: "100%",
       maxWidth: 480,
@@ -1079,8 +1079,20 @@ function RecommendationCard({
   onMore,
 }) {
   const [expanded, setExpanded] = useState(!collapsed && !isIgnored);
+  const [collectMenuOpen, setCollectMenuOpen] = useState(false);
+  const [collectMenuPos, setCollectMenuPos] = useState({ top: 0, left: 0 });
+  const collectBtnRef = useRef(null);
   // Sync expanded state when collapsed/ignored prop changes
   useEffect(() => { setExpanded(!collapsed && !isIgnored); }, [collapsed, isIgnored]);
+  useEffect(() => {
+    if (!collectMenuOpen) return;
+    const handler = (e) => {
+      if (collectBtnRef.current && collectBtnRef.current.contains(e.target)) return;
+      setCollectMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [collectMenuOpen]);
   const isResolved = collapsed && !isIgnored;
   const showBody = expanded;
 
@@ -1091,7 +1103,7 @@ function RecommendationCard({
 
   const PdfIcon = () => <InvoiceIcon width={14} height={17} />;
   const ExternalIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
       <path d="M17.5 7.5L17.5 2.5M17.5 2.5H12.5M17.5 2.5L10.8333 9.16667M8.33333 4.16667H6.5C5.09987 4.16667 4.3998 4.16667 3.86502 4.43915C3.39462 4.67883 3.01217 5.06129 2.77248 5.53169C2.5 6.06647 2.5 6.76654 2.5 8.16667V13.5C2.5 14.9001 2.5 15.6002 2.77248 16.135C3.01217 16.6054 3.39462 16.9878 3.86502 17.2275C4.3998 17.5 5.09987 17.5 6.5 17.5H11.8333C13.2335 17.5 13.9335 17.5 14.4683 17.2275C14.9387 16.9878 15.3212 16.6054 15.5608 16.135C15.8333 15.6002 15.8333 14.9001 15.8333 13.5V11.6667" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
@@ -1115,7 +1127,7 @@ function RecommendationCard({
   );
 
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 12, padding: "20px", overflow: "hidden", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
+    <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showBody ? 10 : 0, transition: "margin 0.35s ease", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
         onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
@@ -1135,7 +1147,7 @@ function RecommendationCard({
         </div>
       </div>
       {showBody && (
-        <p style={{ fontSize: 13, color: "#4F4F4F", lineHeight: "20px", margin: "0 0 14px" }}>{description}</p>
+        <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "0 0 14px" }}>{description}</p>
       )}
       {showBody && (
       <>
@@ -1153,18 +1165,51 @@ function RecommendationCard({
       </div>
       {(!isResolved || isIgnored) && (
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 13, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
+        <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 14, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
           {primaryLabel}
         </PrimaryButton>
         {!isIgnored && fileAction ? (
-          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 13, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
+          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
             <PdfIcon />{fileAction}
           </SecondaryButton>
         ) : !isIgnored && secondaryLabel ? (
-          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 13, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
+          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
             {secondaryLabel}
           </SecondaryButton>
         ) : null}
+        {!isIgnored && (fileAction || secondaryLabel) && (
+          <div style={{ position: "relative" }}>
+            <button
+              ref={collectBtnRef}
+              onClick={() => {
+                const rect = collectBtnRef.current.getBoundingClientRect();
+                setCollectMenuPos({ top: rect.bottom + 4, left: rect.left });
+                setCollectMenuOpen(o => !o);
+              }}
+              style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path d="M9.99984 10.8333C10.4601 10.8333 10.8332 10.4602 10.8332 9.99992C10.8332 9.53968 10.4601 9.16659 9.99984 9.16659C9.5396 9.16659 9.1665 9.53968 9.1665 9.99992C9.1665 10.4602 9.5396 10.8333 9.99984 10.8333Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9.99984 4.99992C10.4601 4.99992 10.8332 4.62682 10.8332 4.16659C10.8332 3.70635 10.4601 3.33325 9.99984 3.33325C9.5396 3.33325 9.1665 3.70635 9.1665 4.16659C9.1665 4.62682 9.5396 4.99992 9.99984 4.99992Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9.99984 16.6666C10.4601 16.6666 10.8332 16.2935 10.8332 15.8333C10.8332 15.373 10.4601 14.9999 9.99984 14.9999C9.5396 14.9999 9.1665 15.373 9.1665 15.8333C9.1665 16.2935 9.5396 16.6666 9.99984 16.6666Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {collectMenuOpen && (
+              <div style={{ position: "fixed", top: collectMenuPos.top, left: collectMenuPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 9999, minWidth: 200, padding: "4px" }}>
+                <button
+                  onClick={() => setCollectMenuOpen(false)}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", fontSize: 14, color: "#080908", background: "transparent", border: "none", cursor: "pointer", borderRadius: 6, textAlign: "left", whiteSpace: "nowrap" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  View in collect documents
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {!isIgnored && onMore && (
           <button style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
@@ -1173,7 +1218,7 @@ function RecommendationCard({
           ><MoreIcon /></button>
         )}
         {!isIgnored && <><div style={{ flex: 1 }} />
-        <button style={{ height: 40, padding: "0 12px", border: "none", borderRadius: 8, background: "#FCEFEC", fontSize: 13, fontWeight: 500, color: "#C8543A", cursor: "pointer", whiteSpace: "nowrap" }}
+        <button style={{ height: 40, padding: "0 12px", border: "none", borderRadius: 8, background: "#FCEFEC", fontSize: 14, fontWeight: 500, color: "#C8543A", cursor: "pointer", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"}
           onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
           onClick={onIgnore}
@@ -1485,10 +1530,10 @@ function UsersCheckIcon() {
   );
 }
 
-function DownloadIcon() {
+function DownloadIcon({ size = 18, color = "#7C7C7C" }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M2 11v1.5A1.5 1.5 0 003.5 14h9a1.5 1.5 0 001.5-1.5V11M8 2v8M5 7l3 3 3-3" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M21 15V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V15M17 10L12 15M12 15L7 10M12 15V3" stroke={color} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -1825,7 +1870,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
 }
 
 // ── Results panel ─────────────────────────────────────────────────────────────
-function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true }) {
+function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true, uploadedFileName = null }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -1987,7 +2032,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       </div>
 
       {/* Analysis & key findings */}
-      <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
+      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
         <button onClick={() => setAnalysisOpen(o => !o)}
           style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
@@ -2005,7 +2050,60 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         )}
       </div>
 
+      {/* Import statement to Xero — AmEx only */}
+      {accountName === "American Express OP GBP" && (() => {
+        const accountSlug = accountName.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+        const fileBase = (uploadedFileName || "statement").replace(/\.[^.]+$/, "");
+        const csvName = `${accountSlug}_${fileBase}-converted.csv`;
+        const handleDownloadCsv = () => {
+          const csv = "Date,Description,Amount\n2026-03-01,Opening balance,0.00\n2026-03-05,Yorkshire Tea Estates,-240.00\n2026-03-12,Clifton & Harrow Supplies,-1180.00\n2026-03-14,Meridian Office Solutions,-530.00";
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url; a.download = csvName; a.click();
+          URL.revokeObjectURL(url);
+        };
+        return (
+          <>
+          <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "32px 0 16px" }}>Import statement to Xero</h3>
+          <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, padding: "20px 20px 16px", marginBottom: 28 }}>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", margin: "0 0 6px 0" }}>File converted to CSV</p>
+            <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px 0", lineHeight: "20px" }}>Your file was a PDF so I have converted it to CSV. Download it and import it to Xero to create a bank feed.</p>
+            {/* File row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, marginBottom: 14 }}>
+              <CsvIcon width={20} height={24} />
+              <span style={{ flex: 1, fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{csvName}</span>
+            </div>
+            {/* Button row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={() => window.open("https://go.xero.com", "_blank", "noopener,noreferrer")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 40, padding: "0 16px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", transition: "background 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+                onMouseLeave={e => e.currentTarget.style.background = "#05A105"}
+              >
+                Import statement in Xero
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5.5 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h7.5a1 1 0 001-1V9M8.5 2.5H11.5M11.5 2.5V5.5M11.5 2.5L6 8" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <button
+                onClick={handleDownloadCsv}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap", transition: "all 0.15s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+              >
+                <DownloadIcon size={18} color="#080908" />
+                Download statement
+              </button>
+            </div>
+          </div>
+          </>
+        );
+      })()}
+
       {/* Suggestions heading — hidden for clean accounts */}
+      {!effectiveClean && <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />}
       {!effectiveClean && <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>}
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
 
@@ -2026,6 +2124,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                   isIgnored={isIgnored}
                   tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
                   primaryLabel={entry.primaryLabel}
+                  secondaryLabel={["date","duplicate","omitted","general"].includes(entry.cat) ? null : undefined}
                   external={entry.external}
                   fileAction={entry.fileAction}
                   onPrimaryAction={
@@ -2214,6 +2313,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
+              secondaryLabel={null}
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
@@ -2258,7 +2358,7 @@ function AccountPicker({ accounts, highlightedAccount, setHighlightedAccount, on
       <div style={{
         background: "#FFFFFF",
         border: "1px solid #E9E9EB",
-        borderRadius: 16,
+        borderRadius: 8,
         padding: "20px 20px 12px",
         boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
       }}>
@@ -2325,7 +2425,7 @@ function BSOptionPicker({ title, options, onSelect }) {
   }, [highlighted, options, onSelect]);
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16, padding: "20px 20px 12px", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
         {title && <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, marginTop: 0 }}>{title}</p>}
         {options.map((opt, i) => {
           const isKeyActive = i === highlighted;
@@ -2378,6 +2478,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [stepSubtexts, setStepSubtexts]       = useState(showResults ? RECONCILIATION_STEPS.map(s => s.subtext || "") : []);
   const [reconciliationCollapsed, setReconciliationCollapsed] = useState(showResults);
   const [userMessages, setUserMessages]       = useState([]);
+  const [feedProceedChoice, setFeedProceedChoice] = useState(showResults ? "upload" : null);
+  const [csvConverting, setCsvConverting]     = useState(false);
+  const [csvConvertDone, setCsvConvertDone]   = useState(false);
   const [reuploadPhase, setReuploadPhase]     = useState(false);
   const [replaceStatementMode, setReplaceStatementMode] = useState(false);
   const [resultsVisible, setResultsVisible]   = useState(showResults);
@@ -2481,6 +2584,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     setStepSubtexts([]);
     setUserMessages([]);
     setReuploadPhase(false);
+    setFeedProceedChoice(null);
+    setCsvConverting(false);
+    setCsvConvertDone(false);
     setInputValue("");
     // Unmount canvas content only after the slide-out animation finishes (720ms)
     setTimeout(() => setCanvasReady(false), 720);
@@ -2500,6 +2606,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     setStepSubtexts([]);
     setUserMessages([]);
     setReuploadPhase(false);
+    setFeedProceedChoice("upload");
     setInputValue("");
     setCreditCardBannerDismissed(false);
     setTimeout(() => {
@@ -2553,12 +2660,29 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     return () => timers.forEach(clearTimeout);
   }, [startClicked]);
 
-  // After file is selected, wait 2.2s then start AI response
+  // After file is selected, wait 2.2s then start AI response (normal flow only)
   useEffect(() => {
-    if (!uploadedFiles || showResults) return;
+    if (!uploadedFiles || showResults || feedProceedChoice === "convert") return;
     const t = setTimeout(() => setPrepDone(true), 2200);
     return () => clearTimeout(t);
   }, [uploadedFiles]);
+
+  // Inject spin keyframe once
+  useEffect(() => {
+    if (document.getElementById("_spin_kf")) return;
+    const s = document.createElement("style");
+    s.id = "_spin_kf";
+    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+    document.head.appendChild(s);
+  }, []);
+
+  // CSV conversion flow — starts after file uploaded in convert mode
+  useEffect(() => {
+    if (feedProceedChoice !== "convert" || !uploadedFiles || csvConvertDone) return;
+    const t1 = setTimeout(() => setCsvConverting(true), 600);
+    const t2 = setTimeout(() => { setCsvConverting(false); setCsvConvertDone(true); }, 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [uploadedFiles, feedProceedChoice]);
 
   const handleFileSelected = (fileOrDocs) => {
     const files = Array.isArray(fileOrDocs) ? fileOrDocs : [fileOrDocs];
@@ -2584,7 +2708,11 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const { done: line2Done } = useTypewriter(isPicker && line1Done ? line2Text : "", 18, showResults);
 
   // Line 3 AI message — in picker flow: starts after user picks account; in row flow: starts after line1 finishes
-  const line3Segments = [
+  const isNoFeedAccount = effectiveAccountName === "American Express OP GBP";
+  const line3Segments = isNoFeedAccount ? [
+    { text: selectedAccount, bold: true },
+    { text: " doesn't have a bank feed connected. To reconcile this account, you'll need to provide a bank statement.", bold: false },
+  ] : [
     { text: "I couldn't find any bank statement for ", bold: false },
     { text: selectedAccount,                          bold: true  },
     { text: ". Could you upload the bank statement for me.", bold: false },
@@ -2592,6 +2720,10 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const line3Full = line3Segments.map(s => s.text).join("");
   const line3Trigger = isPicker ? accountSelected : (line1Done && accountSelected);
   const { done: line3Done } = useTypewriter(line3Trigger ? line3Full : "", 18, showResults);
+
+  // Convert-path AI response (after user picks "Convert my bank statement to CSV and download")
+  const convertRespText = "Upload your PDF or image statement and I'll convert it to CSV for you before running the reconciliation.";
+  const { done: convertRespDone } = useTypewriter(feedProceedChoice === "convert" ? convertRespText : "", 18, showResults);
 
   // Line 4 — after file prep completes
   const fileCount = uploadedFiles ? uploadedFiles.length : 1;
@@ -2897,7 +3029,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </div>
           )}
 
-          {/* Upload card — appears once line 3 finishes, hides after file chosen or re-upload phase */}
+          {/* Upload card — appears after line 3, hides after file chosen or re-upload phase */}
           {line3Done && !uploadedFiles && !reuploadPhase && (
             <div style={{ marginTop: 16 }}>
               <UploadCard onFileSelected={handleFileSelected} onOpenAllDocs={() => setAllDocsOpen(true)} />
@@ -2945,27 +3077,92 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </div>
           )}
 
-          {/* AI line 4 — has everything needed */}
-          {prepDone && (
+          {/* CSV conversion progress — convert path only */}
+          {feedProceedChoice === "convert" && uploadedFiles && !csvConvertDone && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%", display: "flex", alignItems: "center", gap: 10 }}>
+              {csvConverting ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, animation: "spin 1s linear infinite" }}>
+                    <circle cx="8" cy="8" r="6.5" stroke="#E9E9EB" strokeWidth="1.5"/>
+                    <path d="M8 1.5A6.5 6.5 0 0 1 14.5 8" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span>Converting your statement to CSV…</span>
+                </>
+              ) : (
+                <span style={{ color: "#8C8C8B" }}>Preparing…</span>
+              )}
+            </div>
+          )}
+
+          {/* CSV conversion done — steps card */}
+          {feedProceedChoice === "convert" && csvConvertDone && (
+            <>
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+                <p>Your statement has been converted to CSV and is ready to download. You'll need to upload it to Xero to complete the bank reconciliation.</p>
+              </div>
+              <div style={{ marginTop: 16, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "24px 24px 16px", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Proceed with bank statement</p>
+                {/* Step 1 — Download CSV */}
+                <div
+                  onClick={() => {
+                    const csv = "Date,Description,Amount\n2026-03-01,Opening balance,0.00\n2026-03-05,Yorkshire Tea Estates,-240.00\n2026-03-12,Clifton & Harrow Supplies,-1180.00\n2026-03-14,Meridian Office Solutions,-530.00";
+                    const blob = new Blob([csv], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = (uploadedFiles[0]?.name?.replace(/\.[^.]+$/, "") || "statement") + "-converted.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 18px", marginBottom: 8, background: "#F7F7F7", borderRadius: 10, cursor: "pointer", boxSizing: "border-box", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#E9E9EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 12, fontWeight: 600, color: "#545453" }}>1</span>
+                  <span style={{ fontSize: 14, color: "#080908" }}>Download file in CSV</span>
+                </div>
+                {/* Step 2 — Go to Xero */}
+                <div
+                  onClick={() => window.open("https://go.xero.com", "_blank", "noopener,noreferrer")}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 18px", marginBottom: 8, background: "#F7F7F7", borderRadius: 10, cursor: "pointer", boxSizing: "border-box", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#E9E9EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 12, fontWeight: 600, color: "#545453" }}>2</span>
+                  <span style={{ fontSize: 14, color: "#080908" }}>Go to Xero and import statement</span>
+                </div>
+                {/* Step 3 — Reconcile now */}
+                <div
+                  onClick={() => { setFeedProceedChoice("upload"); setCsvConvertDone(false); setPrepDone(true); setStartClicked(true); }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "14px 18px", marginBottom: 8, background: "#F7F7F7", borderRadius: 10, cursor: "pointer", boxSizing: "border-box", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#E9E9EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 12, fontWeight: 600, color: "#545453" }}>3</span>
+                  <span style={{ fontSize: 14, color: "#080908" }}>I have imported the statement in Xero. Reconcile account now</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* AI line 4 — has everything needed (normal flow only) */}
+          {prepDone && feedProceedChoice !== "convert" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
               <p><StreamingMessage key="line4" segments={line4Segments} speed={18} instant={showResults} /></p>
             </div>
           )}
 
-          {/* AI line 5 — ready to start */}
-          {line4Done && (
+          {/* AI line 5 — ready to start (normal flow only) */}
+          {line4Done && feedProceedChoice !== "convert" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 6, width: "70%" }}>
               <p><StreamingMessage key="line5" segments={[{ text: line5Text, bold: false }]} speed={18} instant={showResults} /></p>
             </div>
           )}
 
-          {/* Ready to start card — hidden once Start reconciliation is clicked */}
-          {line5Done && !startClicked && (
+          {/* Ready to start card — hidden once Start reconciliation is clicked (normal flow only) */}
+          {line5Done && !startClicked && feedProceedChoice !== "convert" && (
             <div style={{ marginTop: 16 }}>
               <div style={{
                 background: "#FFFFFF",
                 border: "1px solid #E9E9EB",
-                borderRadius: 16,
+                borderRadius: 8,
                 padding: "24px 24px 16px",
                 width: "100%",
                 boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
@@ -3180,7 +3377,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               <div style={{
-                borderRadius: 16, padding: "14px 14px 12px", background: "#FFFFFF",
+                borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF",
                 boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB",
               }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
@@ -3211,7 +3408,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               </div>
             </div>
           </div>
-        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode ? null : (
+        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles) ? null : (
           /* Standalone textarea — visible when AI is not streaming and no action card is showing */
           <div style={{ padding: resultsVisible ? "60px 24px 20px" : "0 24px 20px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -3255,7 +3452,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 </div>
               )}
               <div style={{
-                borderRadius: 16, padding: "14px 14px 12px", background: "#FFFFFF",
+                borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF",
                 boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB",
               }}>
                 <textarea
@@ -3332,7 +3529,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               const period1 = `${prevM} 15 – ${parts[0]} 14, ${yr}`;
               const period2 = `${parts[0]} 15 – ${nextM} 14, ${nextY}`;
               return (
-                <div style={{ padding: "20px 48px 0" }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ padding: `48px ${boxesOpen ? 338 : 48}px 0 48px`, transition: "padding-right 0.35s cubic-bezier(0.16, 1, 0.3, 1)" }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
                   {/* info-circle icon */}
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
                     <path d="M9.99984 13.3334V10.0001M9.99984 6.66675H10.0082M18.3332 10.0001C18.3332 14.6025 14.6022 18.3334 9.99984 18.3334C5.39746 18.3334 1.6665 14.6025 1.6665 10.0001C1.6665 5.39771 5.39746 1.66675 9.99984 1.66675C14.6022 1.66675 18.3332 5.39771 18.3332 10.0001Z" stroke="#EAB758" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3346,7 +3543,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
                     Add statement
                   </button>
-                  <button onClick={() => setCreditCardBannerDismissed(true)} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#2A2A2A", whiteSpace: "nowrap", transition: "border-color 0.15s" }}
+                  <button onClick={() => setCreditCardBannerDismissed(true)} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#2A2A2A", whiteSpace: "nowrap", transition: "border-color 0.15s", boxSizing: "border-box" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = "#CFCFD1"}
                     onMouseLeave={e => e.currentTarget.style.borderColor = "#DBDBDB"}>
                     Dismiss
@@ -3370,6 +3567,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
                 accountStatus={accountStatus}
                 boxesOpen={boxesOpen}
+                uploadedFileName={uploadedFiles?.[0]?.name}
               />
             )}
           </div>
@@ -3607,7 +3805,7 @@ function SecondaryButton({ children, icon, onClick, disabled = false, style = {}
   const defaultEnter = e => { if (!disabled) { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; } };
   const defaultLeave = e => { if (!disabled) { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; } };
   return (
-    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", background: disabled ? "#F5F5F5" : "#FFFFFF", color: disabled ? "#9D9D9E" : "#080908", border: `1px solid ${disabled ? "#F5F5F5" : "#E9E9EB"}`, borderRadius: 6, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.15s ease", ...style }}
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 12px", background: disabled ? "#F5F5F5" : "#FFFFFF", color: disabled ? "#9D9D9E" : "#080908", border: `1px solid ${disabled ? "#F5F5F5" : "#E9E9EB"}`, borderRadius: 6, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.15s ease", ...style }}
       onMouseEnter={onMouseEnter || defaultEnter}
       onMouseLeave={onMouseLeave || defaultLeave}>
       {children}{icon}
@@ -5553,7 +5751,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   <div style={{
                     background: "#FFFFFF",
                     border: "1px solid #E9E9EB",
-                    borderRadius: 16,
+                    borderRadius: 8,
                     padding: "20px 20px 12px",
                     maxWidth: 480,
                     boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
@@ -5649,7 +5847,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
                     <div style={{ marginTop: 16 }}>
                       <div style={{
-                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
                         padding: "20px 20px 12px", maxWidth: 480,
                         boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
                       }}>
@@ -5822,7 +6020,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               <div style={{
                 background: "#FFFFFF",
                 border: "1px solid #E9E9EB",
-                borderRadius: 16,
+                borderRadius: 8,
                 padding: "20px 20px 12px",
                 maxWidth: 480,
                 boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
@@ -6705,7 +6903,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   {restartPrepDone && !restartReadyChoice && !restartStartAfterMore && restartAddMoreRound === 0 && (
                     <div style={{ marginTop: 16 }}>
                       <div style={{
-                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
                         padding: "20px 20px 12px", maxWidth: 480,
                         boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
                       }}>
@@ -6789,7 +6987,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       {restartAddMorePrepDone && (
                         <div style={{ marginTop: 16 }}>
                           <div style={{
-                            background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 16,
+                            background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
                             padding: "20px 20px 12px", maxWidth: 480,
                             boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
                           }}>
@@ -6933,7 +7131,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               </button>
             )}
             <div style={{
-              borderRadius: 16, padding: "14px 14px 12px", background: "#FFFFFF",
+              borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF",
               boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB",
             }}>
               <textarea
