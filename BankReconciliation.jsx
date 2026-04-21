@@ -355,7 +355,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
     const getOutcome = (name) => {
       if (name === "Lloyds Bank - Operations GBP")  return { status: "reconciled",  count: null };
       if (name === "Lloyds Bank - Business")         return { status: "suggestions", count: 8 };
-      if (name === "HSBC - Business Transactions")   return { status: "suggestions", count: 1 };
+      if (name === "HSBC - Business Transactions")   return { status: "suggestions", count: 58 };
       return { status: "suggestions", count: reconciledData[name]?.suggestions || 3 };
     };
     const { status, count } = getOutcome(rowName);
@@ -1176,8 +1176,7 @@ function RecommendationCard({
         onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {isResolved && <SuccessIcon />}
-          {isIgnored && <IgnoredIcon />}
+          {(isResolved || isIgnored) && <SuccessIcon />}
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
@@ -2025,19 +2024,21 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
   const label = accountStatus === "completed" ? "Completed" : "Reconciled";
   const msg   = accountStatus === "completed" ? "Ready to reconcile in Xero" : "Fully reconciled in Xero";
   const pct   = totalSuggestions > 0 ? Math.min(100, Math.round((resolvedCount / totalSuggestions) * 100)) : 0;
+  const [collapsedCats, setCollapsedCats] = useState({});
+  const toggleCat = (key) => setCollapsedCats(prev => ({ ...prev, [key]: !prev[key] }));
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "#FFFFFF", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif", border: "1px solid #ECECEC", height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Suggestions</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px" }}>
+        <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>Suggestions</span>
       </div>
       {/* Progress / clean state */}
-      <div style={{ borderTop: "1px solid #F0F0F0", padding: "16px" }}>
+      <div style={{ borderTop: "1px solid #F0F0F0", padding: "20px" }}>
         {allJustResolved ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Status row */}
@@ -2087,14 +2088,29 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
       </div>
       {/* Nav list */}
       {!isCleanReconcile && (
-        <div style={{ borderTop: "1px solid #F0F0F0", padding: "8px 6px 10px", maxHeight: 420, overflowY: "auto" }}>
+        <div style={{ borderTop: "1px solid #F0F0F0", padding: "12px 10px 16px", flex: 1, overflowY: "auto" }}>
           {navCategories.length === 0 ? (
             <div style={{ padding: "10px 10px", fontSize: 14, color: "#8C8C8B", textAlign: "center" }}>No suggestions</div>
           ) : (
-            navCategories.map((cat, ci) => (
+            navCategories.map((cat, ci) => {
+              const isCatCollapsed = !!collapsedCats[cat.key];
+              return (
               <div key={ci} style={{ marginBottom: ci < navCategories.length - 1 ? 6 : 0 }}>
-                <div style={{ padding: "4px 10px 4px", fontSize: 14, fontWeight: 400, color: "#ADADAD" }}>{cat.label}</div>
-                {cat.items.map((item, ii) => {
+                <button
+                  onClick={() => toggleCat(cat.key)}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", borderRadius: 6 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>{cat.label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#6B6B6B", background: "#F0F0F0", borderRadius: 4, padding: "1px 7px", lineHeight: "18px" }}>{cat.items.length}</span>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s ease", transform: isCatCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>
+                      <path d="M3 5L7 9L11 5" stroke="#ADADAD" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </button>
+                {!isCatCollapsed && cat.items.map((item, ii) => {
                   const isResolved = resolvedCards.has(cat.baseIdx + ii);
                   const isIgnored  = ignoredCards.has(cat.baseIdx + ii);
                   return (
@@ -2105,15 +2121,10 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                       onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
                       onMouseLeave={e => e.currentTarget.style.background = "none"}
                     >
-                      {isResolved ? (
+                      {(isResolved || isIgnored) ? (
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="8" cy="8" r="7.25" stroke="#05A105" strokeWidth="1.25"/>
-                          <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      ) : isIgnored ? (
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="8" cy="8" r="7.25" stroke="#ADADAD" strokeWidth="1.25"/>
-                          <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="#ADADAD" strokeWidth="1.25" strokeLinecap="round"/>
+                          <circle cx="8" cy="8" r="8" fill="#05A105"/>
+                          <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : (
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
@@ -2127,7 +2138,8 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                   );
                 })}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -2152,7 +2164,12 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { description: "Omitted",            issues: 0 },
     { description: "General",            issues: 0 },
   ] : isHSBC ? [
-    { description: "Missing entries", issues: 1 },
+    { description: "Missing entries",    issues: 18 },
+    { description: "Anomalies",          issues: 12 },
+    { description: "Duplicates",         issues: 10 },
+    { description: "Date differences",   issues: 10 },
+    { description: "Omitted",            issues:  5 },
+    { description: "General",            issues:  3 },
   ] : accountName === "Barclays - Operations" ? [
     { description: "Missing entries",    issues: 2 },
     { description: "Anomalies",          issues: 1 },
@@ -2178,7 +2195,70 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     // Per-account suggestion cards — idx must align with navCats baseIdx in boxes section
   const ACCOUNT_CARDS = {
     "HSBC - Business Transactions": [
-      { idx: 0, cat: "missing", contact: "Anchor & Webb Consulting", state: "Open", date: "21 Mar 2026", amount: "£875.00", email: "20 Mar, 10:30", description: "A bank statement line for Anchor & Webb Consulting (£875.00) dated 21 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      // Missing entries (18)
+      { idx:  0, cat: "missing",   contact: "Meridian Freight Ltd",       state: "Open",   date: "3 Mar 2026",  amount: "£1,240.00",  email: "2 Mar, 09:10",  description: "A bank statement line for Meridian Freight Ltd (£1,240.00) dated 3 Mar 2026 was found with no matching GL entry in Xero.",       primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  1, cat: "missing",   contact: "Hartley & Sons Supplies",    state: "Open",   date: "5 Mar 2026",  amount: "£380.00",    email: "4 Mar, 11:45",  description: "A bank statement line for Hartley & Sons Supplies (£380.00) dated 5 Mar 2026 was found with no matching GL entry in Xero.",       primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  2, cat: "missing",   contact: "Queensbury Engineering",     state: "Review", date: "6 Mar 2026",  amount: "£2,150.00",  email: "5 Mar, 14:20",  description: "A bank statement line for Queensbury Engineering (£2,150.00) dated 6 Mar 2026 was found with no matching GL entry in Xero.",       primaryLabel: "Review and publish", external: false, fileAction: "Queensbury-invoice.pdf" },
+      { idx:  3, cat: "missing",   contact: "Lakewood Solutions",         state: "Open",   date: "7 Mar 2026",  amount: "£760.00",    email: "6 Mar, 08:55",  description: "A bank statement line for Lakewood Solutions (£760.00) dated 7 Mar 2026 was found with no matching GL entry in Xero.",             primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  4, cat: "missing",   contact: "Pinecroft Consulting",       state: "Open",   date: "9 Mar 2026",  amount: "£3,200.00",  email: "8 Mar, 16:30",  description: "A bank statement line for Pinecroft Consulting (£3,200.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",          primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  5, cat: "missing",   contact: "Ashford & Clarke",           state: "Open",   date: "10 Mar 2026", amount: "£490.00",    email: "9 Mar, 10:00",  description: "A bank statement line for Ashford & Clarke (£490.00) dated 10 Mar 2026 was found with no matching GL entry in Xero.",              primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  6, cat: "missing",   contact: "Northgate Financial",        state: "Open",   date: "11 Mar 2026", amount: "£1,875.00",  email: "10 Mar, 13:15", description: "A bank statement line for Northgate Financial (£1,875.00) dated 11 Mar 2026 was found with no matching GL entry in Xero.",         primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  7, cat: "missing",   contact: "Westbrook Services",         state: "Open",   date: "12 Mar 2026", amount: "£640.00",    email: "11 Mar, 09:40", description: "A bank statement line for Westbrook Services (£640.00) dated 12 Mar 2026 was found with no matching GL entry in Xero.",            primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx:  8, cat: "missing",   contact: "Templeton & Ward",           state: "Review", date: "13 Mar 2026", amount: "£920.00",    email: "12 Mar, 15:00", description: "A bank statement line for Templeton & Ward (£920.00) dated 13 Mar 2026 was found with no matching GL entry in Xero.",              primaryLabel: "Review and publish", external: false, fileAction: "Templeton-invoice.pdf" },
+      { idx:  9, cat: "missing",   contact: "Greystone Technologies",     state: "Open",   date: "14 Mar 2026", amount: "£5,400.00",  email: "13 Mar, 11:25", description: "A bank statement line for Greystone Technologies (£5,400.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.",     primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 10, cat: "missing",   contact: "Fairfield Logistics",        state: "Open",   date: "15 Mar 2026", amount: "£1,100.00",  email: "14 Mar, 08:30", description: "A bank statement line for Fairfield Logistics (£1,100.00) dated 15 Mar 2026 was found with no matching GL entry in Xero.",         primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 11, cat: "missing",   contact: "Coppergate Partners",        state: "Open",   date: "16 Mar 2026", amount: "£2,750.00",  email: "15 Mar, 14:50", description: "A bank statement line for Coppergate Partners (£2,750.00) dated 16 Mar 2026 was found with no matching GL entry in Xero.",         primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 12, cat: "missing",   contact: "Riverside Digital",          state: "Open",   date: "17 Mar 2026", amount: "£385.00",    email: "16 Mar, 10:10", description: "A bank statement line for Riverside Digital (£385.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",             primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 13, cat: "missing",   contact: "Whitmore Agency",            state: "Review", date: "18 Mar 2026", amount: "£1,560.00",  email: "17 Mar, 16:20", description: "A bank statement line for Whitmore Agency (£1,560.00) dated 18 Mar 2026 was found with no matching GL entry in Xero.",            primaryLabel: "Review and publish", external: false, fileAction: "Whitmore-invoice.pdf" },
+      { idx: 14, cat: "missing",   contact: "Stonegate Ventures",         state: "Open",   date: "19 Mar 2026", amount: "£820.00",    email: "18 Mar, 09:05", description: "A bank statement line for Stonegate Ventures (£820.00) dated 19 Mar 2026 was found with no matching GL entry in Xero.",           primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 15, cat: "missing",   contact: "Elmwood Trading",            state: "Open",   date: "20 Mar 2026", amount: "£4,100.00",  email: "19 Mar, 13:45", description: "A bank statement line for Elmwood Trading (£4,100.00) dated 20 Mar 2026 was found with no matching GL entry in Xero.",            primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 16, cat: "missing",   contact: "Bridgewater Associates",     state: "Open",   date: "21 Mar 2026", amount: "£670.00",    email: "20 Mar, 11:30", description: "A bank statement line for Bridgewater Associates (£670.00) dated 21 Mar 2026 was found with no matching GL entry in Xero.",       primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 17, cat: "missing",   contact: "Redwood Consulting",         state: "Open",   date: "22 Mar 2026", amount: "£1,340.00",  email: "21 Mar, 15:55", description: "A bank statement line for Redwood Consulting (£1,340.00) dated 22 Mar 2026 was found with no matching GL entry in Xero.",         primaryLabel: "Create spend money", external: false, fileAction: null },
+      // Anomalies (12)
+      { idx: 18, cat: "anomaly",   contact: "Premier Office Supplies",    state: "Open",   date: "4 Mar 2026",  amount: "£8,400.00",  email: "3 Mar, 10:00",  description: "A transaction of £8,400.00 from Premier Office Supplies is significantly above the account average. This unusual amount may require manual review.",    primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 19, cat: "anomaly",   contact: "Highfield Analytics",        state: "Open",   date: "8 Mar 2026",  amount: "£12,300.00", email: "7 Mar, 14:30",  description: "A transaction of £12,300.00 from Highfield Analytics is significantly above the account average. This unusual amount may require manual review.",      primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 20, cat: "anomaly",   contact: "Oakwood Research",           state: "Open",   date: "11 Mar 2026", amount: "£6,750.00",  email: "10 Mar, 09:15", description: "A transaction of £6,750.00 from Oakwood Research is significantly above the account average. This unusual amount may require manual review.",         primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 21, cat: "anomaly",   contact: "Silverstone Group",          state: "Open",   date: "13 Mar 2026", amount: "£9,200.00",  email: "12 Mar, 11:00", description: "A transaction of £9,200.00 from Silverstone Group is significantly above the account average. This unusual amount may require manual review.",          primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 22, cat: "anomaly",   contact: "Blackthorn Events",          state: "Open",   date: "15 Mar 2026", amount: "£5,850.00",  email: "14 Mar, 16:45", description: "A transaction of £5,850.00 from Blackthorn Events is significantly above the account average. This unusual amount may require manual review.",          primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 23, cat: "anomaly",   contact: "Mapleton Industries",        state: "Open",   date: "16 Mar 2026", amount: "£7,600.00",  email: "15 Mar, 10:20", description: "A transaction of £7,600.00 from Mapleton Industries is significantly above the account average. This unusual amount may require manual review.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 24, cat: "anomaly",   contact: "Greenfield Partners",        state: "Open",   date: "18 Mar 2026", amount: "£11,200.00", email: "17 Mar, 13:40", description: "A transaction of £11,200.00 from Greenfield Partners is significantly above the account average. This unusual amount may require manual review.",       primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 25, cat: "anomaly",   contact: "Haverstock Ltd",             state: "Open",   date: "19 Mar 2026", amount: "£4,950.00",  email: "18 Mar, 08:50", description: "A transaction of £4,950.00 from Haverstock Ltd is significantly above the account average. This unusual amount may require manual review.",            primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 26, cat: "anomaly",   contact: "Bramblewood Services",       state: "Open",   date: "20 Mar 2026", amount: "£6,300.00",  email: "19 Mar, 15:10", description: "A transaction of £6,300.00 from Bramblewood Services is significantly above the account average. This unusual amount may require manual review.",      primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 27, cat: "anomaly",   contact: "Thornfield Capital",         state: "Open",   date: "22 Mar 2026", amount: "£15,000.00", email: "21 Mar, 12:00", description: "A transaction of £15,000.00 from Thornfield Capital is significantly above the account average. This unusual amount may require manual review.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 28, cat: "anomaly",   contact: "Clearwater Tech",            state: "Open",   date: "24 Mar 2026", amount: "£8,100.00",  email: "23 Mar, 10:35", description: "A transaction of £8,100.00 from Clearwater Tech is significantly above the account average. This unusual amount may require manual review.",          primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 29, cat: "anomaly",   contact: "Longbridge Agency",          state: "Open",   date: "25 Mar 2026", amount: "£5,200.00",  email: "24 Mar, 14:00", description: "A transaction of £5,200.00 from Longbridge Agency is significantly above the account average. This unusual amount may require manual review.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      // Duplicates (10)
+      { idx: 30, cat: "duplicate", contact: "Meridian Freight Ltd",       state: "Open",   date: "3 Mar 2026",  amount: "£1,240.00",  email: "2 Mar, 09:10",  description: "Two identical transactions of £1,240.00 from Meridian Freight Ltd were recorded on 3 Mar 2026. One entry may be a duplicate in Xero.",       primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 31, cat: "duplicate", contact: "Premier Office Supplies",    state: "Open",   date: "4 Mar 2026",  amount: "£8,400.00",  email: "3 Mar, 10:00",  description: "Two identical transactions of £8,400.00 from Premier Office Supplies were recorded on 4 Mar 2026. One entry may be a duplicate in Xero.",    primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 32, cat: "duplicate", contact: "Hartley & Sons Supplies",    state: "Open",   date: "5 Mar 2026",  amount: "£380.00",    email: "4 Mar, 11:45",  description: "Two identical transactions of £380.00 from Hartley & Sons Supplies were recorded on 5 Mar 2026. One entry may be a duplicate in Xero.",    primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 33, cat: "duplicate", contact: "Highfield Analytics",        state: "Open",   date: "8 Mar 2026",  amount: "£12,300.00", email: "7 Mar, 14:30",  description: "Two identical transactions of £12,300.00 from Highfield Analytics were recorded on 8 Mar 2026. One entry may be a duplicate in Xero.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 34, cat: "duplicate", contact: "Westbrook Services",         state: "Open",   date: "12 Mar 2026", amount: "£640.00",    email: "11 Mar, 09:40", description: "Two identical transactions of £640.00 from Westbrook Services were recorded on 12 Mar 2026. One entry may be a duplicate in Xero.",         primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 35, cat: "duplicate", contact: "Oakwood Research",           state: "Open",   date: "11 Mar 2026", amount: "£6,750.00",  email: "10 Mar, 09:15", description: "Two identical transactions of £6,750.00 from Oakwood Research were recorded on 11 Mar 2026. One entry may be a duplicate in Xero.",           primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 36, cat: "duplicate", contact: "Coppergate Partners",        state: "Open",   date: "16 Mar 2026", amount: "£2,750.00",  email: "15 Mar, 14:50", description: "Two identical transactions of £2,750.00 from Coppergate Partners were recorded on 16 Mar 2026. One entry may be a duplicate in Xero.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 37, cat: "duplicate", contact: "Silverstone Group",          state: "Open",   date: "13 Mar 2026", amount: "£9,200.00",  email: "12 Mar, 11:00", description: "Two identical transactions of £9,200.00 from Silverstone Group were recorded on 13 Mar 2026. One entry may be a duplicate in Xero.",          primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 38, cat: "duplicate", contact: "Riverside Digital",          state: "Open",   date: "17 Mar 2026", amount: "£385.00",    email: "16 Mar, 10:10", description: "Two identical transactions of £385.00 from Riverside Digital were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.",            primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 39, cat: "duplicate", contact: "Mapleton Industries",        state: "Open",   date: "16 Mar 2026", amount: "£7,600.00",  email: "15 Mar, 10:20", description: "Two identical transactions of £7,600.00 from Mapleton Industries were recorded on 16 Mar 2026. One entry may be a duplicate in Xero.",        primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      // Date differences (10)
+      { idx: 40, cat: "date",      contact: "Ashford & Clarke",           state: "Open",   date: "10 Mar 2026", amount: "£490.00",    email: "9 Mar, 10:00",  description: "A bank statement entry for Ashford & Clarke dated 10 Mar 2026 is matched to a GL entry dated 14 Mar 2026 — a 4-day discrepancy.",      primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 41, cat: "date",      contact: "Northgate Financial",        state: "Open",   date: "11 Mar 2026", amount: "£1,875.00",  email: "10 Mar, 13:15", description: "A bank statement entry for Northgate Financial dated 11 Mar 2026 is matched to a GL entry dated 16 Mar 2026 — a 5-day discrepancy.",    primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 42, cat: "date",      contact: "Blackthorn Events",          state: "Open",   date: "15 Mar 2026", amount: "£5,850.00",  email: "14 Mar, 16:45", description: "A bank statement entry for Blackthorn Events dated 15 Mar 2026 is matched to a GL entry dated 19 Mar 2026 — a 4-day discrepancy.",      primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 43, cat: "date",      contact: "Templeton & Ward",           state: "Open",   date: "13 Mar 2026", amount: "£920.00",    email: "12 Mar, 15:00", description: "A bank statement entry for Templeton & Ward dated 13 Mar 2026 is matched to a GL entry dated 16 Mar 2026 — a 3-day discrepancy.",        primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 44, cat: "date",      contact: "Greystone Technologies",     state: "Open",   date: "14 Mar 2026", amount: "£5,400.00",  email: "13 Mar, 11:25", description: "A bank statement entry for Greystone Technologies dated 14 Mar 2026 is matched to a GL entry dated 18 Mar 2026 — a 4-day discrepancy.",  primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 45, cat: "date",      contact: "Haverstock Ltd",             state: "Open",   date: "19 Mar 2026", amount: "£4,950.00",  email: "18 Mar, 08:50", description: "A bank statement entry for Haverstock Ltd dated 19 Mar 2026 is matched to a GL entry dated 23 Mar 2026 — a 4-day discrepancy.",          primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 46, cat: "date",      contact: "Fairfield Logistics",        state: "Open",   date: "15 Mar 2026", amount: "£1,100.00",  email: "14 Mar, 08:30", description: "A bank statement entry for Fairfield Logistics dated 15 Mar 2026 is matched to a GL entry dated 18 Mar 2026 — a 3-day discrepancy.",      primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 47, cat: "date",      contact: "Bramblewood Services",       state: "Open",   date: "20 Mar 2026", amount: "£6,300.00",  email: "19 Mar, 15:10", description: "A bank statement entry for Bramblewood Services dated 20 Mar 2026 is matched to a GL entry dated 24 Mar 2026 — a 4-day discrepancy.",    primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 48, cat: "date",      contact: "Stonegate Ventures",         state: "Open",   date: "19 Mar 2026", amount: "£820.00",    email: "18 Mar, 09:05", description: "A bank statement entry for Stonegate Ventures dated 19 Mar 2026 is matched to a GL entry dated 22 Mar 2026 — a 3-day discrepancy.",       primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      { idx: 49, cat: "date",      contact: "Elmwood Trading",            state: "Open",   date: "20 Mar 2026", amount: "£4,100.00",  email: "19 Mar, 13:45", description: "A bank statement entry for Elmwood Trading dated 20 Mar 2026 is matched to a GL entry dated 25 Mar 2026 — a 5-day discrepancy.",          primaryLabel: "Acknowledge",    external: false, fileAction: null },
+      // Omitted (5)
+      { idx: 50, cat: "omitted",   contact: "Internal Transfer",          state: "Open",   date: "2 Mar 2026",  amount: "£25,000.00", email: "2 Mar, 09:00",  description: "A bank statement line for an internal transfer of £25,000.00 on 2 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",                      primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 51, cat: "omitted",   contact: "Standing Order — HMRC",     state: "Open",   date: "7 Mar 2026",  amount: "£4,200.00",  email: "7 Mar, 08:00",  description: "A standing order payment of £4,200.00 to HMRC on 7 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",                           primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 52, cat: "omitted",   contact: "Direct Debit — Utilities",  state: "Open",   date: "14 Mar 2026", amount: "£890.00",    email: "14 Mar, 06:00", description: "A direct debit of £890.00 for utilities on 14 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",                                primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 53, cat: "omitted",   contact: "Payroll Batch",             state: "Open",   date: "28 Mar 2026", amount: "£38,400.00", email: "28 Mar, 07:30", description: "A payroll batch payment of £38,400.00 on 28 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",                              primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 54, cat: "omitted",   contact: "Bank Charges",              state: "Open",   date: "31 Mar 2026", amount: "£120.00",    email: "31 Mar, 00:01", description: "A bank charge of £120.00 on 31 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.",                                            primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      // General (3)
+      { idx: 55, cat: "general",   contact: "Unclassified Entry A",      state: "Open",   date: "9 Mar 2026",  amount: "£340.00",    email: "8 Mar, 17:00",  description: "A transaction of £340.00 on 9 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.",  primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 56, cat: "general",   contact: "Unclassified Entry B",      state: "Open",   date: "17 Mar 2026", amount: "£75.00",     email: "16 Mar, 12:30", description: "A transaction of £75.00 on 17 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.",   primaryLabel: "Remove in Xero", external: true,  fileAction: null },
+      { idx: 57, cat: "general",   contact: "Unclassified Entry C",      state: "Open",   date: "24 Mar 2026", amount: "£210.00",    email: "23 Mar, 14:15", description: "A transaction of £210.00 on 24 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true,  fileAction: null },
     ],
     "Barclays - Operations": [
       { idx: 0, cat: "missing",   contact: "Hillcrest Imports",    state: "Open",   date: "18 Mar 2026", amount: "£620.00",   email: "17 Mar, 09:15", description: "A bank statement line for Hillcrest Imports (£620.00) dated 18 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
@@ -2373,40 +2453,57 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       {!effectiveClean && <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>}
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
 
-      {/* Per-account cards for Barclays, AmEx, Mastercard */}
-      {!effectiveClean && ACCOUNT_CARDS[accountName] && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {ACCOUNT_CARDS[accountName].map((entry) => {
-            const isResolved = resolvedCards.has(entry.idx);
-            const isIgnored  = ignoredCards.has(entry.idx);
-            return (
-              <div key={entry.idx} id={`result-${entry.cat}-${entry.idx}`} style={{ scrollMarginTop: 64 }}>
-                <RecommendationCard
-                  title={`${CAT_LABELS[entry.cat] || entry.cat}: ${entry.contact}`}
-                  description={entry.description}
-                  statusLabel={isResolved ? "Resolved" : "Unresolved"}
-                  statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
-                  collapsed={isResolved || isIgnored}
-                  isIgnored={isIgnored}
-                  tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
-                  primaryLabel={entry.primaryLabel}
-                  secondaryLabel={["date","duplicate","omitted","general"].includes(entry.cat) ? null : undefined}
-                  external={entry.external}
-                  fileAction={entry.fileAction}
-                  onPrimaryAction={
-                    entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, entry.idx) :
-                    entry.primaryLabel === "Review and publish"  ? () => onOpenBatchDraft?.(entry, entry.idx) :
-                    entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
-                    () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
-                  }
-                  onMore={undefined}
-                  onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
-                />
+      {/* Per-account cards for HSBC etc — grouped by category */}
+      {!effectiveClean && ACCOUNT_CARDS[accountName] && (() => {
+        const CAT_GROUP_LABELS = { missing: "Missing entries", anomaly: "Anomalies", duplicate: "Duplicates", date: "Date differences", omitted: "Omitted", general: "General" };
+        const catOrder = ["missing", "anomaly", "duplicate", "date", "omitted", "general"];
+        const grouped = catOrder.reduce((acc, key) => {
+          const items = ACCOUNT_CARDS[accountName].filter(e => e.cat === key);
+          if (items.length) acc.push({ key, items });
+          return acc;
+        }, []);
+        return (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {grouped.map((group, gi) => (
+              <div key={group.key}>
+                {gi > 0 && <div style={{ height: 32 }} />}
+                <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {group.items.map((entry, localIdx) => {
+                    const isResolved = resolvedCards.has(entry.idx);
+                    const isIgnored  = ignoredCards.has(entry.idx);
+                    return (
+                      <div key={entry.idx} id={`result-${entry.cat}-${localIdx}`} style={{ scrollMarginTop: 64 }}>
+                        <RecommendationCard
+                          title={`${CAT_LABELS[entry.cat] || entry.cat}: ${entry.contact}`}
+                          description={entry.description}
+                          statusLabel={isResolved ? "Resolved" : "Unresolved"}
+                          statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                          collapsed={isResolved || isIgnored}
+                          isIgnored={isIgnored}
+                          tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
+                          primaryLabel={entry.primaryLabel}
+                          secondaryLabel={["date","duplicate","omitted","general"].includes(entry.cat) ? null : undefined}
+                          external={entry.external}
+                          fileAction={entry.fileAction}
+                          onPrimaryAction={
+                            entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, entry.idx) :
+                            entry.primaryLabel === "Review and publish"  ? () => onOpenBatchDraft?.(entry, entry.idx) :
+                            entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
+                            () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
+                          }
+                          onMore={undefined}
+                          onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Missing entry cards */}
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2765,7 +2862,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [isClosing, setIsClosing] = useState(false);
   const ACCOUNT_TOTAL_SUGGESTIONS = {
     "Lloyds Bank - Business": 8,
-    "HSBC - Business Transactions": 1,
+    "HSBC - Business Transactions": 58,
     "Barclays - Operations": 5,
     "American Express OP GBP": 4,
     "Mastercard Business": 3,
@@ -2883,6 +2980,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
   const handleReplaceStatement = () => {
     setReplaceStatementMode(true);
+    setResultsVisible(false);
+    setCanvasReady(false);
+    setBoxesOpen(false);
   };
 
   const handleSend = () => {
@@ -3086,7 +3186,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       `}</style>
 
       {/* Top bar */}
-      <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
+      <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #ECECEC", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
         <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>Bank reconciliation</span>
 
         {/* Account dropdown */}
@@ -3189,7 +3289,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10,
               }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Left to review</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Suggestions</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolved}/{totalSugg}</span>
                 </div>
                 <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
@@ -3214,7 +3314,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       </div>
 
       {/* Content area — position:relative so the canvas overlay can anchor to it */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", padding: 16 }}>
 
       {/* Left: chat panel — in flex flow so canvas naturally opens beside it */}
       <div style={{
@@ -3256,8 +3356,11 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         )}
 
       {/* Chat area */}
+      <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+        {/* Top fade — only in sidebar mode, inside scroll so it doesn't cover the scrollbar */}
+        {resultsVisible && <div style={{ position: "sticky", top: 0, left: 0, right: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
+        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
           {!clientUpload && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
@@ -3604,7 +3707,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               {/* User bubble */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                 <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
-                  Replace statement
+                  New statement
                 </div>
               </div>
               {/* AI response — typed out */}
@@ -3617,7 +3720,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               {replaceRespDone && (
                 <div style={{ marginTop: 16 }}>
                   <UploadCard
-                    title="Replace statement"
+                    title="New statement"
                     onFileSelected={file => {
                       setReplaceStatementMode(false);
                       setUploadedFiles([{ name: file.name, type: file.type }]);
@@ -3686,7 +3789,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           </div>
         ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) ? null : (
           /* Standalone textarea — visible when AI is not streaming and no action card is showing */
-          <div style={{ padding: resultsVisible ? "60px 24px 20px" : "0 24px 20px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
+          <div style={{ padding: resultsVisible ? "60px 12px 12px" : "0 12px 12px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               {/* Action buttons — shown when results are visible (sidebar mode), hidden while replace flow is open */}
               {resultsVisible && !replaceStatementMode && (
@@ -3721,9 +3824,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 17H20M20 17L16 13M20 17L16 21M20 7H4M4 7L8 3M4 7L8 11" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 15V3M12 3L7 8M12 3L17 8M4 17V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V17" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Replace statement
+                    New statement
                   </button>
                 </div>
               )}
@@ -3774,22 +3877,23 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         );
       })()}
 
+      </div> {/* end chat area wrapper */}
       </div> {/* end left chat panel */}
 
       {/* Canvas — slides in from right, pushes chat into sidebar */}
       <div style={{
         position: "absolute",
-        top: 0, bottom: 0,
-        left: chatWidth,
-        right: 0,
+        top: 16, bottom: 16,
+        left: chatWidth + 32,
+        right: boxesOpen ? 382 : 16,
         background: "#FFFFFF",
-        borderLeft: "1px solid #E9E9EB",
+        borderRadius: 8,
+        border: "1px solid #ECECEC",
         overflow: "hidden",
         zIndex: 2,
-        transform: resultsVisible ? "none" : "translateX(100%)",
-        transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))",
+        transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
         willChange: resultsVisible ? "auto" : "transform",
-        position: "absolute",
       }}>
         {canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
@@ -3805,7 +3909,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               const period1 = `${prevM} 15 – ${parts[0]} 14, ${yr}`;
               const period2 = `${parts[0]} 15 – ${nextM} 14, ${nextY}`;
               return (
-                <div style={{ padding: `48px ${boxesOpen ? 338 : 48}px 0 48px`, transition: "padding-right 0.35s cubic-bezier(0.16, 1, 0.3, 1)" }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ padding: `48px 48px 0 48px` }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
                   {/* info-circle icon */}
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
                     <path d="M9.99984 13.3334V10.0001M9.99984 6.66675H10.0082M18.3332 10.0001C18.3332 14.6025 14.6022 18.3334 9.99984 18.3334C5.39746 18.3334 1.6665 14.6025 1.6665 10.0001C1.6665 5.39771 5.39746 1.66675 9.99984 1.66675C14.6022 1.66675 18.3332 5.39771 18.3332 10.0001Z" stroke="#EAB758" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3842,15 +3946,16 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
                 onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
                 accountStatus={accountStatus}
-                boxesOpen={boxesOpen}
+                boxesOpen={false}
                 uploadedFileName={uploadedFiles?.[0]?.name}
               />
             )}
           </div>
         ) : resultsVisible ? <CanvasLoader /> : null}
+      </div>
 
-        {/* Floating sidebar boxes — position:fixed is contained by canvas willChange:transform */}
-        {canvasReady && (() => {
+      {/* Suggestions sidebar — floats on gray background, outside the canvas card */}
+      {canvasReady && (() => {
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
           // isPreClean: account was already reconciled before opening — no suggestions exist at all
           const isPreClean = effectiveIsCleanReconcile;
@@ -3864,7 +3969,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           // Build nav cats — always the full list so resolved items remain visible
           const navCats = isPreClean ? []
             : isHSBCCanvas ? [
-              { key: "missing", label: "Missing entries", baseIdx: 0, items: [{ contact: "Anchor & Webb Consulting" }] },
+              { key: "missing",   label: "Missing entries",  baseIdx:  0, items: [{ contact: "Meridian Freight Ltd" }, { contact: "Hartley & Sons Supplies" }, { contact: "Queensbury Engineering" }, { contact: "Lakewood Solutions" }, { contact: "Pinecroft Consulting" }, { contact: "Ashford & Clarke" }, { contact: "Northgate Financial" }, { contact: "Westbrook Services" }, { contact: "Templeton & Ward" }, { contact: "Greystone Technologies" }, { contact: "Fairfield Logistics" }, { contact: "Coppergate Partners" }, { contact: "Riverside Digital" }, { contact: "Whitmore Agency" }, { contact: "Stonegate Ventures" }, { contact: "Elmwood Trading" }, { contact: "Bridgewater Associates" }, { contact: "Redwood Consulting" }] },
+              { key: "anomaly",   label: "Anomalies",        baseIdx: 18, items: [{ contact: "Premier Office Supplies" }, { contact: "Highfield Analytics" }, { contact: "Oakwood Research" }, { contact: "Silverstone Group" }, { contact: "Blackthorn Events" }, { contact: "Mapleton Industries" }, { contact: "Greenfield Partners" }, { contact: "Haverstock Ltd" }, { contact: "Bramblewood Services" }, { contact: "Thornfield Capital" }, { contact: "Clearwater Tech" }, { contact: "Longbridge Agency" }] },
+              { key: "duplicate", label: "Duplicates",       baseIdx: 30, items: [{ contact: "Meridian Freight Ltd" }, { contact: "Premier Office Supplies" }, { contact: "Hartley & Sons Supplies" }, { contact: "Highfield Analytics" }, { contact: "Westbrook Services" }, { contact: "Oakwood Research" }, { contact: "Coppergate Partners" }, { contact: "Silverstone Group" }, { contact: "Riverside Digital" }, { contact: "Mapleton Industries" }] },
+              { key: "date",      label: "Date differences", baseIdx: 40, items: [{ contact: "Ashford & Clarke" }, { contact: "Northgate Financial" }, { contact: "Blackthorn Events" }, { contact: "Templeton & Ward" }, { contact: "Greystone Technologies" }, { contact: "Haverstock Ltd" }, { contact: "Fairfield Logistics" }, { contact: "Bramblewood Services" }, { contact: "Stonegate Ventures" }, { contact: "Elmwood Trading" }] },
+              { key: "omitted",   label: "Omitted",          baseIdx: 50, items: [{ contact: "Internal Transfer" }, { contact: "Standing Order — HMRC" }, { contact: "Direct Debit — Utilities" }, { contact: "Payroll Batch" }, { contact: "Bank Charges" }] },
+              { key: "general",   label: "General",          baseIdx: 55, items: [{ contact: "Unclassified Entry A" }, { contact: "Unclassified Entry B" }, { contact: "Unclassified Entry C" }] },
             ]
             : effectiveAccountName === "Barclays - Operations" ? [
               { key: "missing", label: "Missing entries", baseIdx: 0, items: [{ contact: "Hillcrest Imports" }, { contact: "NorthStar Media" }] },
@@ -3897,7 +4007,18 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           // Hide boxes only for pre-reconciled accounts (no suggestions to show)
           if (isPreClean) return null;
           return (
-            <div style={{ position: "absolute", top: 94, right: 20, width: 290, zIndex: 20, fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+            <div style={{
+              position: "absolute",
+              top: 16, bottom: 16, right: 16,
+              width: 350,
+              zIndex: 3,
+              display: "flex",
+              flexDirection: "column",
+              fontFamily: "'Inter', sans-serif",
+              transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))",
+              transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+              pointerEvents: boxesOpen ? "auto" : "none",
+            }}>
               <SuggestionsBox
                 isCleanReconcile={false}
                 allJustResolved={allJustResolved}
@@ -3912,9 +4033,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </div>
           );
         })()}
-      </div>
 
-      {/* Drag handle — thin absolute strip between chat and canvas */}
+      {/* Drag handle — invisible hit area with a centered notch on hover */}
       {resultsVisible && (
         <div
           onMouseDown={handleDragStart}
@@ -3922,16 +4042,27 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             position: "absolute",
             top: 0,
             bottom: 0,
-            left: chatWidth,
-            width: 6,
+            left: chatWidth + 27,
+            width: 12,
             cursor: "col-resize",
             zIndex: 10,
-            background: isDragging ? "#E9E9EB" : "transparent",
-            transition: "background 0.15s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-          onMouseEnter={e => { if (!isDragging) e.currentTarget.style.background = "#F0F0F0"; }}
-          onMouseLeave={e => { if (!isDragging) e.currentTarget.style.background = "transparent"; }}
-        />
+          onMouseEnter={e => { const notch = e.currentTarget.firstChild; if (notch) notch.style.opacity = "1"; }}
+          onMouseLeave={e => { if (!isDragging) { const notch = e.currentTarget.firstChild; if (notch) notch.style.opacity = "0"; } }}
+        >
+          <div style={{
+            width: 5,
+            height: 56,
+            borderRadius: 2.5,
+            background: "#7C7C7C",
+            opacity: isDragging ? 1 : 0,
+            transition: "opacity 0.15s",
+            pointerEvents: "none",
+          }} />
+        </div>
       )}
 
       </div> {/* end content area */}
@@ -7653,6 +7784,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
+        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
         <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Review</h1>
         {/* Tabs */}
         <div style={{ display: "flex", gap: 24, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
@@ -7680,8 +7812,10 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
             );
           })}
         </div>
+        </div>
       </div>
-      <div ref={scrollRef} onScroll={e => onSaveScroll?.(e.currentTarget.scrollTop)} style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div ref={scrollRef} onScroll={e => onSaveScroll?.(e.currentTarget.scrollTop)} style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px" }}>
+        <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
         {activeTab === "Profit and Loss" ? (
           <div style={{
             background: "#FAFAFA", border: "1px solid #E9E9EB", borderRadius: 12,
@@ -7777,6 +7911,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
             </div>
           ))
         )}
+        </div>
       </div>
     </div>
   );
@@ -7869,12 +8004,15 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
 
       {/* Page header */}
-      <div style={{ padding: "32px 48px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "#FFFFFF" }}>
-        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
+      <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
+        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
+          <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
+        </div>
       </div>
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: 48, paddingTop: 0, background: "#FFFFFF" }}>
+        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
 
         {/* Two-column layout */}
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", minWidth: 0 }}>
@@ -7992,6 +8130,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
 
           </div>{/* end right column */}
 
+        </div>
         </div>
       </div>
     </div>
@@ -8411,7 +8550,8 @@ export default function BankReconciliation() {
           <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} />
 
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
-          <div style={{ padding: "32px 48px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "#FFFFFF" }}>
+          <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
+          <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Bank reconciliation</h1>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <PrimaryButton icon={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
@@ -8440,9 +8580,11 @@ export default function BankReconciliation() {
               </Tooltip>
             </div>
           </div>
+          </div>
 
           {/* Scrollable content */}
-          <div style={{ flex: 1, overflowY: "auto", padding: 48, paddingTop: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: 48, paddingTop: 0 }}>
+          <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
 
             {/* Stats summary cards (from Widgets.jsx) */}
             <StatsRow items={(() => {
@@ -8469,6 +8611,7 @@ export default function BankReconciliation() {
             {/* Bank accounts table */}
             <AccountTable title="Accounts" rows={bankAccounts} footerLabel={`${bankAccounts.length} accounts`} onRunReconciliation={handleRunReconciliation} onViewResults={handleViewResults} reconciledAccounts={reconciledAccounts} reconciledData={reconciledData} reconciledDates={reconciledDates} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} bankStatements={bankStatements} onUploadStatement={handleUploadStatement} onAutoReconcile={handleAutoReconcile} onResetAccount={handleResetAccount} externalReconcilingAccounts={externalReconcilingAccounts} />
 
+          </div>
           </div>
         </div>
         )}
