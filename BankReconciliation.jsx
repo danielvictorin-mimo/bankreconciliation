@@ -100,6 +100,39 @@ function TrMatchBadge({ value = "0/0", noFeed = false }) {
   );
 }
 
+// ── Inline tooltip ───────────────────────────────────────────────────────────
+function Tooltip({ text, children }) {
+  const [visible, setVisible] = React.useState(false);
+  const [pos, setPos] = React.useState({ x: 0, y: 0 });
+  const ref = React.useRef(null);
+  return (
+    <span ref={ref} style={{ display: "inline-flex", alignItems: "center" }}
+      onMouseEnter={() => {
+        if (ref.current) {
+          const rect = ref.current.getBoundingClientRect();
+          setPos({ x: rect.left + rect.width / 2, y: rect.top });
+        }
+        setVisible(true);
+      }}
+      onMouseLeave={() => setVisible(false)}>
+      {children}
+      {visible && (
+        <div style={{
+          position: "fixed", top: pos.y - 8, left: pos.x,
+          transform: "translate(-50%, -100%)",
+          background: "#2A2A2A", color: "#FFFFFF",
+          fontSize: 14, fontWeight: 400, lineHeight: "20px",
+          padding: "6px 8px", borderRadius: 8,
+          whiteSpace: "nowrap", zIndex: 9999,
+          pointerEvents: "none", fontFamily: "'Inter', sans-serif",
+        }}>
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ── Tr. matching reconciled badge (with SVG progress ring) ───────────────────
 function TrMatchingBadge({ matchedCount, totalCount, status }) {
   const isSuggestions = status === "suggestions";
@@ -146,7 +179,7 @@ function Chevron({ up = false, color = "#8C8C8B", size = 14 }) {
 // ── Account / Credit card table ───────────────────────────────────────────────
 function DocIcon() {
   return (
-    <svg width="18" height="22" viewBox="0 0 23 28" fill="none" style={{ flexShrink: 0 }}>
+    <svg width="16" height="16" viewBox="0 0 23 28" fill="none" style={{ flexShrink: 0 }}>
       <path d="M0 2.59259C0 1.16074 1.14416 0 2.55556 0H16.1L19.1048 3.95161L23 9.07407V25.4074C23 26.8393 21.8558 28 20.4444 28H2.55556C1.14416 28 0 26.8393 0 25.4074V2.59259Z" fill="#F4F4F2"/>
       <path d="M6.49191 13.3299H16.508M6.49191 16.6686H16.508M11.5 9.99121V20.0073M9.16288 9.99121H13.8371C14.772 9.99121 15.2395 9.99121 15.5966 10.1732C15.9107 10.3332 16.166 10.5886 16.3261 10.9027C16.508 11.2598 16.508 11.7273 16.508 12.6622V17.3364C16.508 18.2713 16.508 18.7388 16.3261 19.0959C16.166 19.41 15.9107 19.6653 15.5966 19.8254C15.2395 20.0073 14.772 20.0073 13.8371 20.0073H9.16288C8.22795 20.0073 7.76049 20.0073 7.4034 19.8254C7.08929 19.6653 6.83391 19.41 6.67386 19.0959C6.49191 18.7388 6.49191 18.2713 6.49191 17.3364V12.6622C6.49191 11.7273 6.49191 11.2598 6.67386 10.9027C6.83391 10.5886 7.08929 10.3332 7.4034 10.1732C7.76049 9.99121 8.22795 9.99121 9.16288 9.99121Z" stroke="#0AAC63" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M16.1 7.61574V0L23 9.07407H17.5375C16.8599 9.07407 16.521 9.07407 16.3105 8.86051C16.1 8.64694 16.1 8.30321 16.1 7.61574Z" fill="#D6D6D4"/>
@@ -248,7 +281,7 @@ const randomOutcome = () => {
 };
 
 
-function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewResults, reconciledAccounts = new Set(), reconciledData = {}, reconciledDates = {}, reconciledStatuses = {}, reconciledCounts = {}, bankStatements = {}, onUploadStatement, onAutoReconcile, onResetAccount }) {
+function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewResults, reconciledAccounts = new Set(), reconciledData = {}, reconciledDates = {}, reconciledStatuses = {}, reconciledCounts = {}, bankStatements = {}, onUploadStatement, onAutoReconcile, onResetAccount, externalReconcilingAccounts = new Set() }) {
   const [hovered, setHovered] = useState(null);
   const fileInputRef = useRef(null);
   const [uploadingFor, setUploadingFor] = useState(null);
@@ -293,9 +326,9 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
   const sortable = new Set(["Account", "Feed balance", "Statement balance", "GL balance"]);
   const colTooltips = {
     "Account": "The bank or financial account being reconciled",
-    "Feed balance": "Real-time balance pulled directly from your bank feed",
+    "Feed balance": "Real-time balance pulled directly from ledger",
     "Statement balance": "Closing balance from the uploaded bank statement",
-    "GL balance": "Current balance recorded in your general ledger",
+    "GL balance": "Current balance recorded in ledger",
     "Tr. matching": "Number of bank statement lines matched",
     "Bank statement": "The bank statement file used for this reconciliation",
     "Actions": "Run reconciliation or review results for this account",
@@ -448,7 +481,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
       <div ref={scrollRef} style={{ overflowX: "auto" }}>
       <div style={{
         display: "grid",
-        gridTemplateColumns: "auto auto auto auto auto 200px 220px",
+        gridTemplateColumns: "auto auto auto auto 160px 260px 220px",
         minWidth: "100%",
         width: "max-content",
       }}>
@@ -532,14 +565,16 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
 
               {/* Feed balance */}
               <div style={cell({ display: "flex", alignItems: "center", fontSize: 14, color: row.noFeedBalance ? "#9D9D9E" : "#080908", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" })} {...cellProps}>
-                {row.noFeedBalance ? "No feed balance" : row.feedBalance}
+                {row.noFeedBalance ? (
+                  <Tooltip text="This account has no connected bank feed">No feed balance</Tooltip>
+                ) : row.feedBalance}
               </div>
 
               {/* Statement balance */}
               <div style={cell({ display: "flex", alignItems: "center", fontSize: 14, color: isReconciled ? "#080908" : "#9D9D9E", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" })} {...cellProps}>
                 {isReconciled
                   ? (rowStatus === "suggestions" ? (rData.statementBalance || row.feedBalance) : row.feedBalance)
-                  : "No bank statement"}
+                  : <Tooltip text="No bank statement has been uploaded for this account">No bank statement</Tooltip>}
               </div>
 
               {/* GL balance + difference badge */}
@@ -562,7 +597,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                   return (
                     <span
                       style={{ display: "inline-block", background: bg, borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 500, color, marginTop: 4, alignSelf: "flex-start", whiteSpace: "nowrap", cursor: "default" }}
-                      onMouseEnter={e => { const rect = e.currentTarget.getBoundingClientRect(); setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: "Difference between statement balance and GL balance" }); }}
+                      onMouseEnter={e => { const rect = e.currentTarget.getBoundingClientRect(); setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: isReconciled ? "Difference between statement balance and GL balance" : "Difference between feed balance and GL balance" }); }}
                       onMouseLeave={() => setBadgeTooltip(t => ({ ...t, visible: false }))}
                     >
                       {value}
@@ -573,14 +608,19 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
 
               {/* Tr. matching */}
               <div style={cell({ display: "flex", alignItems: "center", padding: "14px 16px", borderRight: "1px solid #E9E9EB" })} {...cellProps}>
-                {isReconciled ? (() => {
-                  const total    = parseInt((rData.matched || "100/100").split("/")[1]) || 100;
-                  const sc       = reconciledCounts[row.name] || 3;
-                  const matchedN = rowStatus === "suggestions" ? Math.max(0, total - sc) : total;
-                  return <TrMatchingBadge matchedCount={matchedN} totalCount={total} status={rowStatus} />;
-                })() : (
-                  <TrMatchBadge value={row.trMatching || "0/0"} noFeed={!!row.noFeedBalance} />
-                )}
+                <span
+                  onMouseEnter={e => { const rect = e.currentTarget.getBoundingClientRect(); setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: isReconciled ? "Difference between statement balance and GL balance" : row.noFeedBalance ? "This account has no connected bank feed" : "Difference between feed balance and GL balance" }); }}
+                  onMouseLeave={() => setBadgeTooltip(t => ({ ...t, visible: false }))}
+                >
+                  {isReconciled ? (() => {
+                    const total    = parseInt((rData.matched || "100/100").split("/")[1]) || 100;
+                    const sc       = reconciledCounts[row.name] || 3;
+                    const matchedN = rowStatus === "suggestions" ? Math.max(0, total - sc) : total;
+                    return <TrMatchingBadge matchedCount={matchedN} totalCount={total} status={rowStatus} />;
+                  })() : (
+                    <TrMatchBadge value={row.trMatching || "0/0"} noFeed={!!row.noFeedBalance} />
+                  )}
+                </span>
               </div>
 
               {/* Bank statement */}
@@ -591,7 +631,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                   <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, width: "100%" }}>
                     <DocIcon />
                     <span
-                      style={{ fontSize: 13, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0, cursor: "default" }}
+                      style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0, cursor: "default" }}
                       onMouseEnter={e => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: bankStatements[row.name].fileName });
@@ -606,7 +646,10 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                         const rect = e.currentTarget.getBoundingClientRect();
                         const stmt = bankStatements[row.name];
                         const time = stmt.time || "";
-                        setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: `Bank statement uploaded ${stmt.date}${time ? " at " + time : ""}` });
+                        const tooltipText = stmt.uploadedBy
+                          ? `Bank statement uploaded ${stmt.displayDate || stmt.date}${stmt.time ? " at " + stmt.time : ""} by Client ${stmt.uploadedBy}`
+                          : `Bank statement uploaded ${stmt.date}${stmt.time ? " at " + stmt.time : ""} by accountant Laura Bennett`;
+                        setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: tooltipText });
                       }}
                       onMouseLeave={() => setBadgeTooltip(t => ({ ...t, visible: false }))}
                     >
@@ -620,7 +663,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
                     onClick={() => { setUploadingFor(row.name); fileInputRef.current?.click(); }}
                   >
-                    Upload or drop file
+                    Drop file or upload
                   </SecondaryButton>
                 )}
               </div>
@@ -632,7 +675,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                 boxShadow: isDragOver ? "none" : isScrollable ? "-6px 0 12px rgba(0,0,0,0.06)" : "none",
                 zIndex: 1,
               }, "last")} {...cellProps}>
-                {reconcilingViaUpload.has(row.name) ? (
+                {(reconcilingViaUpload.has(row.name) || externalReconcilingAccounts.has(row.name)) ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, color: "#000000", whiteSpace: "nowrap" }}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
                       <path d="M8 1.5A6.5 6.5 0 1 1 1.5 8" stroke="#05A105" strokeWidth="2" strokeLinecap="round"/>
@@ -1304,11 +1347,12 @@ function SpendMoneySidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0 }}>
-        <span style={{ fontSize: 24, fontWeight: 600, color: "#080908" }}>Review spend money</span>
-        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 4 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M15 5L5 15M5 5L15 15" stroke="#545453" strokeWidth="1.5" strokeLinecap="round"/>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Review spend money</span>
+        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}>
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <rect width="30" height="30" rx="15" fill="#F5F5F5"/>
+            <path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
@@ -1535,6 +1579,228 @@ function DownloadIcon({ size = 18, color = "#7C7C7C" }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path d="M21 15V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V15M17 10L12 15M12 15L7 10M12 15V3" stroke={color} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  );
+}
+
+// ── Upload Statements Sidebar ─────────────────────────────────────────────────
+function UploadStatementsSidebar({ onClose, onUploaded }) {
+  const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [allDocsOpen, setAllDocsOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const email = "associatetesting@dev.platform.mimohq.com";
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 320);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(email).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const startUploading = (files) => {
+    setUploading(true);
+    setTimeout(() => {
+      onUploaded?.(files);
+      setVisible(false);
+      setTimeout(onClose, 320);
+    }, 2000);
+  };
+
+  const handleFiles = (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    setDroppedFiles(prev => [...prev, ...files]);
+    startUploading(files);
+  };
+
+  const handleDocsSelected = (docs) => {
+    // Convert AllDocuments selections into file-like objects
+    const files = docs.map(d => ({ name: d.name, type: d.type === "csv" ? "text/csv" : "application/pdf" }));
+    setDroppedFiles(files);
+    startUploading(files);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
+      background: "#FFFFFF", boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
+      display: "flex", flexDirection: "column", zIndex: 201,
+      transform: visible ? "translateX(0)" : "translateX(100%)",
+      transition: "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Upload statements</span>
+        <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}>
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <rect width="30" height="30" rx="15" fill="#F5F5F5"/>
+            <path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {uploading ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 300 }}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+              <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+            <div style={{ fontSize: 20, fontWeight: 500, color: "#080908" }}>Uploading statements</div>
+            <div style={{ fontSize: 14, color: "#8C8C8B" }}>Please wait while we're uploading your documents.</div>
+          </div>
+        ) : (<>
+
+        {/* Forward a document */}
+        <div style={{ border: "1px solid #E9E9EB", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, height: 78, boxSizing: "border-box", flexShrink: 0 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M22 6L12 13L2 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 2 }}>Forward a document</div>
+            <div style={{ fontSize: 13, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
+          </div>
+          <button onClick={handleCopy}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", flexShrink: 0, whiteSpace: "nowrap" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+            onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="9" width="13" height="13" rx="2" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 15H4C2.9 15 2 14.1 2 13V4C2 2.9 2.9 2 4 2H13C14.1 2 15 2.9 15 4V5" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false); }}
+          onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+          style={{
+            border: `1.5px dashed ${dragging ? "#05A105" : "#DBDBDB"}`,
+            borderRadius: 12,
+            padding: "36px 24px 28px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: dragging ? "#F4F9F1" : "transparent",
+            transition: "background 0.15s, border-color 0.15s",
+            flex: 1,
+          }}
+        >
+          {/* 3-document fan illustration */}
+          <svg width="86" height="56" viewBox="0 0 86 56" fill="none" style={{ marginBottom: 20 }}>
+            <defs>
+              <filter id="filter0_d_upload_ss" x="15.84" y="-3.31" width="57.44" height="65.62" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                <feOffset dy="4.96"/>
+                <feGaussianBlur stdDeviation="4.13"/>
+                <feComposite in2="hardAlpha" operator="out"/>
+                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.11 0"/>
+                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+              </filter>
+              <clipPath id="clip0_upload_ss">
+                <rect width="86" height="56" fill="white"/>
+              </clipPath>
+            </defs>
+            <g clipPath="url(#clip0_upload_ss)">
+              <path d="M53.2218 13.2854C53.7433 11.3393 55.7436 10.1844 57.6897 10.7059L76.3653 15.71L79.0693 22.1909L82.5746 30.5922L76.6263 52.7914C76.1049 54.7375 74.1046 55.8924 72.1585 55.3709L47.4927 48.7617C45.5466 48.2403 44.3917 46.2399 44.9132 44.2939L53.2218 13.2854Z" fill="#DCF0D7"/>
+              <path d="M73.5917 26.0618L76.3652 15.7109L82.5746 30.5931L75.0427 28.5749C74.1084 28.3246 73.6412 28.1994 73.4287 27.8314C73.2162 27.4633 73.3414 26.9961 73.5917 26.0618Z" fill="#D0EFC8"/>
+              <path d="M32.7772 13.2854C32.2557 11.3393 30.2554 10.1844 28.3093 10.7059L9.63377 15.71L6.92969 22.1909L3.42441 30.5922L9.37268 52.7914C9.89413 54.7375 11.8945 55.8924 13.8405 55.3709L38.5064 48.7617C40.4524 48.2403 41.6073 46.2399 41.0859 44.2939L32.7772 13.2854Z" fill="#D2DEF6"/>
+              <path d="M12.4073 26.0618L9.63379 15.7109L3.42442 30.5931L10.9563 28.5749C11.8907 28.3246 12.3578 28.1994 12.5703 27.8314C12.7828 27.4633 12.6576 26.9961 12.4073 26.0618Z" fill="#BCCFF2"/>
+              <g filter="url(#filter0_d_upload_ss)">
+                <path d="M24.1064 4.54527C24.1064 2.03499 26.1414 0 28.6517 0H52.7417L58.086 6.92787L65.0139 15.9084V44.5437C65.0139 47.0539 62.9789 49.0889 60.4686 49.0889H28.6517C26.1414 49.0889 24.1064 47.0539 24.1064 44.5437V4.54527Z" fill="#F4F4F2"/>
+                <path d="M40.5298 16.6758C45.1308 15.296 40.3532 38.7468 36.769 35.521C32.3247 31.521 53.4258 25.4246 51.4695 31.2906C49.7549 36.4317 35.4016 18.2137 40.5298 16.6758Z" stroke="#FF6056" strokeWidth="1.57261"/>
+                <path d="M52.7412 13.3517V0L65.0134 15.9085H55.2979C54.0927 15.9085 53.4901 15.9085 53.1156 15.534C52.7412 15.1596 52.7412 14.557 52.7412 13.3517Z" fill="#D6D6D4"/>
+              </g>
+            </g>
+          </svg>
+
+          <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", textAlign: "center", margin: "0 0 2px" }}>
+            Drag &amp; drop your file here, or
+          </p>
+          <p style={{ fontSize: 14, textAlign: "center", margin: "0 0 10px" }}>
+            <span style={{ color: "#05A105", fontWeight: 600, cursor: "pointer" }} onClick={() => fileInputRef.current?.click()}>
+              Choose a file
+            </span>{" "}to upload it manually
+          </p>
+          <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 20px", textAlign: "center" }}>
+            Can be any document type
+          </p>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 20px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+              onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Upload document
+            </button>
+            <button
+              onClick={() => setAllDocsOpen(true)}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 20px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+              All documents
+            </button>
+          </div>
+          {droppedFiles.length > 0 && (
+            <div style={{ marginTop: 16, width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
+              {droppedFiles.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "#F5F5F5", borderRadius: 6, fontSize: 13, color: "#080908" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14 2V8H20" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                  <button onClick={() => setDroppedFiles(prev => prev.filter((_, j) => j !== i))} style={{ border: "none", background: "none", cursor: "pointer", padding: 2, display: "flex", color: "#8C8C8B", fontSize: 14 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <input ref={fileInputRef} type="file" multiple style={{ display: "none" }} onChange={e => handleFiles(e.target.files)} />
+        </div>
+
+        {/* Separator */}
+        <div style={{ height: 1, background: "#E9E9EB", flexShrink: 0 }} />
+
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          style={{ width: "100%", height: 44, border: "1px solid #E9E9EB", background: "#FFFFFF", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0 }}
+          onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+          onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+          Close
+        </button>
+        </>)}
+      </div>
+
+      {/* All Documents overlay — slides in on top */}
+      {allDocsOpen && (
+        <AllDocumentsSidebar
+          onClose={() => setAllDocsOpen(false)}
+          onSelect={(docs) => { setAllDocsOpen(false); handleDocsSelected(docs); }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -1781,10 +2047,10 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                   <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#4C71DF" }}>Ready to reconcile in Xero</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#4C71DF" }}>Ready to reconcile in Xero</span>
             </div>
             {/* Description */}
-            <span style={{ fontSize: 12, color: "#8C8C8B", lineHeight: "18px" }}>All suggestions resolved. Go to Xero to finalise and post the reconciliation.</span>
+            <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "18px" }}>All suggestions resolved. Go to Xero to finalise and post the reconciliation.</span>
             {/* Progress */}
             <div>
               <div style={{ marginBottom: 8 }}>
@@ -2082,7 +2348,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
                 onMouseLeave={e => e.currentTarget.style.background = "#05A105"}
               >
-                Import statement in Xero
+                Import statement to Xero
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M5.5 2.5H3a1 1 0 00-1 1v7.5a1 1 0 001 1h7.5a1 1 0 001-1V9M8.5 2.5H11.5M11.5 2.5V5.5M11.5 2.5L6 8" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -2469,7 +2735,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [dropdownOpen, setDropdownOpen]       = useState(false);
   const [inputValue, setInputValue]           = useState("");
   const [isAtBottom, setIsAtBottom]           = useState(true);
-  const [uploadedFiles, setUploadedFiles]     = useState(showResults ? [{ name: "bank-statement.pdf", type: "application/pdf" }] : existingStatement ? [{ name: existingStatement.fileName, type: existingStatement.fileName?.endsWith(".csv") ? "text/csv" : "application/pdf" }] : null);
+  const [uploadedFiles, setUploadedFiles]     = useState(showResults ? [{ name: existingStatement?.fileName || "bank-statement.pdf", type: "application/pdf" }] : existingStatement ? [{ name: existingStatement.fileName, type: existingStatement.fileName?.endsWith(".csv") ? "text/csv" : "application/pdf" }] : null);
   const [previewUrl, setPreviewUrl]           = useState(null);
   const [prepDone, setPrepDone]               = useState(showResults || !!existingStatement);
   const [startClicked, setStartClicked]       = useState(showResults);
@@ -2709,9 +2975,16 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
   // Line 3 AI message — in picker flow: starts after user picks account; in row flow: starts after line1 finishes
   const isNoFeedAccount = effectiveAccountName === "American Express OP GBP";
+  const clientUpload = showResults && existingStatement?.uploadedBy;
   const line3Segments = isNoFeedAccount ? [
     { text: selectedAccount, bold: true },
     { text: " doesn't have a bank feed connected. To reconcile this account, you'll need to provide a bank statement.", bold: false },
+  ] : clientUpload ? [
+    { text: "Client ", bold: false },
+    { text: existingStatement.uploadedBy, bold: true },
+    { text: ` uploaded a bank statement for `, bold: false },
+    { text: selectedAccount, bold: true },
+    { text: ` on ${existingStatement.date}${existingStatement.time ? " at " + existingStatement.time : ""}.`, bold: false },
   ] : [
     { text: "I couldn't find any bank statement for ", bold: false },
     { text: selectedAccount,                          bold: true  },
@@ -2865,9 +3138,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               {uploadedFiles.map((file, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <div style={{ width: 1, height: 32, background: "#E9E9EB", flexShrink: 0 }} />}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", maxWidth: 240 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px" }}>
                     <FileIcon file={file} width={24} height={24} />
-                    <span style={{ fontSize: 14, color: "#080908", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 14, color: "#080908", fontWeight: 500, whiteSpace: "nowrap" }}>
                       {file.name}
                     </span>
                   </div>
@@ -2916,7 +3189,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10,
               }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <span style={{ fontSize: 14, color: "#545453", whiteSpace: "nowrap" }}>Left to review</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Left to review</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolved}/{totalSugg}</span>
                 </div>
                 <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
@@ -2986,17 +3259,19 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
-          <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
-            <p><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>
-            {isPicker && line1Done && (
-              <p style={{ marginTop: 6 }}>
-                <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
-              </p>
-            )}
-          </div>
+          {!clientUpload && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
+              <p><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>
+              {isPicker && line1Done && (
+                <p style={{ marginTop: 6 }}>
+                  <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Account picker — keyboard handler lives on window while picker is visible */}
-          {isPicker && line2Done && !accountSelected && (
+          {!clientUpload && isPicker && line2Done && !accountSelected && (
             <AccountPicker
               accounts={accounts}
               highlightedAccount={highlightedAccount}
@@ -3006,7 +3281,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           )}
 
           {/* User reply bubble — appears after account is selected and line1 is done */}
-          {accountSelected && line1Done && (
+          {!clientUpload && accountSelected && line1Done && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
@@ -3150,7 +3425,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           )}
 
           {/* AI line 5 — ready to start (normal flow only) */}
-          {line4Done && feedProceedChoice !== "convert" && (
+          {line4Done && feedProceedChoice !== "convert" && !clientUpload && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 6, width: "70%" }}>
               <p><StreamingMessage key="line5" segments={[{ text: line5Text, bold: false }]} speed={18} instant={showResults} /></p>
             </div>
@@ -3231,14 +3506,15 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: clientUpload ? "#F0F0F0" : "#EAF2E2",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
-                color: "#080908",
+                color: clientUpload ? "#8C8C8B" : "#080908",
                 lineHeight: "22px",
+                fontStyle: clientUpload ? "italic" : "normal",
               }}>
-                Start reconciliation
+                {clientUpload ? "Reconciliation triggered automatically" : "Start reconciliation"}
               </div>
             </div>
           )}
@@ -3408,7 +3684,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               </div>
             </div>
           </div>
-        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles) ? null : (
+        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) ? null : (
           /* Standalone textarea — visible when AI is not streaming and no action card is showing */
           <div style={{ padding: resultsVisible ? "60px 24px 20px" : "0 24px 20px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -7722,12 +7998,148 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
   );
 }
 
+// ── Account name matcher ──────────────────────────────────────────────────────
+function matchAccountFromFilename(filename) {
+  const f = filename.toLowerCase();
+  if (f.includes("barclays"))                          return "Barclays - Operations";
+  if (f.includes("lloyds") && f.includes("ops"))      return "Lloyds Bank - Operations GBP";
+  if (f.includes("lloyds"))                           return "Lloyds Bank - Business";
+  if (f.includes("hsbc"))                             return "HSBC - Business Transactions";
+  if (f.includes("amex") || f.includes("american"))   return "American Express OP GBP";
+  if (f.includes("mastercard"))                       return "Mastercard Business";
+  return null;
+}
+
+// ── Processing Panel ──────────────────────────────────────────────────────────
+function ProcessingPanel({ files, onClose, onReview }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [doneIndices, setDoneIndices] = useState(new Set());
+  const [fileStatuses, setFileStatuses] = useState({}); // { [i]: "processing" | "matched" | "reconciling" }
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  useEffect(() => {
+    files.forEach((file, i) => {
+      const base = i * 600;
+      // "Processing" immediately (default, no timeout needed)
+      // "Reconciling" at 3s — AND trigger table update at the same moment
+      setTimeout(() => {
+        setFileStatuses(prev => ({ ...prev, [i]: "reconciling" }));
+        const accountName = matchAccountFromFilename(file?.name || "");
+        if (accountName) onReview?.(accountName, file);
+      }, base + 3000);
+      // Done at 8s (matches table's 3s auto-reconcile delay after onReview)
+      setTimeout(() => {
+        setDoneIndices(prev => new Set([...prev, i]));
+      }, base + 8000);
+    });
+  }, []);
+
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 24, right: 24, zIndex: 9000,
+      background: "#FFFFFF", borderRadius: 16,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)",
+      width: 340, fontFamily: "'Inter', sans-serif",
+      overflow: "hidden",
+      transform: visible ? "translateY(0)" : "translateY(calc(100% + 24px))",
+      opacity: visible ? 1 : 0,
+      transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: collapsed ? "none" : "1px solid #F0F0F0" }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{files.length} new document{files.length > 1 ? "s" : ""}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setCollapsed(c => !c)} style={{ border: "none", background: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d={collapsed ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} stroke="#545453" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="#545453" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {!collapsed && (
+        <>
+          {/* Status bar */}
+          <div style={{ background: doneIndices.size === files.length ? "#F0FBF0" : "#EBF5FB", padding: "10px 16px" }}>
+            <span style={{ fontSize: 14, color: doneIndices.size === files.length ? "#05A105" : "#2980B9", fontWeight: 500 }}>
+              {doneIndices.size === files.length ? "Reconciliation done for matched accounts" : Object.values(fileStatuses).some(s => s === "reconciling") ? "Reconciling accounts…" : "Less than a minute left"}
+            </span>
+          </div>
+
+          {/* File rows */}
+          {files.map((file, i) => {
+            const name = file?.name || "document";
+            const truncName = name.length > 24 ? name.slice(0, 24) + "..." : name;
+            const isDone = doneIndices.has(i);
+            return (
+              <React.Fragment key={i}>
+                {i > 0 && <div style={{ height: 1, background: "#F0F0F0", margin: "0 16px" }} />}
+                <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flexShrink: 0 }}><CsvIcon width={20} height={24} /></div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{truncName}</div>
+                    {isDone && <div style={{ fontSize: 14, color: "#8C8C8B", marginTop: 2 }}>Bank statement</div>}
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    {isDone ? (
+                      <button
+                        onClick={() => { onClose(); }}
+                        style={{ height: 32, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                        Review
+                      </button>
+                    ) : (() => {
+                      const status = fileStatuses[i] || "processing";
+                      const label = status === "reconciling" ? "Reconciling" : "Processing";
+                      const color = "#545453";
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="16" height="16" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                            <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3" strokeLinecap="round"/>
+                          </svg>
+                          <span style={{ fontSize: 13, color, fontWeight: 500 }}>{label}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })}
+
+          {/* Footer button */}
+          <div style={{ borderTop: "1px solid #F0F0F0", padding: "12px 16px 14px" }}>
+            <button style={{ width: "100%", height: 40, border: "1px solid #E9E9EB", background: "#FFFFFF", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+              Open all documents
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
   const [selectedPeriod, setSelectedPeriod] = useState("April 2026");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
+  const [uploadStatementsSidebarOpen, setUploadStatementsSidebarOpen] = useState(false);
+  const [processingFiles, setProcessingFiles] = useState(null); // array of files being processed
+  const [externalReconcilingAccounts, setExternalReconcilingAccounts] = useState(new Set());
+  const [allStatementsOpen, setAllStatementsOpen] = useState(false);
   const [allResolvedOnOpen, setAllResolvedOnOpen] = useState(false); // true when opening from a fully reconciled account
   const [isCleanReconcileOnOpen, setIsCleanReconcileOnOpen] = useState(false); // true when account has "reconciled" status (no suggestions)
   const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations", "Mastercard Business"])); // tracks completed reconciliations
@@ -7735,8 +8147,8 @@ export default function BankReconciliation() {
   const [reconciledStatuses, setReconciledStatuses] = useState({ "Barclays - Operations": "suggestions", "Mastercard Business": "suggestions" }); // { [accountName]: "reconciled"|"suggestions"|"completed" }
   const [reconciledCounts, setReconciledCounts] = useState({ "Barclays - Operations": 5, "Mastercard Business": 3 }); // { [accountName]: number | null }
   const [bankStatements, setBankStatements] = useState({
-    "Barclays - Operations": { fileName: "barclays-statement-mar2026.pdf", date: "Mar 2026" },
-    "Mastercard Business":   { fileName: "mastercard-statement-mar2026.pdf", date: "Mar 2026" },
+    "Barclays - Operations": { fileName: "barclays-statement-mar2026.pdf", date: "4 Apr", displayDate: "4 April", time: "15:32", period: "March 2026", uploadedBy: "Sarah Thompson" },
+    "Mastercard Business":   { fileName: "mastercard-statement-mar2026.pdf", date: "4 Apr", displayDate: "4 April", time: "15:32", period: "March 2026", uploadedBy: "Sarah Thompson" },
   }); // { [accountName]: { fileName, date } }
   const [rowComments, setRowComments] = useState({}); // { [accountCode]: [{user, timestamp, text}] }
   const [bsReconciling, setBsReconciling] = useState(null); // null | true | { code, account } — when object, direct account flow
@@ -7993,9 +8405,32 @@ export default function BankReconciliation() {
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
           <div style={{ padding: "32px 48px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: "#FFFFFF" }}>
             <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Bank reconciliation</h1>
-            <PrimaryButton icon={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
-              Run reconciliation
-            </PrimaryButton>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <PrimaryButton icon={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
+                Run reconciliation
+              </PrimaryButton>
+              <Tooltip text="Upload statements">
+                <button onClick={() => setUploadStatementsSidebarOpen(true)}
+                  style={{ width: 40, height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M16.6666 8.74935V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23306 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23306 18.3327 5.93312 18.3327 7.33325 18.3327H9.99992M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M14.9999 17.4993V12.4993M12.4999 14.9993H17.4999" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip text="All statements">
+                <button
+                  onClick={() => setAllStatementsOpen(true)}
+                  style={{ width: 40, height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M2.08341 10.0007H4.90172C5.47272 10.0007 5.99472 10.3233 6.25008 10.834C6.50544 11.3447 7.02744 11.6673 7.59844 11.6673H12.4017C12.9727 11.6673 13.4947 11.3447 13.7501 10.834C14.0054 10.3233 14.5274 10.0007 15.0984 10.0007H17.9167M7.47222 3.33398H12.5279C13.4253 3.33398 13.874 3.33398 14.2702 3.47062C14.6205 3.59145 14.9396 3.78865 15.2043 4.04794C15.5037 4.34115 15.7043 4.74248 16.1057 5.54513L17.9111 9.15607C18.0686 9.47106 18.1474 9.62855 18.2029 9.79361C18.2522 9.94019 18.2878 10.091 18.3093 10.2442C18.3334 10.4167 18.3334 10.5928 18.3334 10.9449V12.6673C18.3334 14.0674 18.3334 14.7675 18.0609 15.3023C17.8212 15.7727 17.4388 16.1552 16.9684 16.3948C16.4336 16.6673 15.7335 16.6673 14.3334 16.6673H5.66675C4.26662 16.6673 3.56655 16.6673 3.03177 16.3948C2.56137 16.1552 2.17892 15.7727 1.93923 15.3023C1.66675 14.7675 1.66675 14.0674 1.66675 12.6673V10.9449C1.66675 10.5928 1.66675 10.4167 1.69089 10.2442C1.71234 10.091 1.74795 9.94019 1.79726 9.79361C1.8528 9.62855 1.93155 9.47105 2.08904 9.15607L3.89451 5.54513C4.29583 4.74248 4.4965 4.34115 4.79587 4.04794C5.06061 3.78865 5.37968 3.59145 5.72999 3.47062C6.12613 3.33398 6.57482 3.33398 7.47222 3.33398Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Scrollable content */}
@@ -8024,12 +8459,61 @@ export default function BankReconciliation() {
             })()} />
 
             {/* Bank accounts table */}
-            <AccountTable title="Accounts" rows={bankAccounts} footerLabel={`${bankAccounts.length} accounts`} onRunReconciliation={handleRunReconciliation} onViewResults={handleViewResults} reconciledAccounts={reconciledAccounts} reconciledData={reconciledData} reconciledDates={reconciledDates} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} bankStatements={bankStatements} onUploadStatement={handleUploadStatement} onAutoReconcile={handleAutoReconcile} onResetAccount={handleResetAccount} />
+            <AccountTable title="Accounts" rows={bankAccounts} footerLabel={`${bankAccounts.length} accounts`} onRunReconciliation={handleRunReconciliation} onViewResults={handleViewResults} reconciledAccounts={reconciledAccounts} reconciledData={reconciledData} reconciledDates={reconciledDates} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} bankStatements={bankStatements} onUploadStatement={handleUploadStatement} onAutoReconcile={handleAutoReconcile} onResetAccount={handleResetAccount} externalReconcilingAccounts={externalReconcilingAccounts} />
 
           </div>
         </div>
         )}
       </div>
+
+      {/* Upload Statements Sidebar */}
+      {uploadStatementsSidebarOpen && (
+        <>
+          <div onClick={() => setUploadStatementsSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
+          <UploadStatementsSidebar
+            onClose={() => setUploadStatementsSidebarOpen(false)}
+            onUploaded={(files) => setProcessingFiles(files)}
+          />
+        </>
+      )}
+
+      {/* All Statements Sidebar */}
+      {allStatementsOpen && (
+        <>
+          <div onClick={() => setAllStatementsOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
+          <AllDocumentsSidebar onClose={() => setAllStatementsOpen(false)} />
+        </>
+      )}
+
+      {/* Processing panel */}
+      {processingFiles && (
+        <ProcessingPanel
+          files={processingFiles}
+          onClose={() => setProcessingFiles(null)}
+          onReview={(accountName, file) => {
+            if (!accountName) return;
+            const now = new Date();
+            const dateStr = now.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+            const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+            // Update the bank statement column
+            setBankStatements(prev => ({ ...prev, [accountName]: { fileName: file?.name || "bank-statement.pdf", date: dateStr, time: timeStr } }));
+            // Show "Reconciling" in actions column
+            setExternalReconcilingAccounts(prev => new Set([...prev, accountName]));
+            // Determine outcome and trigger auto-reconcile after 3s (same as table drop)
+            const getOutcome = (name) => {
+              if (name === "Lloyds Bank - Operations GBP") return { status: "reconciled", count: null };
+              if (name === "Lloyds Bank - Business")        return { status: "suggestions", count: 8 };
+              if (name === "HSBC - Business Transactions")  return { status: "suggestions", count: 1 };
+              return { status: "suggestions", count: 3 };
+            };
+            const { status, count } = getOutcome(accountName);
+            setTimeout(() => {
+              setExternalReconcilingAccounts(prev => { const next = new Set(prev); next.delete(accountName); return next; });
+              handleAutoReconcile(accountName, status, count);
+            }, 3000);
+          }}
+        />
+      )}
 
       {/* BS reconciled success toast */}
       {bsReconciledAlert && (
