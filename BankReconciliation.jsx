@@ -825,7 +825,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 28px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0 }}>
-          <span style={{ fontSize: 20, fontWeight: 500, color: "#080908", letterSpacing: "-0.3px" }}>All documents</span>
+          <span style={{ fontSize: 20, fontWeight: 500, color: "#080908", letterSpacing: "-0.3px" }}>All statements</span>
           <button
             onClick={close}
             style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
@@ -1797,7 +1797,7 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
       {allDocsOpen && (
         <AllDocumentsSidebar
           onClose={() => setAllDocsOpen(false)}
-          onSelect={(docs) => { setAllDocsOpen(false); handleDocsSelected(docs); }}
+          onSelect={(docs) => { handleDocsSelected(docs); }}
         />
       )}
     </div>
@@ -8011,11 +8011,12 @@ function matchAccountFromFilename(filename) {
 }
 
 // ── Processing Panel ──────────────────────────────────────────────────────────
-function ProcessingPanel({ files, onClose, onReview }) {
+function ProcessingPanel({ files, onClose, onReview, onViewResults }) {
   const [collapsed, setCollapsed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [doneIndices, setDoneIndices] = useState(new Set());
-  const [fileStatuses, setFileStatuses] = useState({}); // { [i]: "processing" | "matched" | "reconciling" }
+  const [fileStatuses, setFileStatuses] = useState({}); // { [i]: "processing" | "reconciling" }
+  const [matchedAccounts, setMatchedAccounts] = useState({}); // { [i]: accountName }
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
 
@@ -8027,12 +8028,15 @@ function ProcessingPanel({ files, onClose, onReview }) {
       setTimeout(() => {
         setFileStatuses(prev => ({ ...prev, [i]: "reconciling" }));
         const accountName = matchAccountFromFilename(file?.name || "");
-        if (accountName) onReview?.(accountName, file);
+        if (accountName) {
+          setMatchedAccounts(prev => ({ ...prev, [i]: accountName }));
+          onReview?.(accountName, file);
+        }
       }, base + 3000);
-      // Done at 8s (matches table's 3s auto-reconcile delay after onReview)
+      // Done at 6s — same moment the table finishes (onReview at 3s + 3s delay = 6s)
       setTimeout(() => {
         setDoneIndices(prev => new Set([...prev, i]));
-      }, base + 8000);
+      }, base + 6000);
     });
   }, []);
 
@@ -8091,7 +8095,7 @@ function ProcessingPanel({ files, onClose, onReview }) {
                   <div style={{ flexShrink: 0 }}>
                     {isDone ? (
                       <button
-                        onClick={() => { onClose(); }}
+                        onClick={() => { const acc = matchedAccounts[i]; if (acc) onViewResults?.(acc); onClose(); }}
                         style={{ height: 32, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908" }}
                         onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
                         onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
@@ -8137,6 +8141,10 @@ export default function BankReconciliation() {
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
   const [uploadStatementsSidebarOpen, setUploadStatementsSidebarOpen] = useState(false);
+  const [uploadSidebarVisible, setUploadSidebarVisible] = useState(false);
+
+  const openUploadSidebar = () => { setUploadStatementsSidebarOpen(true); requestAnimationFrame(() => setUploadSidebarVisible(true)); };
+  const closeUploadSidebar = () => { setUploadSidebarVisible(false); setTimeout(() => setUploadStatementsSidebarOpen(false), 320); };
   const [processingFiles, setProcessingFiles] = useState(null); // array of files being processed
   const [externalReconcilingAccounts, setExternalReconcilingAccounts] = useState(new Set());
   const [allStatementsOpen, setAllStatementsOpen] = useState(false);
@@ -8410,7 +8418,7 @@ export default function BankReconciliation() {
                 Run reconciliation
               </PrimaryButton>
               <Tooltip text="Upload statements">
-                <button onClick={() => setUploadStatementsSidebarOpen(true)}
+                <button onClick={openUploadSidebar}
                   style={{ width: 40, height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
                   onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
@@ -8469,9 +8477,9 @@ export default function BankReconciliation() {
       {/* Upload Statements Sidebar */}
       {uploadStatementsSidebarOpen && (
         <>
-          <div onClick={() => setUploadStatementsSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
+          <div onClick={closeUploadSidebar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, opacity: uploadSidebarVisible ? 1 : 0, transition: "opacity 0.32s ease" }} />
           <UploadStatementsSidebar
-            onClose={() => setUploadStatementsSidebarOpen(false)}
+            onClose={closeUploadSidebar}
             onUploaded={(files) => setProcessingFiles(files)}
           />
         </>
@@ -8490,6 +8498,7 @@ export default function BankReconciliation() {
         <ProcessingPanel
           files={processingFiles}
           onClose={() => setProcessingFiles(null)}
+          onViewResults={(accountName) => { setProcessingFiles(null); handleViewResults(accountName); }}
           onReview={(accountName, file) => {
             if (!accountName) return;
             const now = new Date();
