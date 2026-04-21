@@ -2094,6 +2094,8 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
           ) : (
             navCategories.map((cat, ci) => {
               const isCatCollapsed = !!collapsedCats[cat.key];
+              const remaining = cat.items.filter((_, ii) => !resolvedCards.has(cat.baseIdx + ii) && !ignoredCards.has(cat.baseIdx + ii)).length;
+              const catAllDone = remaining === 0;
               return (
               <div key={ci} style={{ marginBottom: ci < navCategories.length - 1 ? 6 : 0 }}>
                 <button
@@ -2104,7 +2106,14 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                 >
                   <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>{cat.label}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: "#6B6B6B", background: "#F0F0F0", borderRadius: 4, padding: "1px 7px", lineHeight: "18px" }}>{cat.items.length}</span>
+                    {catAllDone ? (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                        <circle cx="8" cy="8" r="8" fill="#05A105"/>
+                        <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "#6B6B6B", background: "#F0F0F0", borderRadius: 4, padding: "1px 7px", lineHeight: "18px" }}>{remaining}</span>
+                    )}
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s ease", transform: isCatCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>
                       <path d="M3 5L7 9L11 5" stroke="#ADADAD" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -2848,7 +2857,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [replaceStatementMode, setReplaceStatementMode] = useState(false);
   const [resultsVisible, setResultsVisible]   = useState(showResults);
   const [canvasReady, setCanvasReady]         = useState(showResults);
-  const [boxesOpen, setBoxesOpen]             = useState(false);
+  const [boxesOpen, setBoxesOpen]             = useState(true);
   const [creditCardBannerDismissed, setCreditCardBannerDismissed] = useState(false);
   const addStatementInputRef = useRef(null);
   const [chatWidth, setChatWidth]             = useState(400);
