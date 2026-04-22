@@ -1115,6 +1115,9 @@ function RecommendationCard({
   secondaryLabel = "Upload document",
   external = false,
   fileAction = null,
+  score = null,
+  verticalTable = false,
+  hideMore = false,
   onPrimaryAction,
   onFileAction,
   onSecondaryAction,
@@ -1159,8 +1162,8 @@ function RecommendationCard({
   );
   const SuccessIcon = () => (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" fill="none" stroke="#05A105" strokeWidth="1.5"/>
-      <path d="M6.66667 10L8.88889 12.2222L13.3333 7.77778" stroke="#05A105" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="10" cy="10" r="10" fill="#05A105"/>
+      <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
   const IgnoredIcon = () => (
@@ -1170,7 +1173,7 @@ function RecommendationCard({
   );
 
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #EFF1F4", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
+    <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showBody ? 10 : 0, transition: "margin 0.35s ease", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
         onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
@@ -1180,7 +1183,7 @@ function RecommendationCard({
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, padding: "2px 8px", borderRadius: 4, background: effectiveStatusStyle.background, border: effectiveStatusStyle.border, color: effectiveStatusStyle.color, whiteSpace: "nowrap", transition: "all 0.3s ease" }}>
+          <span style={{ fontSize: 12, fontWeight: 500, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", borderRadius: 4, background: effectiveStatusStyle.background, border: effectiveStatusStyle.border, color: effectiveStatusStyle.color, whiteSpace: "nowrap", transition: "all 0.3s ease" }}>
             {effectiveStatusLabel}
           </span>
           <div style={{ display: "flex", transform: showBody ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
@@ -1189,11 +1192,21 @@ function RecommendationCard({
         </div>
       </div>
       {showBody && (
-        <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "0 0 14px" }}>{description}</p>
+        <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "16px 0 14px" }}>{description}</p>
       )}
       {showBody && (
       <>
       <div style={{ marginBottom: isResolved ? 0 : 14 }}>
+        {verticalTable ? (
+          <div style={{ border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+            {Object.entries(tableRow).map(([key, val], i, arr) => (
+              <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr", borderBottom: i < arr.length - 1 ? "1px solid #E9E9EB" : "none", background: "#FFFFFF" }}>
+                <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 400, color: "#000000", borderRight: "1px solid #E9E9EB" }}>{key}</div>
+                <div style={{ padding: "12px 16px", fontSize: 14, color: "#080908" }}>{val}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <DataTable
           columns={[
             { key: "state",   label: "State",     width: "1fr" },
@@ -1204,6 +1217,7 @@ function RecommendationCard({
           ]}
           rows={tableRows && tableRows.length ? tableRows : [tableRow]}
         />
+        )}
       </div>
       {(!isResolved || isIgnored) && (
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1219,7 +1233,7 @@ function RecommendationCard({
             {secondaryLabel}
           </SecondaryButton>
         ) : null}
-        {!isIgnored && (fileAction || secondaryLabel) && (
+        {!hideMore && !isIgnored && (fileAction || secondaryLabel) && (
           <div style={{ position: "relative" }}>
             <button
               ref={collectBtnRef}
@@ -1252,7 +1266,7 @@ function RecommendationCard({
             )}
           </div>
         )}
-        {!isIgnored && onMore && (
+        {!hideMore && !isIgnored && onMore && (
           <button style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
             onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
@@ -2018,7 +2032,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
 }
 
 // ── Results sidebar: Progress box ────────────────────────────────────────────
-function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards, ignoredCards = new Set() }) {
+function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards, ignoredCards = new Set(), completedTitle = "Ready to reconcile in Xero", completedDescription = "All suggestions resolved. Go to Xero to finalise and post the reconciliation." }) {
   const color = accountStatus === "completed" ? "#4C71DF" : "#05A105";
   const bg    = accountStatus === "completed" ? "#EEF2FF" : "#EAF2E2";
   const label = accountStatus === "completed" ? "Completed" : "Reconciled";
@@ -2048,10 +2062,10 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                   <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "#4C71DF" }}>Ready to reconcile in Xero</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#4C71DF" }}>{completedTitle}</span>
             </div>
             {/* Description */}
-            <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "18px" }}>All suggestions resolved. Go to Xero to finalise and post the reconciliation.</span>
+            <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "18px" }}>{completedDescription}</span>
             {/* Progress */}
             <div>
               <div style={{ marginBottom: 8 }}>
@@ -2100,20 +2114,13 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
               <div key={ci} style={{ marginBottom: ci < navCategories.length - 1 ? 6 : 0 }}>
                 <button
                   onClick={() => toggleCat(cat.key)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", borderRadius: 6 }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 10px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", borderRadius: 6 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}
                 >
                   <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>{cat.label}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {catAllDone ? (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                        <circle cx="8" cy="8" r="8" fill="#05A105"/>
-                        <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <span style={{ fontSize: 12, fontWeight: 500, color: "#6B6B6B", background: "#F0F0F0", borderRadius: 4, padding: "1px 7px", lineHeight: "18px" }}>{remaining}</span>
-                    )}
+                    <span style={{ fontSize: 12, fontWeight: 500, color: catAllDone ? "#05A105" : "#6B6B6B", background: catAllDone ? "#EAF2E2" : "#F0F0F0", borderRadius: 4, padding: "1px 7px", lineHeight: "18px", transition: "background 0.2s, color 0.2s" }}>{remaining}</span>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s ease", transform: isCatCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>
                       <path d="M3 5L7 9L11 5" stroke="#ADADAD" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -2131,13 +2138,13 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                       onMouseLeave={e => e.currentTarget.style.background = "none"}
                     >
                       {(isResolved || isIgnored) ? (
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="8" cy="8" r="8" fill="#05A105"/>
-                          <path d="M4.5 8.5L7 11L11.5 5.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                          <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                          <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : (
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="8" cy="8" r="7.25" stroke="#D1D1D1" strokeWidth="1"/>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                          <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
                         </svg>
                       )}
                       <span style={{ fontSize: 14, color: (isResolved || isIgnored) ? "#ADADAD" : "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -7793,7 +7800,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
-        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
         <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Review</h1>
         {/* Tabs */}
         <div style={{ display: "flex", gap: 24, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
@@ -7824,7 +7831,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
         </div>
       </div>
       <div ref={scrollRef} onScroll={e => onSaveScroll?.(e.currentTarget.scrollTop)} style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px" }}>
-        <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
         {activeTab === "Profit and Loss" ? (
           <div style={{
             background: "#FAFAFA", border: "1px solid #E9E9EB", borderRadius: 12,
@@ -7928,7 +7935,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab }) {
+function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, vatReviewCompleted = false, vatResolvedCount = 0 }) {
   const AVATAR_COLORS = ["#6389CF", "#6389CF", "#6389CF", "#6389CF", "#6389CF"];
   const members = [
     { initial: "C", name: "Courtney Lemke",  role: "Accountant" },
@@ -7951,6 +7958,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
   const adjustTasks = [
     { label: "Handle prepayment suggestions", count: null              },
     { label: "Handle accrual suggestions",    count: null              },
+    { label: "VAT review",                    count: null, arrow: true },
     { label: "Review Profit & Loss",          count: null, arrow: true },
     { label: "Reconcile balance sheet",       count: null, arrow: true, onClick: () => { onNavigate?.("Review"); onSetBsTab?.("Balance sheet"); } },
   ];
@@ -8014,20 +8022,20 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
 
       {/* Page header */}
       <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
-        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
           <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
         </div>
       </div>
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: 48, paddingTop: 0, background: "#FFFFFF" }}>
-        <div style={{ maxWidth: 1680, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
 
         {/* Two-column layout */}
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", minWidth: 0 }}>
 
           {/* LEFT — Month-end close card */}
-          <div style={{ flex: "1 1 500px", minWidth: 0, maxWidth: 800, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
+          <div style={{ flex: "1 1 500px", minWidth: 0, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
 
             {/* Card header: badge + buttons */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 24px 16px 20px" }}>
@@ -8098,7 +8106,49 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
           </div>
 
           {/* RIGHT column */}
-          <div style={{ flex: "0 0 450px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ flex: "0 0 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Workflows card */}
+          <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" style={{ flexShrink: 0 }}>
+                <rect width="40" height="40" rx="7" fill="#05A105"/>
+                <path d="M25.8 17.5C26.9201 17.5 27.4802 17.5 27.908 17.3443C28.2843 17.2074 28.5903 16.9888 28.782 16.72C29 16.4144 29 16.0144 29 15.2143V14.7857C29 13.9856 29 13.5856 28.782 13.28C28.5903 13.0112 28.2843 12.7926 27.908 12.6557C27.4802 12.5 26.9201 12.5 25.8 12.5H14.2C13.0799 12.5 12.5198 12.5 12.092 12.6557C11.7157 12.7926 11.4097 13.0112 11.218 13.28C11 13.5856 11 13.9856 11 14.7857V15.2143C11 16.0144 11 16.4144 11.218 16.72C11.4097 16.9888 11.7157 17.2074 12.092 17.3443C12.5198 17.5 13.0799 17.5 14.2 17.5H25.8Z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M25.8 27.5C26.9201 27.5 27.4802 27.5 27.908 27.3443C28.2843 27.2074 28.5903 26.9888 28.782 26.72C29 26.4144 29 26.0144 29 25.2143V24.7857C29 23.9856 29 23.5856 28.782 23.28C28.5903 23.0112 28.2843 22.7926 27.908 22.6557C27.4802 22.5 26.9201 22.5 25.8 22.5H14.2C13.0799 22.5 12.5198 22.5 12.092 22.6557C11.7157 22.7926 11.4097 23.0112 11.218 23.28C11 23.5856 11 23.9856 11 24.7857V25.2143C11 26.0144 11 26.4144 11.218 26.72C11.4097 26.9888 11.7157 27.2074 12.092 27.3443C12.5198 27.5 13.0799 27.5 14.2 27.5H25.8Z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <p style={{ fontSize: 18, fontWeight: 500, color: "#1F2024", margin: 0 }}>Workflows</p>
+            </div>
+            {[
+              { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${reconciledAccounts.size} of ${totalAccounts} accounts reconciled`, statusColor: "#000000", btnLabel: "Select account", dataflowIcon: true },
+              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? `${vatResolvedCount} of 6 suggestions resolved` : "Not started", statusColor: vatReviewCompleted ? "#000000" : undefined, btnLabel: vatReviewCompleted ? "Review" : "Run" },
+              { label: "Payroll reconciliation",       onRun: null, status: "Not started", btnLabel: "Run" },
+              { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
+              { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
+              { label: "Balance sheet reconciliation", onRun: null, status: "3 of 24 accounts reconciled", statusColor: "#000000", btnLabel: "Select account", dataflowIcon: true },
+            ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => (
+              <div key={label} style={{ borderTop: "1px solid #ECECEC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: "#1F2024" }}>{label}</span>
+                  <span style={{ fontSize: 13, color: statusColor || "#ADADAD" }}>{status}</span>
+                </div>
+                <button
+                  onClick={onRun || undefined}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s ease" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+                >
+                  {btnLabel}
+                  {dataflowIcon ? (
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M4.167 10h11.666M10 4.167 15.833 10 10 15.833" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <PlayCircleIcon color="#080908" size={20} />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
 
           {/* Client context card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
@@ -8118,24 +8168,6 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, tot
             <SecondaryButton style={{ alignSelf: "flex-start" }}>Manage Client Context</SecondaryButton>
           </div>
 
-          {/* Members card */}
-          <div style={{ flex: 1, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
-            <p style={{ fontSize: 18, fontWeight: 500, color: "#1F2024", margin: 0 }}>Members</p>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {members.map(({ initial, name, role }, i) => (
-                <div key={name} style={{ borderTop: "1px solid #EFF1F4", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 500, color: AVATAR_COLORS[i % AVATAR_COLORS.length], flexShrink: 0 }}>
-                      {initial}
-                    </div>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>{name}</span>
-                  </div>
-                  <span style={{ fontSize: 14, color: "#8C8C8B" }}>{role}</span>
-                </div>
-              ))}
-            </div>
-            <SecondaryButton style={{ alignSelf: "flex-start" }}>Manage members</SecondaryButton>
-          </div>
 
           </div>{/* end right column */}
 
@@ -8282,6 +8314,572 @@ function ProcessingPanel({ files, onClose, onReview, onViewResults }) {
   );
 }
 
+// ── VAT Review Flow ───────────────────────────────────────────────────────────
+const VAT_STEPS = [
+  { title: "Pulling 184 transactions from Xero",      subtext: null,                                       duration: 900  },
+  { title: "Checking 184 VAT codes",                  subtext: "Comparing against HMRC VAT code list.",    duration: 1300 },
+  { title: "Matched 178 transactions, 6 flagged",     subtext: "6 entries require manual review.",         duration: 1500 },
+  { title: "Standard rate method (20%) confirmed",    subtext: "VAT scheme: Standard Rate.",               duration: 1000 },
+  { title: "1 duplicate entry detected",              subtext: null,                                       duration: 800  },
+  { title: "Generating suggestions",                  subtext: null,                                       duration: 1000 },
+];
+
+const VAT_CARDS = [
+  {
+    idx: 0, cat: "wrong-code", score: 94,
+    title: "Incorrect VAT rate applied",
+    contact: "Hartley & Sons Supplies",
+    description: "An exempt supply from Hartley & Sons Supplies has been coded at the standard 20% rate. This overstates input VAT and could trigger a compliance query from HMRC.",
+    tableRow: { Date: "12 Mar 2026", Contact: "Hartley & Sons Supplies", Description: "Professional services", Amount: "£1,200.00", "VAT Code": "T1 (20%)", "VAT Amount": "£240.00" },
+    primaryLabel: "Correct VAT code",
+    secondaryLabel: "View invoice",
+  },
+  {
+    idx: 1, cat: "wrong-code", score: 67,
+    title: "Wrong VAT code on zero-rated supply",
+    contact: "Meridian Freight Ltd",
+    description: "A zero-rated freight supply from Meridian Freight Ltd has been posted with a standard-rate VAT code, incorrectly claiming £180 of input VAT.",
+    tableRow: { Date: "18 Mar 2026", Contact: "Meridian Freight Ltd", Description: "International freight", Amount: "£900.00", "VAT Code": "T1 (20%)", "VAT Amount": "£180.00" },
+    primaryLabel: "Correct VAT code",
+    secondaryLabel: "View invoice",
+  },
+  {
+    idx: 2, cat: "missing-vat", score: 38,
+    title: "Missing VAT registration number",
+    contact: "Premier Office Supplies",
+    description: "The invoice from Premier Office Supplies does not include the supplier's VAT registration number. HMRC requires this for input VAT claims to be valid.",
+    tableRow: { Date: "5 Mar 2026", Contact: "Premier Office Supplies", Description: "Office consumables", Amount: "£450.00", "VAT Code": "T1 (20%)", "VAT Amount": "£90.00" },
+    primaryLabel: "Request VAT invoice",
+    secondaryLabel: "View invoice",
+  },
+  {
+    idx: 3, cat: "duplicate", score: 88,
+    title: "Duplicate VAT entry",
+    contact: "Premier Office Supplies",
+    description: "Invoice #INV-2026-0341 from Premier Office Supplies appears to have been posted twice, resulting in a duplicate input VAT claim of £90.00.",
+    tableRow: { Date: "5 Mar 2026", Contact: "Premier Office Supplies", Description: "Office consumables (duplicate)", Amount: "£450.00", "VAT Code": "T1 (20%)", "VAT Amount": "£90.00" },
+    primaryLabel: "Delete duplicate",
+    secondaryLabel: "Compare entries",
+  },
+  {
+    idx: 4, cat: "non-reclaimable", score: 72,
+    title: "Non-reclaimable VAT — client entertainment",
+    contact: "Client Entertainment Ltd",
+    description: "VAT on business entertainment for clients is blocked under VATA 1994 s.84. The £96 of VAT on this entry cannot be reclaimed and should be excluded.",
+    tableRow: { Date: "22 Mar 2026", Contact: "Client Entertainment Ltd", Description: "Client dinner", Amount: "£480.00", "VAT Code": "T1 (20%)", "VAT Amount": "£96.00" },
+    primaryLabel: "Mark as non-reclaimable",
+    secondaryLabel: "View invoice",
+  },
+  {
+    idx: 5, cat: "late-claim", score: 41,
+    title: "Late VAT claim — outside 4-year limit",
+    contact: "Westbrook Services",
+    description: "This invoice is dated March 2021, more than 4 years ago. HMRC's 4-year cap on input VAT claims means this amount can no longer be reclaimed.",
+    tableRow: { Date: "14 Mar 2021", Contact: "Westbrook Services", Description: "Consulting services", Amount: "£2,100.00", "VAT Code": "T1 (20%)", "VAT Amount": "£420.00" },
+    primaryLabel: "Write off VAT",
+    secondaryLabel: "View invoice",
+  },
+];
+
+const VAT_NAV_CATS = [
+  { key: "wrong-code",      label: "Wrong VAT code",      baseIdx: 0, items: [{ contact: "Hartley & Sons Supplies" }, { contact: "Meridian Freight Ltd" }] },
+  { key: "missing-vat",     label: "Missing VAT number",  baseIdx: 2, items: [{ contact: "Premier Office Supplies" }] },
+  { key: "duplicate",       label: "Duplicates",          baseIdx: 3, items: [{ contact: "Premier Office Supplies" }] },
+  { key: "non-reclaimable", label: "Non-reclaimable VAT", baseIdx: 4, items: [{ contact: "Client Entertainment Ltd" }] },
+  { key: "late-claim",      label: "Late VAT claim",      baseIdx: 5, items: [{ contact: "Westbrook Services" }] },
+];
+
+const VAT_CAT_LABELS = {
+  "wrong-code":      "Wrong VAT code",
+  "missing-vat":     "Missing VAT number",
+  "duplicate":       "Duplicates",
+  "non-reclaimable": "Non-reclaimable VAT",
+  "late-claim":      "Late VAT claim",
+};
+
+function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
+  const [stepStatuses, setStepStatuses] = useState(showResults ? VAT_STEPS.map(() => "done") : []);
+  const [stepSubtexts, setStepSubtexts] = useState(showResults ? VAT_STEPS.map(() => true) : []);
+  const [stepsCollapsed, setStepsCollapsed] = useState(showResults);
+  const [resultsVisible, setResultsVisible]   = useState(showResults);
+  const [canvasReady, setCanvasReady]         = useState(showResults);
+  const [boxesOpen, setBoxesOpen]             = useState(false);
+  const [chatWidth, setChatWidth]             = useState(400);
+  const [isDragging, setIsDragging]           = useState(false);
+  const [isAtBottom, setIsAtBottom]           = useState(true);
+  const [inputValue, setInputValue]           = useState("");
+  const [toast, setToast]                     = useState(null);
+  const chatScrollRef = useRef(null);
+  const chatEndRef    = useRef(null);
+
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const stepsComplete = stepStatuses.length > 0 && stepStatuses.every(s => s === "done");
+  const totalSuggestions = VAT_CARDS.length;
+
+  // Typewriter messages — defined before effects so introDone is in scope
+  const introSegments = [
+    { text: "Great, let's do a ", bold: false },
+    { text: "VAT review.", bold: true },
+    { text: " Let me run through some things, then we can look at the results together.", bold: false },
+  ];
+  const introFull = introSegments.map(s => s.text).join("");
+  const { done: introDone } = useTypewriter(introFull, 18, showResults);
+
+  // Auto-start steps once intro message finishes typing
+  useEffect(() => {
+    if (!introDone || showResults) return;
+    setStepStatuses(VAT_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
+    setStepSubtexts(VAT_STEPS.map(() => false));
+    let cumulative = 0;
+    const timers = [];
+    VAT_STEPS.forEach((step, i) => {
+      cumulative += step.duration;
+      if (step.subtext) {
+        timers.push(setTimeout(() => {
+          setStepSubtexts(prev => { const next = [...prev]; next[i] = true; return next; });
+        }, cumulative - 400));
+      }
+      timers.push(setTimeout(() => {
+        setStepStatuses(prev => {
+          const next = [...prev];
+          next[i] = "done";
+          if (i + 1 < VAT_STEPS.length) next[i + 1] = "active";
+          return next;
+        });
+      }, cumulative));
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [introDone]);
+
+  // Collapse steps when chat slides into sidebar
+  useEffect(() => {
+    if (!resultsVisible) return;
+    const t = setTimeout(() => setStepsCollapsed(true), 360);
+    return () => clearTimeout(t);
+  }, [resultsVisible]);
+
+  // Show canvas once steps finish
+  useEffect(() => {
+    if (stepsComplete) setResultsVisible(true);
+  }, [stepsComplete]);
+
+  // Canvas content ready after slide-in animation
+  useEffect(() => {
+    if (!resultsVisible) return;
+    if (showResults) { setCanvasReady(true); return; }
+    const t = setTimeout(() => setCanvasReady(true), 3200);
+    return () => clearTimeout(t);
+  }, [resultsVisible]);
+
+  // Spin keyframe
+  useEffect(() => {
+    if (document.getElementById("_spin_kf")) return;
+    const s = document.createElement("style");
+    s.id = "_spin_kf";
+    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+    document.head.appendChild(s);
+  }, []);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [stepStatuses, stepsCollapsed, resultsVisible]);
+
+  // Track whether chat is scrolled to bottom
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const onScroll = () => setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Drag handle
+  const handleDragStart = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const startX = e.clientX;
+    const startWidth = chatWidth;
+    const onMouseMove = (e) => setChatWidth(Math.max(280, Math.min(700, startWidth + (e.clientX - startX))));
+    const onMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  const catOrder = ["wrong-code", "missing-vat", "duplicate", "non-reclaimable", "late-claim"];
+  const groupedCards = catOrder.reduce((acc, key) => {
+    const items = VAT_CARDS.filter(c => c.cat === key);
+    if (items.length) acc.push({ key, items });
+    return acc;
+  }, []);
+
+  const resolvedCount = resolvedCards.size + ignoredCards.size;
+  const pct = totalSuggestions > 0 ? Math.min(100, Math.round((resolvedCount / totalSuggestions) * 100)) : 0;
+  const allDone = resolvedCount >= totalSuggestions;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FBFBFB" }}>
+      <style>{`
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes resultsFadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+        @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+      `}</style>
+
+      {/* Top bar — matches bank reconciliation style */}
+      <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #ECECEC", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>VAT review</span>
+
+        {/* Period badge — styled like the account dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", fontSize: 14, fontWeight: 500, color: "#080908" }}>
+          {selectedPeriod}
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Suggestions toggle — same expanding button as bank rec */}
+        {resultsVisible && canvasReady && (
+          <button
+            onClick={() => setBoxesOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 8, cursor: "pointer", fontFamily: "inherit", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", height: 48, minWidth: 48, padding: boxesOpen ? 0 : "0 12px 0 0", overflow: "hidden", justifyContent: "center", flexShrink: 0, transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+            onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+          >
+            <div style={{ maxWidth: boxesOpen ? 0 : 180, opacity: boxesOpen ? 0 : 1, overflow: "hidden", transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, padding 0.35s cubic-bezier(0.16,1,0.3,1)", display: "flex", flexDirection: "column", gap: 4, paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Suggestions</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolvedCount}/{totalSuggestions}</span>
+              </div>
+              <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: allDone ? "#4C71DF" : "#05A105", borderRadius: 1, transition: "width 0.4s ease, background 0.3s ease" }} />
+              </div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M15 21L15 3M16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21Z" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        )}
+
+        {/* Close X button — same circle style as bank rec */}
+        <button onClick={onClose}
+          style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}
+        >
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <rect width="30" height="30" rx="15" fill="#F5F5F5"/>
+            <path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Content area — identical structure to ReconciliationFlow */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", padding: 16 }}>
+
+        {/* Left chat panel — full width until canvas appears, then transitions to sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", width: resultsVisible ? chatWidth : "100%", flexShrink: 0, transition: isDragging ? "none" : "width 0.72s cubic-bezier(0.16, 1, 0.3, 1)", overflow: "hidden", willChange: "width", position: "relative", zIndex: 1 }}>
+
+          {/* Scroll-to-bottom button */}
+          {resultsVisible && (
+            <button
+              onClick={() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })}
+              style={{ position: "absolute", bottom: 218, left: "50%", transform: "translateX(-50%)", zIndex: 10, width: 32, height: 32, borderRadius: "50%", background: "#FFFFFF", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)", opacity: isAtBottom ? 0 : 1, pointerEvents: isAtBottom ? "none" : "auto", transition: "opacity 0.35s ease" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5V19M12 19L19 12M12 19L5 12" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Chat scroll area */}
+          <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
+            <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              {resultsVisible && <div style={{ position: "sticky", top: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
+              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+
+                {/* User bubble */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    I want to do a VAT review
+                  </div>
+                </div>
+
+                {/* Intro AI message */}
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
+                  <p style={{ margin: 0 }}><StreamingMessage segments={introSegments} speed={18} /></p>
+                </div>
+
+                {/* Steps block */}
+                {stepStatuses.length > 0 && (
+                  <div style={{ marginTop: 24 }}>
+                    <div onClick={() => setStepsCollapsed(c => !c)} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: stepsCollapsed ? 0 : 20, cursor: "pointer" }}>
+                      <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9 2 2 4-4" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>VAT review</span>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform 0.2s ease", transform: stepsCollapsed ? "rotate(180deg)" : "rotate(0deg)" }}>
+                            <path d="M3 8.5L7 4.5L11 8.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <span style={{ fontSize: 13, color: "#8C8C8B" }}>{stepsComplete ? "Completed" : "In progress"}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ overflow: "hidden", maxHeight: stepsCollapsed ? 0 : 800, opacity: stepsCollapsed ? 0 : 1, transition: "max-height 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease" }}>
+                      {VAT_STEPS.map((step, i) => {
+                        const status = stepStatuses[i] || "pending";
+                        const isLast = i === VAT_STEPS.length - 1;
+                        return (
+                          <div key={i} style={{ display: "flex", gap: 16 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+                              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.4s ease" }}>
+                                {status === "done" && (
+                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                                    <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                                {status === "active" && (
+                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                                    <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                                  </svg>
+                                )}
+                                {status === "pending" && (
+                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
+                                  </svg>
+                                )}
+                              </div>
+                              {!isLast && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
+                            </div>
+                            <div style={{ paddingBottom: isLast ? 0 : 20 }}>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>{step.title}</div>
+                              {(stepSubtexts[i] || status === "done") && step.subtext && (
+                                <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>{step.subtext}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+            </div>
+          </div>
+
+          {/* Typing indicator — shown while intro is typing and while steps are running */}
+          {!stepsComplete && (
+            <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
+              <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ fontSize: 14, lineHeight: "22px", flex: 1 }}>
+                      <span style={{ background: "linear-gradient(90deg, #9D9D9E 0%, #9D9D9E 30%, #2A2A2A 50%, #9D9D9E 70%, #9D9D9E 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "textShimmer 2s linear infinite", display: "inline-block" }}>
+                        Analysing transactions...
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Chat input — shown once results are visible */}
+          {resultsVisible && (
+            <div style={{ padding: "60px 12px 12px", flexShrink: 0, background: "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)", marginTop: -60 }}>
+              <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
+                  <textarea
+                    value={inputValue}
+                    onChange={e => setInputValue(e.target.value)}
+                    placeholder="Ask for changes or information..."
+                    rows={3}
+                    style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#080908", lineHeight: "22px", background: "transparent", fontFamily: "'Inter', sans-serif", display: "block" }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+                    <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, color: "#8C8C8B", padding: 0 }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M15.5 8.5L8.5 15.5C7.12 16.88 4.88 16.88 3.5 15.5C2.12 14.12 2.12 11.88 3.5 10.5L10.5 3.5C11.33 2.67 12.67 2.67 13.5 3.5C14.33 4.33 14.33 5.67 13.5 6.5L6.5 13.5C6.08 13.92 5.42 13.92 5 13.5C4.58 13.08 4.58 12.42 5 12L11.5 5.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div style={{ flex: 1 }} />
+                    <button style={{ width: 36, height: 36, marginLeft: 6, border: "1px solid #E9E9EB", borderRadius: 10, background: inputValue.trim() ? "#05A105" : "#FAFAFA", cursor: inputValue.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", padding: 0 }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M9.99984 15.8346V4.16797M9.99984 4.16797L4.1665 10.0013M9.99984 4.16797L15.8332 10.0013" stroke={inputValue.trim() ? "#FFFFFF" : "#8C8C8B"} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Drag handle */}
+        {resultsVisible && (
+          <div onMouseDown={handleDragStart} style={{ position: "absolute", top: 0, bottom: 0, left: chatWidth + 16, width: 16, cursor: "col-resize", zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 4, height: 40, borderRadius: 2, background: isDragging ? "#CFCFD1" : "transparent", transition: "background 0.15s" }} />
+          </div>
+        )}
+
+        {/* Canvas — slides in from right, absolutely positioned */}
+        <div style={{ position: "absolute", top: 16, bottom: 16, left: chatWidth + 32, right: boxesOpen ? 382 : 16, background: "#FFFFFF", borderRadius: 8, border: "1px solid #ECECEC", overflow: "hidden", zIndex: 2, transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))", transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)", willChange: resultsVisible ? "auto" : "transform" }}>
+          {canvasReady ? (
+            <div style={{ animation: "resultsFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
+              <div style={{ padding: "48px 48px 48px", maxWidth: 800, margin: "0 auto" }}>
+
+                {/* Results heading */}
+                <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
+
+                {/* VAT summary table */}
+                <div style={{ marginBottom: 12 }}>
+                  <DataTable
+                    columns={[
+                      { key: "description", label: "Summary", width: "1fr" },
+                      { key: "value",       label: "Value",   width: "160px" },
+                    ]}
+                    rows={[
+                      { description: "Period",       value: selectedPeriod },
+                      { description: "Transactions", value: "184" },
+                      { description: "Output VAT",   value: "£3,211.44" },
+                      { description: "Input VAT",    value: "£1,097.56" },
+                      { description: "Net VAT due",  value: "£2,113.88" },
+                      { description: "Adjustment",   value: "–£9.64" },
+                    ]}
+                  />
+                </div>
+
+                {/* Results table */}
+                <div style={{ marginBottom: 12 }}>
+                  <DataTable
+                    columns={[
+                      { key: "description", label: "Suggestion description", width: "1fr" },
+                      { key: "issues", label: "Suggestions found", width: "160px" },
+                    ]}
+                    rows={[
+                      { description: "Wrong VAT code",      issues: 2 },
+                      { description: "Missing VAT number",  issues: 1 },
+                      { description: "Duplicates",          issues: 1 },
+                      { description: "Non-reclaimable VAT", issues: 1 },
+                      { description: "Late VAT claim",      issues: 1 },
+                    ]}
+                  />
+                </div>
+
+                {/* Analysis & key findings accordion */}
+                <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
+                  <button onClick={() => setAnalysisOpen(o => !o)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
+                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                      <ChevronUpIcon />
+                    </div>
+                  </button>
+                  {analysisOpen && (
+                    <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
+                      The VAT review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
+                    </div>
+                  )}
+                </div>
+
+                <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />
+
+                {/* Suggestion cards grouped by category */}
+                <h3 style={{ fontSize: 20, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {groupedCards.map((group, gi) => (
+                    <div key={group.key}>
+                      {gi > 0 && <div style={{ height: 32 }} />}
+                      <h3 style={{ fontSize: 15, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>{VAT_CAT_LABELS[group.key] || group.key}</h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        {group.items.map((card, localIdx) => {
+                          const isResolved = resolvedCards.has(card.idx);
+                          const isIgnored  = ignoredCards.has(card.idx);
+                          return (
+                            <div key={card.idx} id={`result-${card.cat}-${localIdx}`} style={{ scrollMarginTop: 64 }}>
+                              <RecommendationCard
+                                title={card.title}
+                                score={card.score ?? null}
+                                description={card.description}
+                                verticalTable={true}
+                                hideMore={true}
+                                statusLabel={isResolved ? "Resolved" : isIgnored ? "Ignored" : "Unresolved"}
+                                statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                                collapsed={isResolved || isIgnored}
+                                isIgnored={isIgnored}
+                                tableRow={card.tableRow}
+                                primaryLabel={card.primaryLabel}
+                                secondaryLabel={card.secondaryLabel}
+                                onPrimaryAction={() => { setResolvedCards(prev => new Set([...prev, card.idx])); setToast("Action recorded"); setTimeout(() => setToast(null), 3000); }}
+                                onIgnore={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); setToast("Suggestion ignored"); setTimeout(() => setToast(null), 3000); }}
+                                onSecondaryAction={() => {}}
+                                onMore={() => {}}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : resultsVisible ? <CanvasLoader /> : null}
+        </div>
+
+        {/* Suggestions sidebar */}
+        {canvasReady && (
+          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 350, zIndex: 3, display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+            <SuggestionsBox
+              isCleanReconcile={false}
+              allJustResolved={allDone}
+              accountStatus={null}
+              resolvedCount={resolvedCount}
+              totalSuggestions={totalSuggestions}
+              matchedTotal={null}
+              navCategories={VAT_NAV_CATS}
+              resolvedCards={resolvedCards}
+              ignoredCards={ignoredCards}
+              completedTitle="VAT review complete"
+              completedDescription="All suggestions have been addressed. Your VAT return is ready to submit."
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", background: "#05A105", color: "#FFFFFF", padding: "12px 20px", borderRadius: 10, fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 10, zIndex: 300, animation: "toastIn 0.35s ease", fontFamily: "'Inter', sans-serif" }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" fill="rgba(255,255,255,0.25)"/>
+            <path d="M6.66667 10L8.88889 12.2222L13.3333 7.77778" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
@@ -8307,6 +8905,10 @@ export default function BankReconciliation() {
     "Mastercard Business":   { fileName: "mastercard-statement-mar2026.pdf", date: "4 Apr", displayDate: "4 April", time: "15:32", period: "March 2026", uploadedBy: "Sarah Thompson" },
   }); // { [accountName]: { fileName, date } }
   const [rowComments, setRowComments] = useState({}); // { [accountCode]: [{user, timestamp, text}] }
+  const [vatReviewActive, setVatReviewActive] = useState(false);
+  const [vatReviewCompleted, setVatReviewCompleted] = useState(false);
+  const [vatResolvedCards, setVatResolvedCards] = useState(new Set());
+  const [vatIgnoredCards, setVatIgnoredCards] = useState(new Set());
   const [bsReconciling, setBsReconciling] = useState(null); // null | true | { code, account } — when object, direct account flow
   const [bsReconciledData, setBsReconciledData] = useState({}); // { [code]: { date, status, suggestionCount, ... } }
   const [bsActiveTab, setBsActiveTab] = useState("Profit and Loss"); // persisted tab across BS reconciliation opens/closes
@@ -8515,6 +9117,10 @@ export default function BankReconciliation() {
     return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved)} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
   }
 
+  if (vatReviewActive) {
+    return <VATReviewFlow selectedPeriod={selectedPeriod} onClose={() => { setVatReviewActive(false); setVatReviewCompleted(true); }} resolvedCards={vatResolvedCards} setResolvedCards={setVatResolvedCards} ignoredCards={vatIgnoredCards} setIgnoredCards={setVatIgnoredCards} showResults={vatReviewCompleted} />;
+  }
+
   if (bsReconciling) {
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "#FBFBFB" }}>
@@ -8549,7 +9155,7 @@ export default function BankReconciliation() {
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Home" ? (
-          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} />
+          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size} />
         ) : activeNav === "Review" ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
         ) : (
@@ -8560,7 +9166,7 @@ export default function BankReconciliation() {
 
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
           <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
-          <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ maxWidth: 1440, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Bank reconciliation</h1>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <PrimaryButton icon={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
@@ -8593,7 +9199,7 @@ export default function BankReconciliation() {
 
           {/* Scrollable content */}
           <div style={{ flex: 1, overflowY: "auto", padding: 48, paddingTop: 0 }}>
-          <div style={{ maxWidth: 1680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ maxWidth: 1440, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
 
             {/* Stats summary cards (from Widgets.jsx) */}
             <StatsRow items={(() => {
