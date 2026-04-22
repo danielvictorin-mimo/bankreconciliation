@@ -1173,9 +1173,9 @@ function RecommendationCard({
   );
 
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif", transition: "all 0.35s ease" }}>
+    <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif" }}>
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showBody ? 10 : 0, transition: "margin 0.35s ease", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
         onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1183,106 +1183,102 @@ function RecommendationCard({
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", borderRadius: 4, background: effectiveStatusStyle.background, border: effectiveStatusStyle.border, color: effectiveStatusStyle.color, whiteSpace: "nowrap", transition: "all 0.3s ease" }}>
+          <span style={{ fontSize: 12, fontWeight: 500, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", borderRadius: 4, background: effectiveStatusStyle.background, border: effectiveStatusStyle.border, color: effectiveStatusStyle.color, whiteSpace: "nowrap", transition: "all 0.4s ease" }}>
             {effectiveStatusLabel}
           </span>
-          <div style={{ display: "flex", transform: showBody ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>
+          <div style={{ display: "flex", transform: showBody ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
             <ChevronUpIcon />
           </div>
         </div>
       </div>
-      {showBody && (
+      <div style={{ overflow: "hidden", maxHeight: showBody ? 1200 : 0, opacity: showBody ? 1 : 0, transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease" }}>
         <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "16px 0 14px" }}>{description}</p>
-      )}
-      {showBody && (
-      <>
-      <div style={{ marginBottom: isResolved ? 0 : 14 }}>
-        {verticalTable ? (
-          <div style={{ border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
-            {Object.entries(tableRow).map(([key, val], i, arr) => (
-              <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr", borderBottom: i < arr.length - 1 ? "1px solid #E9E9EB" : "none", background: "#FFFFFF" }}>
-                <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 400, color: "#000000", borderRight: "1px solid #E9E9EB" }}>{key}</div>
-                <div style={{ padding: "12px 16px", fontSize: 14, color: "#080908" }}>{val}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-        <DataTable
-          columns={[
-            { key: "state",   label: "State",     width: "1fr" },
-            { key: "contact", label: "Contact",   width: "1.4fr" },
-            { key: "date",    label: "Date",      width: "1fr" },
-            { key: "amount",  label: "Amount",    width: "0.8fr" },
-            { key: "email",   label: "Email b...", width: "0.9fr" },
-          ]}
-          rows={tableRows && tableRows.length ? tableRows : [tableRow]}
-        />
-        )}
-      </div>
-      {(!isResolved || isIgnored) && (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 14, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
-          {primaryLabel}
-        </PrimaryButton>
-        {!isIgnored && fileAction ? (
-          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
-            <PdfIcon />{fileAction}
-          </SecondaryButton>
-        ) : !isIgnored && secondaryLabel ? (
-          <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
-            {secondaryLabel}
-          </SecondaryButton>
-        ) : null}
-        {!hideMore && !isIgnored && (fileAction || secondaryLabel) && (
-          <div style={{ position: "relative" }}>
-            <button
-              ref={collectBtnRef}
-              onClick={() => {
-                const rect = collectBtnRef.current.getBoundingClientRect();
-                setCollectMenuPos({ top: rect.bottom + 4, left: rect.left });
-                setCollectMenuOpen(o => !o);
-              }}
-              style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-            >
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <path d="M9.99984 10.8333C10.4601 10.8333 10.8332 10.4602 10.8332 9.99992C10.8332 9.53968 10.4601 9.16659 9.99984 9.16659C9.5396 9.16659 9.1665 9.53968 9.1665 9.99992C9.1665 10.4602 9.5396 10.8333 9.99984 10.8333Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9.99984 4.99992C10.4601 4.99992 10.8332 4.62682 10.8332 4.16659C10.8332 3.70635 10.4601 3.33325 9.99984 3.33325C9.5396 3.33325 9.1665 3.70635 9.1665 4.16659C9.1665 4.62682 9.5396 4.99992 9.99984 4.99992Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9.99984 16.6666C10.4601 16.6666 10.8332 16.2935 10.8332 15.8333C10.8332 15.373 10.4601 14.9999 9.99984 14.9999C9.5396 14.9999 9.1665 15.373 9.1665 15.8333C9.1665 16.2935 9.5396 16.6666 9.99984 16.6666Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            {collectMenuOpen && (
-              <div style={{ position: "fixed", top: collectMenuPos.top, left: collectMenuPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 9999, minWidth: 200, padding: "4px" }}>
+        <div style={{ marginBottom: isResolved ? 0 : 14 }}>
+          {verticalTable ? (
+            <div style={{ border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+              {Object.entries(tableRow).map(([key, val], i, arr) => (
+                <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr", borderBottom: i < arr.length - 1 ? "1px solid #E9E9EB" : "none", background: "#FFFFFF" }}>
+                  <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 400, color: "#000000", borderRight: "1px solid #E9E9EB" }}>{key}</div>
+                  <div style={{ padding: "12px 16px", fontSize: 14, color: "#080908" }}>{val}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable
+              columns={[
+                { key: "state",   label: "State",     width: "1fr" },
+                { key: "contact", label: "Contact",   width: "1.4fr" },
+                { key: "date",    label: "Date",      width: "1fr" },
+                { key: "amount",  label: "Amount",    width: "0.8fr" },
+                { key: "email",   label: "Email b...", width: "0.9fr" },
+              ]}
+              rows={tableRows && tableRows.length ? tableRows : [tableRow]}
+            />
+          )}
+        </div>
+        {(!isResolved || isIgnored) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 14, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
+              {primaryLabel}
+            </PrimaryButton>
+            {!isIgnored && fileAction ? (
+              <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
+                <PdfIcon />{fileAction}
+              </SecondaryButton>
+            ) : !isIgnored && secondaryLabel ? (
+              <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
+                {secondaryLabel}
+              </SecondaryButton>
+            ) : null}
+            {!hideMore && !isIgnored && (fileAction || secondaryLabel) && (
+              <div style={{ position: "relative" }}>
                 <button
-                  onClick={() => setCollectMenuOpen(false)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", fontSize: 14, color: "#080908", background: "transparent", border: "none", cursor: "pointer", borderRadius: 6, textAlign: "left", whiteSpace: "nowrap" }}
+                  ref={collectBtnRef}
+                  onClick={() => {
+                    const rect = collectBtnRef.current.getBoundingClientRect();
+                    setCollectMenuPos({ top: rect.bottom + 4, left: rect.left });
+                    setCollectMenuOpen(o => !o);
+                  }}
+                  style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
                 >
-                  View in collect documents
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M9.99984 10.8333C10.4601 10.8333 10.8332 10.4602 10.8332 9.99992C10.8332 9.53968 10.4601 9.16659 9.99984 9.16659C9.5396 9.16659 9.1665 9.53968 9.1665 9.99992C9.1665 10.4602 9.5396 10.8333 9.99984 10.8333Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9.99984 4.99992C10.4601 4.99992 10.8332 4.62682 10.8332 4.16659C10.8332 3.70635 10.4601 3.33325 9.99984 3.33325C9.5396 3.33325 9.1665 3.70635 9.1665 4.16659C9.1665 4.62682 9.5396 4.99992 9.99984 4.99992Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9.99984 16.6666C10.4601 16.6666 10.8332 16.2935 10.8332 15.8333C10.8332 15.373 10.4601 14.9999 9.99984 14.9999C9.5396 14.9999 9.1665 15.373 9.1665 15.8333C9.1665 16.2935 9.5396 16.6666 9.99984 16.6666Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
+                {collectMenuOpen && (
+                  <div style={{ position: "fixed", top: collectMenuPos.top, left: collectMenuPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", zIndex: 9999, minWidth: 200, padding: "4px" }}>
+                    <button
+                      onClick={() => setCollectMenuOpen(false)}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", fontSize: 14, color: "#080908", background: "transparent", border: "none", cursor: "pointer", borderRadius: 6, textAlign: "left", whiteSpace: "nowrap" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      View in collect documents
+                    </button>
+                  </div>
+                )}
               </div>
             )}
+            {!hideMore && !isIgnored && onMore && (
+              <button style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+                onClick={onMore}
+              ><MoreIcon /></button>
+            )}
+            {!isIgnored && <><div style={{ flex: 1 }} />
+            <button style={{ height: 40, padding: "0 12px", border: "none", borderRadius: 8, background: "#FCEFEC", fontSize: 14, fontWeight: 500, color: "#C8543A", cursor: "pointer", whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"}
+              onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
+              onClick={onIgnore}
+            >Ignore suggestion</button></>}
           </div>
         )}
-        {!hideMore && !isIgnored && onMore && (
-          <button style={{ width: 40, height: 40, border: "1px solid #EFF1F4", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-            onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-            onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-            onClick={onMore}
-          ><MoreIcon /></button>
-        )}
-        {!isIgnored && <><div style={{ flex: 1 }} />
-        <button style={{ height: 40, padding: "0 12px", border: "none", borderRadius: 8, background: "#FCEFEC", fontSize: 14, fontWeight: 500, color: "#C8543A", cursor: "pointer", whiteSpace: "nowrap" }}
-          onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"}
-          onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
-          onClick={onIgnore}
-        >Ignore suggestion</button></>}
       </div>
-      )}
-      </>
-      )}
     </div>
   );
 }
@@ -2032,7 +2028,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
 }
 
 // ── Results sidebar: Progress box ────────────────────────────────────────────
-function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards, ignoredCards = new Set(), completedTitle = "Ready to reconcile in Xero", completedDescription = "All suggestions resolved. Go to Xero to finalise and post the reconciliation." }) {
+function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStatus, resolvedCount, totalSuggestions, matchedTotal, navCategories, resolvedCards, ignoredCards = new Set(), completedTitle = "Ready to reconcile in Xero", completedDescription = "All suggestions resolved. Go to Xero to finalise and post the reconciliation.", completedColor = "#4C71DF" }) {
   const color = accountStatus === "completed" ? "#4C71DF" : "#05A105";
   const bg    = accountStatus === "completed" ? "#EEF2FF" : "#EAF2E2";
   const label = accountStatus === "completed" ? "Completed" : "Reconciled";
@@ -2057,12 +2053,12 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Status row */}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#4C71DF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: completedColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "#4C71DF" }}>{completedTitle}</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: completedColor }}>{completedTitle}</span>
             </div>
             {/* Description */}
             <span style={{ fontSize: 14, color: "#8C8C8B", lineHeight: "18px" }}>{completedDescription}</span>
@@ -2073,7 +2069,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
                 <span style={{ fontSize: 14, color: "#8C8C8B" }}>{"\u2009"}/ {totalSuggestions} resolved</span>
               </div>
               <div style={{ height: 4, background: "#E9E9EB", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "#4C71DF", borderRadius: 2, transition: "width 0.4s ease" }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: completedColor, borderRadius: 2, transition: "width 0.4s ease" }} />
               </div>
             </div>
           </div>
@@ -8120,7 +8116,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
             </div>
             {[
               { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${reconciledAccounts.size} of ${totalAccounts} accounts reconciled`, statusColor: "#000000", btnLabel: "Select account", dataflowIcon: true },
-              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? `${vatResolvedCount} of 6 suggestions resolved` : "Not started", statusColor: vatReviewCompleted ? "#000000" : undefined, btnLabel: vatReviewCompleted ? "Review" : "Run" },
+              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", statusColor: vatReviewCompleted ? (vatResolvedCount >= 6 ? "#05A105" : "#000000") : undefined, btnLabel: vatReviewCompleted ? "Review" : "Run" },
               { label: "Payroll reconciliation",       onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
@@ -8561,7 +8557,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolvedCount}/{totalSuggestions}</span>
               </div>
               <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: allDone ? "#4C71DF" : "#05A105", borderRadius: 1, transition: "width 0.4s ease, background 0.3s ease" }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: "#05A105", borderRadius: 1, transition: "width 0.4s ease" }} />
               </div>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -8861,6 +8857,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
               ignoredCards={ignoredCards}
               completedTitle="VAT review complete"
               completedDescription="All suggestions have been addressed. Your VAT return is ready to submit."
+              completedColor="#05A105"
             />
           </div>
         )}
