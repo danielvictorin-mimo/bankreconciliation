@@ -4296,6 +4296,9 @@ const _MM_PATHS = {
   fileQuestion: "M16.6668 7.91797V5.66797C16.6668 4.26784 16.6668 3.56777 16.3943 3.03299C16.1547 2.56259 15.7722 2.18014 15.3018 1.94045C14.767 1.66797 14.067 1.66797 12.6668 1.66797H7.3335C5.93336 1.66797 5.2333 1.66797 4.69852 1.94045C4.22811 2.18014 3.84566 2.56259 3.60598 3.03299C3.3335 3.56777 3.3335 4.26784 3.3335 5.66797V14.3346C3.3335 15.7348 3.3335 16.4348 3.60598 16.9696C3.84566 17.44 4.22811 17.8225 4.69852 18.0622C5.2333 18.3346 5.93336 18.3346 7.3335 18.3346H11.6668M11.6668 9.16797H6.66683M8.3335 12.5013H6.66683M13.3335 5.83464H6.66683M13.7502 12.5032C13.897 12.0858 14.1868 11.7338 14.5683 11.5096C14.9497 11.2854 15.3982 11.2035 15.8343 11.2783C16.2704 11.3531 16.666 11.5798 16.9509 11.9183C17.2359 12.2568 17.3919 12.6852 17.3912 13.1277C17.3912 14.3768 15.5176 15.0013 15.5176 15.0013M15.5417 17.5013H15.5501",
   settingsGear: "M7.82936 16.1439L8.3164 17.2393C8.46118 17.5653 8.69747 17.8424 8.99659 18.0368C9.29571 18.2312 9.64483 18.3347 10.0016 18.3346C10.3583 18.3347 10.7075 18.2312 11.0066 18.0368C11.3057 17.8424 11.542 17.5653 11.6868 17.2393L12.1738 16.1439C12.3472 15.7552 12.6388 15.4312 13.0071 15.218C13.3778 15.0042 13.8066 14.9131 14.2321 14.9578L15.4238 15.0846C15.7785 15.1222 16.1365 15.056 16.4544 14.8941C16.7722 14.7322 17.0363 14.4816 17.2145 14.1726C17.393 13.8638 17.4781 13.5099 17.4593 13.1537C17.4406 12.7975 17.3189 12.4545 17.109 12.1661L16.4034 11.1967C16.1522 10.8489 16.018 10.4303 16.0201 10.0013C16.02 9.57346 16.1555 9.15659 16.4071 8.81056L17.1127 7.84112C17.3226 7.55276 17.4443 7.20969 17.463 6.85353C17.4818 6.49737 17.3967 6.14342 17.2183 5.83464C17.04 5.52566 16.7759 5.27504 16.4581 5.11316C16.1402 4.95127 15.7822 4.88508 15.4275 4.9226L14.2358 5.04945C13.8103 5.09414 13.3815 5.00307 13.0108 4.78927C12.6418 4.57485 12.3501 4.2491 12.1775 3.85871L11.6868 2.76334C11.542 2.43728 11.3057 2.16023 11.0066 1.9658C10.7075 1.77137 10.3583 1.66791 10.0016 1.66797C9.64483 1.66791 9.29571 1.77137 8.99659 1.9658C8.69747 2.16023 8.46118 2.43728 8.3164 2.76334L7.82936 3.85871C7.6568 4.2491 7.36509 4.57485 6.99603 4.78927C6.62538 5.00307 6.19659 5.09414 5.77103 5.04945L4.57566 4.9226C4.22094 4.88508 3.86294 4.95127 3.54509 5.11316C3.22724 5.27504 2.96317 5.52566 2.78492 5.83464C2.60644 6.14342 2.52141 6.49737 2.54014 6.85353C2.55888 7.20969 2.68058 7.55276 2.89048 7.84112L3.59603 8.81056C3.84765 9.15659 3.98315 9.57346 3.98307 10.0013C3.98315 10.4291 3.84765 10.846 3.59603 11.192L2.89048 12.1615C2.68058 12.4498 2.55888 12.7929 2.54014 13.1491C2.52141 13.5052 2.60644 13.8592 2.78492 14.168C2.96335 14.4768 3.22744 14.7273 3.54525 14.8891C3.86306 15.051 4.22096 15.1173 4.57566 15.08L5.76733 14.9532C6.19289 14.9085 6.62167 14.9995 6.99233 15.2133C7.36277 15.4272 7.65583 15.753 7.82936 16.1439Z",
   settingsCircle: "M10.0001 12.5013C11.3808 12.5013 12.5001 11.382 12.5001 10.0013C12.5001 8.62059 11.3808 7.5013 10.0001 7.5013C8.61939 7.5013 7.5001 8.62059 7.5001 10.0013C7.5001 11.382 8.61939 12.5013 10.0001 12.5013Z",
+  calculator: "M15.5 4.5L4.5 15.5M6.5 8.5V4.5M4.5 6.5H8.5M11.5 13.5H15.5M5.8 19H14.2C15.8802 19 16.7202 19 17.362 18.673C17.9265 18.3854 18.3854 17.9265 18.673 17.362C19 16.7202 19 15.8802 19 14.2V5.8C19 4.11984 19 3.27976 18.673 2.63803C18.3854 2.07354 17.9265 1.6146 17.362 1.32698C16.7202 1 15.8802 1 14.2 1H5.8C4.11984 1 3.27976 1 2.63803 1.32698C2.07354 1.6146 1.6146 2.07354 1.32698 2.63803C1 3.27976 1 4.11984 1 5.8V14.2C1 15.8802 1 16.7202 1.32698 17.362C1.6146 17.9265 2.07354 18.3854 2.63803 18.673C3.27976 19 4.11984 19 5.8 19Z",
+  rows1: "M17.8 10C18.9201 10 19.4802 10 19.908 9.78201C20.2843 9.59027 20.5903 9.28431 20.782 8.90798C21 8.48016 21 7.92011 21 6.8V6.2C21 5.0799 21 4.51984 20.782 4.09202C20.5903 3.7157 20.2843 3.40973 19.908 3.21799C19.4802 3 18.9201 3 17.8 3L6.2 3C5.0799 3 4.51984 3 4.09202 3.21799C3.71569 3.40973 3.40973 3.71569 3.21799 4.09202C3 4.51984 3 5.07989 3 6.2L3 6.8C3 7.9201 3 8.48016 3.21799 8.90798C3.40973 9.28431 3.71569 9.59027 4.09202 9.78201C4.51984 10 5.07989 10 6.2 10L17.8 10Z",
+  rows2: "M17.8 21C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V17.2C21 16.0799 21 15.5198 20.782 15.092C20.5903 14.7157 20.2843 14.4097 19.908 14.218C19.4802 14 18.9201 14 17.8 14L6.2 14C5.0799 14 4.51984 14 4.09202 14.218C3.71569 14.4097 3.40973 14.7157 3.21799 15.092C3 15.5198 3 16.0799 3 17.2L3 17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21H17.8Z",
 };
 
 function _MM_NavIcon({ name, color }) {
@@ -4312,9 +4315,15 @@ function _MM_NavIcon({ name, color }) {
       <path d={_MM_PATHS.settingsCircle} {...sp} />
     </svg>
   );
+  if (name === "rows") return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d={_MM_PATHS.rows1} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={_MM_PATHS.rows2} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d={PATHS[name]} {...sp} />
+      <path d={_MM_PATHS[name] || PATHS[name]} {...sp} />
     </svg>
   );
 }
@@ -4347,7 +4356,8 @@ function MainMenu({
     { label: "Inbox",               icon: "inbox" },
     { label: "Bank reconciliation", icon: "checkVerified" },
     { label: "Adjustments",         icon: "switchHorizontal" },
-    { label: "Review",              icon: "bookOpen" },
+    { label: "Profit & Loss",       icon: "calculator" },
+    { label: "Balance sheet",       icon: "rows" },
   ],
 }) {
   const [associateOpen, setAssociateOpen] = useState(true);
@@ -4381,13 +4391,13 @@ function MainMenu({
       </div>
 
       {/* Company selector — white bordered card */}
-      <div style={{ padding: "0 12px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
+      <div style={{ padding: "0 8px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
         <div style={{
-          display: "flex", alignItems: "center", gap: 8, width: "100%",
+          display: "flex", alignItems: "center", gap: 16, width: "100%",
           height: 42, padding: "0 16px", background: "#FFFFFF",
           border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer",
         }}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
             <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{companyName}</span>
@@ -4398,15 +4408,17 @@ function MainMenu({
       <nav style={{ flex: 1, padding: "0 8px 0", overflowY: "auto" }}>
 
         {/* Divider above Associate */}
-        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 12px" }} />
+        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
 
         {/* Associate */}
         <button
           onClick={() => setAssociateOpen(o => !o)}
-          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 20px 6px", background: "none", border: "none", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+          onMouseLeave={e => e.currentTarget.style.background = "none"}
         >
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Associate</span>
-          <_MM_Chevron up={associateOpen} />
+          <_MM_Chevron up={associateOpen} size={18} />
         </button>
 
         {associateOpen && navItems.map(item => {
@@ -4416,8 +4428,8 @@ function MainMenu({
               key={item.label}
               onClick={() => onNavChange?.(item.label)}
               style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 8,
-                height: 40, padding: "0 12px", marginBottom: 1,
+                width: "100%", display: "flex", alignItems: "center", gap: 12,
+                height: 40, padding: "0 16px",
                 marginLeft: 8, marginRight: 8, width: "calc(100% - 16px)",
                 borderRadius: 6, border: "none", cursor: "pointer",
                 background: active ? "#F5F5F5" : "transparent",
@@ -4435,25 +4447,27 @@ function MainMenu({
         })}
 
         {/* Divider */}
-        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 12px" }} />
+        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
 
         {/* Payments */}
         <button
           onClick={() => setPaymentsOpen(o => !o)}
-          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 20px 4px", background: "none", border: "none", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+          onMouseLeave={e => e.currentTarget.style.background = "none"}
         >
           <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Payments</span>
-          <_MM_Chevron up={paymentsOpen} />
+          <_MM_Chevron up={paymentsOpen} size={18} />
         </button>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 12px" }} />
+        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
 
         {/* Settings */}
         <button
           style={{
-            width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 8,
-            height: 40, padding: "0 12px", marginBottom: 1,
+            width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 12,
+            height: 40, padding: "0 16px",
             marginLeft: 8, marginRight: 8,
             borderRadius: 6, border: "none", cursor: "pointer",
             background: "transparent", textAlign: "left", boxShadow: "none",
@@ -4468,7 +4482,7 @@ function MainMenu({
       </nav>
 
       {/* Divider above user */}
-      <div style={{ height: 1, background: "#E9E9EB", margin: "0 12px", flexShrink: 0 }} />
+      <div style={{ height: 1, background: "#E9E9EB", margin: "0 16px", flexShrink: 0 }} />
 
       {/* User profile */}
       <div
@@ -8119,7 +8133,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
             ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => (
               <div key={label} style={{ borderTop: "1px solid #ECECEC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: "#1F2024" }}>{label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>{label}</span>
                   <span style={{ fontSize: 13, color: statusColor || "#ADADAD" }}>{status}</span>
                 </div>
                 <button
@@ -9148,7 +9162,7 @@ export default function BankReconciliation() {
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Home" ? (
           <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} />
-        ) : activeNav === "Review" ? (
+        ) : (activeNav === "Review" || activeNav === "Balance sheet") ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
