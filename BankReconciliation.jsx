@@ -2828,6 +2828,36 @@ function BSOptionPicker({ title, options, onSelect }) {
   );
 }
 
+// ── Workflow card (shown at top of bank rec chat flow) ────────────────────────
+function WorkflowCard({ label = "Bank reconciliation" }) {
+  return (
+    <div style={{
+      border: "1px solid #E9E9EB",
+      borderRadius: 8,
+      background: "white",
+      padding: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 56,
+      width: "100%",
+      boxSizing: "border-box",
+      boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+    }}>
+      <div style={{ width: 56, height: 56, borderRadius: 8, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <svg width="24" height="24" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="11" r="9.25" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M9.52 8.49C9.52 8.01 9.52 7.78 9.62 7.64C9.7 7.53 9.83 7.46 9.98 7.45C10.14 7.43 10.34 7.56 10.74 7.82L14.43 10.33C14.78 10.55 14.95 10.67 15.01 10.81C15.06 10.93 15.06 11.07 15.01 11.19C14.95 11.33 14.78 11.45 14.43 11.67L10.74 14.18C10.34 14.44 10.14 14.57 9.98 14.55C9.83 14.54 9.7 14.47 9.62 14.36C9.52 14.22 9.52 13.99 9.52 13.51V8.49Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div style={{ fontSize: 16, color: "#000000", fontWeight: 500, marginBottom: 2 }}>Workflow</div>
+        <div style={{ fontSize: 14, color: "#2A2A2A", fontWeight: 400 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Reconciliation flow ───────────────────────────────────────────────────────
 function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026" }) {
   const accounts = [
@@ -3375,14 +3405,18 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
           {!clientUpload && (
-            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
-              <p><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>
-              {isPicker && line1Done && (
-                <p style={{ marginTop: 6 }}>
-                  <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
-                </p>
-              )}
-            </div>
+            <>
+              <WorkflowCard />
+              <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
+              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
+                <p style={{ marginTop: 0 }}><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>
+                {isPicker && line1Done && (
+                  <p style={{ marginTop: 6 }}>
+                    <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
           {/* Account picker — keyboard handler lives on window while picker is visible */}
@@ -6163,6 +6197,10 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ maxWidth: resultsVisible ? "100%" : 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "32px 24px 24px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
+          {/* Workflow card */}
+          <WorkflowCard label="Balance sheet reconciliation" />
+          <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
+
           {/* \u2500\u2500 Direct account flow \u2500\u2500 */}
           {isDirectFlow && (
             <>
@@ -8832,12 +8870,9 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
               {resultsVisible && <div style={{ position: "sticky", top: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
               <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
 
-                {/* User bubble */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
-                    I want to do a VAT review
-                  </div>
-                </div>
+                {/* Workflow card */}
+                <WorkflowCard label={`VAT review for ${selectedPeriod}`} />
+                <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
 
                 {/* Intro AI message */}
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
