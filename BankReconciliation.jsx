@@ -7792,7 +7792,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
 
 // ── Balance Sheet Review page ─────────────────────────────────────────────
-function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll, selectedPeriod, onPeriodChange }) {
+function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll, selectedPeriod, onPeriodChange, hideTabs = false, pageTitle = "Review" }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareValue, setCompareValue] = useState("Last month");
   const compareOptions = ["Last month", "Last quarter", "Last year", "Same month last year"];
@@ -7811,8 +7811,9 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Review</h1>
+        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>{pageTitle}</h1>
         {/* Tabs */}
+        {!hideTabs && (
         <div style={{ display: "flex", gap: 24, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
           {tabs.map(tab => {
             const isActive = tab === activeTab;
@@ -7838,6 +7839,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
             );
           })}
         </div>
+        )}
         </div>
       </div>
       <div ref={scrollRef} onScroll={e => onSaveScroll?.(e.currentTarget.scrollTop)} style={{ flex: 1, overflowY: "auto", padding: "32px 48px 48px" }}>
@@ -7855,7 +7857,90 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
             <span style={{ fontSize: 14, color: "#8C8C8B" }}>Revenue, expenses, and net income breakdown will appear here.</span>
           </div>
         ) : (
-          BS_SECTIONS.map((section, si) => (
+          <>
+          {/* Reconciliation section */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", margin: 0 }}>Reconciliation</h2>
+              <button
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "0 14px", height: 36, borderRadius: 8,
+                  border: "none", background: "#05A105", cursor: "pointer",
+                  fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#048c04"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#05A105"; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 3.5V12.5M3.5 8H12.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                Run reconciliation
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", border: "1px solid #E9E9EB", borderRadius: 12, overflow: "hidden" }}>
+              {[
+                { label: "Payroll", desc: "Check payroll accounts against the payroll source for any balance discrepancies.", comingSoon: false },
+                { label: "Directors\u2019 loan account", desc: "Check payroll accounts against the payroll source for any balance discrepancies.", comingSoon: false },
+                { label: "Fixed assets", desc: "Check accounts for balance discrepancies, missing depreciation, and misclassified capex.", comingSoon: true },
+              ].map((item, idx, arr) => (
+                <div
+                  key={item.label}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "16px 20px",
+                    borderBottom: idx < arr.length - 1 ? "1px solid #E9E9EB" : "none",
+                    background: "#FFFFFF",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{item.label}</span>
+                    <span style={{ fontSize: 13, color: "#8C8C8B", lineHeight: "18px" }}>{item.desc}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 24 }}>
+                    {item.comingSoon ? (
+                      <span style={{
+                        fontSize: 12, fontWeight: 500, color: "#4C71DF",
+                        background: "#EEF2FF", borderRadius: 100, padding: "3px 10px",
+                        whiteSpace: "nowrap",
+                      }}>Coming soon</span>
+                    ) : (
+                      <>
+                        <button
+                          style={{
+                            fontSize: 13, fontWeight: 500, color: "#05A105",
+                            background: "none", border: "none", cursor: "pointer", padding: 0,
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
+                          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+                        >
+                          Run reconciliation
+                        </button>
+                        <button style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6, color: "#8C8C8B" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = "#F4F4F5"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M5.33 13.33H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7.33a2 2 0 0 1-2 2h-1.33M8 7.33v6M5.33 10l2.67 2.67L10.67 10" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <button style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6, color: "#8C8C8B" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = "#F4F4F5"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {BS_SECTIONS.map((section, si) => (
             <div key={si} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {si === 0 ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -7935,7 +8020,8 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
                 />
               ))}
             </div>
-          ))
+          ))}
+          </>
         )}
         </div>
       </div>
@@ -8133,7 +8219,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
             ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => (
               <div key={label} style={{ borderTop: "1px solid #ECECEC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>{label}</span>
+                  <span style={{ fontSize: 16, fontWeight: 500, color: "#1F2024" }}>{label}</span>
                   <span style={{ fontSize: 13, color: statusColor || "#ADADAD" }}>{status}</span>
                 </div>
                 <button
@@ -9157,13 +9243,17 @@ export default function BankReconciliation() {
       <div style={{ display: "flex", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FFFFFF", overflow: "hidden" }}>
 
         {/* ── LEFT MAIN MENU (from MainMenu.jsx) ─────────────────────────── */}
-        <MainMenu activeNav={activeNav} onNavChange={setActiveNav} />
+        <MainMenu activeNav={activeNav} onNavChange={(nav) => {
+          if (nav === "Balance sheet") { setBsActiveTab("Balance sheet"); }
+          if (nav === "Profit & Loss") { setBsActiveTab("Profit and Loss"); }
+          setActiveNav(nav);
+        }} />
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Home" ? (
           <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} />
-        ) : (activeNav === "Review" || activeNav === "Balance sheet") ? (
-          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
+        ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
+          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
