@@ -2851,7 +2851,7 @@ function WorkflowCard({ label = "Bank reconciliation" }) {
         </svg>
       </div>
       <div>
-        <div style={{ fontSize: 16, color: "#000000", fontWeight: 500, marginBottom: 2 }}>Workflow</div>
+        <div style={{ fontSize: 16, color: "#000000", fontWeight: 500, marginBottom: 4 }}>Workflow</div>
         <div style={{ fontSize: 14, color: "#2A2A2A", fontWeight: 400 }}>{label}</div>
       </div>
     </div>
