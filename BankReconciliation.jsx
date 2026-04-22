@@ -1293,7 +1293,7 @@ function CanvasLoader() {
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
         <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
       </svg>
-      <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0 }}>Loading results…</p>
+      <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0 }}>Preparing canvas…</p>
     </div>
   );
 }
@@ -3667,22 +3667,22 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 return (
                   <div key={i} style={{ display: "flex", gap: 16 }}>
                     {/* Circle + connector line */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                      <div style={{
-                        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                        border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                        background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        transition: "all 0.4s ease",
-                      }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                      <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                         {status === "done" && (
-                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                            <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                            <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                            <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                         {status === "active" && (
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", margin: -0 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
                             <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        )}
+                        {status === "pending" && (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
                           </svg>
                         )}
                       </div>
@@ -3695,9 +3695,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
                       <div style={{
                         fontSize: 14, lineHeight: "24px",
-                        fontWeight: status === "done" ? 500 : 400,
+                        fontWeight: 400,
                         color: status === "pending" ? "#BCBCBC" : "#080908",
-                        transition: "all 0.3s ease",
+                        transition: "color 0.3s ease",
                       }}>
                         {step.title}
                       </div>
@@ -4512,7 +4512,7 @@ function MainMenu({
 
 // ── Balance Sheet: Status styles ───────────────────────────────────────────
 const STATUS_STYLES = {
-  "Not started":  { bg: "#FAFAFA",  border: "#F5F5F5",  color: "#545453" },
+  "Not started":  { bg: "#FAFAFA",  border: "#F5F5F5",  color: "#8C8C8B" },
   "In progress":  { bg: "#FDF8EE",  border: "#F8E9CB",  color: "#D5A750" },
   "Review":       { bg: "#FDF8EE",  border: "#F8E9CB",  color: "#D5A750" },
   "Completed":    { bg: "#F1F8F0",  border: "#D5EBCF",  color: "#6BAC5B" },
@@ -5076,6 +5076,10 @@ const BS_SECTIONS = [
     ],
   },
 ];
+
+// ── Balance Sheet: All accounts (flat list) ──────────────────────────────────
+const BS_ALL_ACCOUNTS = BS_SECTIONS.flatMap(s => s.tables.flatMap(t => t.rows.map(r => ({ code: r.code, account: r.account }))));
+const BS_ALL_CODES = new Set(BS_ALL_ACCOUNTS.map(a => a.code));
 
 // ── Balance Sheet: Preset member codes ──────────────────────────────────────
 const PRESET_MEMBER_CODES = {
@@ -6392,26 +6396,23 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                     const isLast = i === activeSteps.length - 1;
                     return (
                       <div key={i} style={{ display: "flex", gap: 16 }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                          <div style={{
-                            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                            border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                            background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            transition: "all 0.4s ease",
-                          }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                          <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                             {status === "done" && (
-                              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                                <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                                <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                                <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             )}
                             {status === "active" && (
-                              <div style={{
-                                width: 16, height: 16, borderRadius: "50%",
-                                border: "1.5px solid #ACD394",
-                                borderTopColor: "#05A105",
-                                animation: "spin 0.7s linear infinite",
-                              }} />
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                                <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            {status === "pending" && (
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
+                              </svg>
                             )}
                           </div>
                           {!isLast && (
@@ -6846,22 +6847,22 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                 const isLast = i === activeSteps.length - 1;
                 return (
                   <div key={i} style={{ display: "flex", gap: 16 }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                      <div style={{
-                        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                        border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                        background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        transition: "all 0.4s ease",
-                      }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                      <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                         {status === "done" && (
-                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                            <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                            <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                            <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                         {status === "active" && (
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", margin: -0 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
                             <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        )}
+                        {status === "pending" && (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
                           </svg>
                         )}
                       </div>
@@ -6870,7 +6871,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       )}
                     </div>
                     <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
-                      <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                      <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "color 0.3s ease" }}>
                         {step.title}
                       </div>
                       {(stepSubtexts[i] || status === "done") && step.subtext && (
@@ -7141,22 +7142,22 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                 return (
                   <div key={i} style={{ display: "flex", gap: 16 }}>
                     {/* Circle + connector line */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                      <div style={{
-                        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                        border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                        background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        transition: "all 0.4s ease",
-                      }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                      <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                         {status === "done" && (
-                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                            <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                            <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                            <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                         {status === "active" && (
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", margin: -0 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
                             <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        )}
+                        {status === "pending" && (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
                           </svg>
                         )}
                       </div>
@@ -7169,7 +7170,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                     <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
                       <div style={{
                         fontSize: 14, lineHeight: "24px",
-                        fontWeight: status === "done" ? 500 : 400,
+                        fontWeight: 400,
                         color: status === "pending" ? "#BCBCBC" : "#080908",
                         transition: "all 0.3s ease",
                       }}>
@@ -7252,26 +7253,23 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                     const isLast = i === activeSteps.length - 1;
                     return (
                       <div key={"restart-step-" + i} style={{ display: "flex", gap: 16 }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                          <div style={{
-                            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                            border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                            background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            transition: "all 0.4s ease",
-                          }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                          <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                             {status === "done" && (
-                              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                                <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                                <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                                <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             )}
                             {status === "active" && (
-                              <div style={{
-                                width: 16, height: 16, borderRadius: "50%",
-                                border: "1.5px solid #ACD394",
-                                borderTopColor: "#05A105",
-                                animation: "spin 0.7s linear infinite",
-                              }} />
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                                <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            {status === "pending" && (
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
+                              </svg>
                             )}
                           </div>
                           {!isLast && (
@@ -7508,26 +7506,23 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                         const isLast = i === activeSteps.length - 1;
                         return (
                           <div key={"restart-newfile-step-" + i} style={{ display: "flex", gap: 16 }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                              <div style={{
-                                width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                                border: status === "active" ? "none" : `1.5px solid ${status === "done" ? "#05A105" : "#E9E9EB"}`,
-                                background: status === "done" ? "#F5F5F5" : status === "active" ? "transparent" : "#FFFFFF",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                transition: "all 0.4s ease",
-                              }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                              <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                                 {status === "done" && (
-                                  <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                                    <path d="M2 6.5L5 9.5L11 3.5" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                  <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
+                                    <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                                    <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
                                 )}
                                 {status === "active" && (
-                                  <div style={{
-                                    width: 16, height: 16, borderRadius: "50%",
-                                    border: "1.5px solid #ACD394",
-                                    borderTopColor: "#05A105",
-                                    animation: "spin 0.7s linear infinite",
-                                  }} />
+                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                                    <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                                  </svg>
+                                )}
+                                {status === "pending" && (
+                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/>
+                                  </svg>
                                 )}
                               </div>
                               {!isLast && (
@@ -7535,7 +7530,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                               )}
                             </div>
                             <div style={{ paddingBottom: isLast ? 0 : 20, paddingTop: 0 }}>
-                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "color 0.3s ease" }}>
                                 {step.title}
                               </div>
                               {(restartStepSubtexts[i] || status === "done") && step.subtext && (
@@ -8009,7 +8004,57 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>{pageTitle}</h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>{pageTitle}</h1>
+          {activeTab === "Balance sheet" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Compare selector */}
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setCompareOpen(prev => !prev)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "9px 12px", borderRadius: 6,
+                    border: "1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer",
+                    fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap",
+                    height: 38, boxSizing: "border-box",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+                >
+                  Compare to {compareValue}
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transition: "transform 0.15s", transform: compareOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    <path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                {compareOpen && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 10,
+                    background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: "4px 0", minWidth: 200,
+                  }}>
+                    {compareOptions.map(opt => (
+                      <div
+                        key={opt}
+                        onClick={() => { setCompareValue(opt); setCompareOpen(false); }}
+                        style={{
+                          padding: "8px 14px", fontSize: 14, color: opt === compareValue ? "#080908" : "#545453",
+                          fontWeight: opt === compareValue ? 500 : 400,
+                          cursor: "pointer", background: "transparent",
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <SecondaryButton style={{ height: 38, boxSizing: "border-box", padding: "9px 12px" }}>Export balance sheet</SecondaryButton>
+            </div>
+          )}
+        </div>
         {/* Tabs */}
         {!hideTabs && (
         <div style={{ display: "flex", gap: 24, marginTop: 24, borderBottom: "1px solid #E9E9EB" }}>
@@ -8079,64 +8124,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
           </div>
           {BS_SECTIONS.map((section, si) => (
             <div key={si} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {si === 0 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", margin: 0 }}>{section.heading}</h2>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {/* Compare selector */}
-                    <div style={{ position: "relative" }}>
-                      <button
-                        onClick={() => setCompareOpen(prev => !prev)}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 6,
-                          padding: "9px 12px", borderRadius: 6,
-                          border: "1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer",
-                          fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap",
-                          height: 38, boxSizing: "border-box",
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
-                      >
-                        Compare to {compareValue}
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transition: "transform 0.15s", transform: compareOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
-                          <path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                      {compareOpen && (
-                        <div style={{
-                          position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 10,
-                          background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: "4px 0", minWidth: 200,
-                        }}>
-                          {compareOptions.map(opt => (
-                            <div
-                              key={opt}
-                              onClick={() => { setCompareValue(opt); setCompareOpen(false); }}
-                              style={{
-                                padding: "8px 14px", fontSize: 14, color: opt === compareValue ? "#080908" : "#545453",
-                                fontWeight: opt === compareValue ? 500 : 400,
-                                cursor: "pointer", background: "transparent",
-                              }}
-                              onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-                            >
-                              {opt}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {/* Export button */}
-                    <SecondaryButton style={{ height: 38, boxSizing: "border-box", padding: "9px 12px" }}>Export balance sheet</SecondaryButton>
-                    {/* Run reconciliation */}
-                    <PrimaryButton icon={<PlayCircleIcon color="white" />} style={{ height: 38, boxSizing: "border-box", padding: "9px 16px" }} onClick={onRunBSReconciliation}>
-                      Run reconciliation
-                    </PrimaryButton>
-                  </div>
-                </div>
-              ) : (
-                <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", marginTop: 16 }}>{section.heading}</h2>
-              )}
+              <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", margin: 0 }}>{section.heading}</h2>
               {section.tables.map((table, ti) => (
                 <DataTableV2
                   key={ti}
@@ -8168,7 +8156,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, vatReviewCompleted = false, vatResolvedCount = 0 }) {
+function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {} }) {
   const AVATAR_COLORS = ["#6389CF", "#6389CF", "#6389CF", "#6389CF", "#6389CF"];
   const members = [
     { initial: "C", name: "Courtney Lemke",  role: "Accountant" },
@@ -8180,6 +8168,9 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
 
   const fullyReconciled = [...reconciledAccounts].filter(name => reconciledStatuses[name] === "reconciled").length;
   const unreconciledCount = totalAccounts - fullyReconciled;
+  const bsReconciledCount = Object.entries(bsReconciledData).filter(([code, d]) => BS_ALL_CODES.has(code) && d.status === "reconciled").length;
+  const bsTotalAccounts = BS_ALL_ACCOUNTS.length;
+  const bsRecStatus = bsReconciledCount === 0 ? "Not started" : `${bsReconciledCount} of ${bsTotalAccounts} accounts reconciled`;
 
   const collectTasks = [
     { label: "Collect missing documents from client",   count: 24 },
@@ -8347,17 +8338,22 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
               <p style={{ fontSize: 18, fontWeight: 500, color: "#1F2024", margin: 0 }}>Workflows</p>
             </div>
             {[
-              { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${reconciledAccounts.size} of ${totalAccounts} accounts reconciled`, statusColor: "#000000", btnLabel: "Select account", dataflowIcon: true },
-              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", statusColor: vatReviewCompleted ? (vatResolvedCount >= 6 ? "#05A105" : "#000000") : undefined, btnLabel: vatReviewCompleted ? "Review" : "Run" },
+              { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${fullyReconciled} of ${totalAccounts} accounts reconciled`, btnLabel: "Select account", dataflowIcon: true },
+              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", btnLabel: vatReviewCompleted ? "Review" : "Run" },
               { label: "Payroll reconciliation",       onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
-              { label: "Balance sheet reconciliation", onRun: null, status: "3 of 24 accounts reconciled", statusColor: "#000000", btnLabel: "Select account", dataflowIcon: true },
-            ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => (
+              { label: "Balance sheet reconciliation", onRun: null, status: bsRecStatus, btnLabel: "Select account", dataflowIcon: true },
+            ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => {
+              const resolvedStatusColor = statusColor !== undefined ? statusColor
+                : status === "Not started" ? "#8C8C8B"
+                : status === "Completed" ? "#05A105"
+                : "#4C71DF";
+              return (
               <div key={label} style={{ borderTop: "1px solid #ECECEC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   <span style={{ fontSize: 16, fontWeight: 500, color: "#1F2024" }}>{label}</span>
-                  <span style={{ fontSize: 13, color: statusColor || "#ADADAD" }}>{status}</span>
+                  <span style={{ fontSize: 14, color: resolvedStatusColor }}>{status}</span>
                 </div>
                 <button
                   onClick={onRun || undefined}
@@ -8375,13 +8371,14 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
                   )}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Client context card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Badge */}
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F1F8F0", borderRadius: 6, padding: "4px 10px", alignSelf: "flex-start", fontSize: 13, fontWeight: 500, color: "#05A105" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F1F8F0", borderRadius: 6, padding: "4px 10px", alignSelf: "flex-start", fontSize: 14, fontWeight: 500, color: "#05A105" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -8844,7 +8841,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
                 {/* Intro AI message */}
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
-                  <p style={{ margin: 0 }}><StreamingMessage segments={introSegments} speed={18} /></p>
+                  <p style={{ margin: 0 }}><StreamingMessage segments={introSegments} speed={18} instant={showResults} /></p>
                 </div>
 
                 {/* Steps block */}
@@ -9394,7 +9391,7 @@ export default function BankReconciliation() {
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Home" ? (
-          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} />
+          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
         ) : (
