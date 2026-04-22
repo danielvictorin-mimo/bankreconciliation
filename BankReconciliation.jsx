@@ -4894,6 +4894,25 @@ function ExpandedRowContent({ row, comments = [], onAddComment }) {
 
 // ── Balance Sheet: ReconciliationCell ────────────────────────────────────────
 function ReconciliationCell({ code, account, bsReconciledData, onViewResults, onRunReconciliation }) {
+  // For group presets, aggregate member account statuses
+  const memberCodes = PRESET_MEMBER_CODES[code];
+  if (memberCodes && bsReconciledData) {
+    const memberData = memberCodes.map(c => bsReconciledData[c]).filter(Boolean);
+    if (memberData.length === memberCodes.length) {
+      const latestDate = memberData.reduce((latest, d) => (d.date > latest ? d.date : latest), memberData[0].date);
+      const allReconciled = memberData.every(d => d.status === "reconciled");
+      const groupStatus = allReconciled ? "reconciled" : "reviewing";
+      const totalSuggestions = memberData.reduce((sum, d) => sum + (d.suggestionCount || 0), 0);
+      return (
+        <ReconciledCard
+          date={latestDate}
+          status={groupStatus}
+          suggestionCount={groupStatus === "reviewing" ? totalSuggestions : null}
+          onPlay={() => onRunReconciliation?.({ code, account })}
+        />
+      );
+    }
+  }
   const data = bsReconciledData && bsReconciledData[code];
   if (data) {
     return (
@@ -5056,6 +5075,27 @@ const BS_SECTIONS = [
       },
     ],
   },
+];
+
+// ── Balance Sheet: Preset member codes ──────────────────────────────────────
+const PRESET_MEMBER_CODES = {
+  "__payroll__":    ["2210", "2230"],
+  "__dla__":        ["2300", "2301"],
+  "__fixed_assets__": ["0010", "0011", "0020", "0030", "0031", "0032", "0040"],
+};
+
+// ── Balance Sheet: Reconciliation Accordions ─────────────────────────────────
+const RECON_ACCORDIONS = [
+  { code: "__payroll__",    title: "Payroll",                 subtitle: "Check payroll accounts against the payroll source for any balance discrepancies." },
+  { code: "__dla__",        title: "Directors\u2019 loan account", subtitle: "Check payroll accounts against the payroll source for any balance discrepancies." },
+  { code: "__fixed_assets__", title: "Fixed assets",          subtitle: "Check accounts for balance discrepancies, missing depreciation, and misclassified capex." },
+];
+
+// ── Balance Sheet: DLA overview rows ─────────────────────────────────────────
+const DLA_OVERVIEW_ROWS = [
+  { account: "2300 \u2013 Directors\u2019 loan \u2014 J Smith",  opening: "\u00a312,400.00 (asset)",    movement: "+\u00a32,600.00", closing: "\u00a315,000.00 (asset)",    isSummary: false },
+  { account: "2301 \u2013 Directors\u2019 loan \u2014 A Jones",  opening: "-\u00a32,800.00 (liability)", movement: "-\u00a3400.00",   closing: "-\u00a33,200.00 (liability)", isSummary: false },
+  { account: "Net DLA position",                                  opening: "\u00a39,600.00",              movement: "+\u00a32,200.00", closing: "\u00a311,800.00",            isSummary: true  },
 ];
 
 // ── Balance Sheet: PAYROLL_RECONCILIATION_STEPS ─────────────────────────────
@@ -7792,6 +7832,164 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
 
 // ── Balance Sheet Review page ─────────────────────────────────────────────
+// ── Balance Sheet: PresetExpandedContent ─────────────────────────────────────
+function PresetExpandedContent({ item, bsReconciledData, rowComments, onAddComment }) {
+  const memberCodes = PRESET_MEMBER_CODES[item.code];
+  if (!memberCodes) return null;
+  const memberData = memberCodes.map(c => bsReconciledData && bsReconciledData[c]).filter(Boolean);
+  if (memberData.length === 0) {
+    return (
+      <div style={{ borderTop: "1px solid #E9E9EB", padding: "16px 24px", background: "#FAFAFA" }}>
+        <span style={{ fontSize: 14, color: "#8C8C8B" }}>No reconciliation results yet.</span>
+      </div>
+    );
+  }
+  // Find member rows from BS_SECTIONS
+  const memberRows = memberCodes.map(code => {
+    for (let si = 0; si < BS_SECTIONS.length; si++) {
+      for (let ti = 0; ti < BS_SECTIONS[si].tables.length; ti++) {
+        const found = BS_SECTIONS[si].tables[ti].rows.find(r => r.code === code);
+        if (found) {
+          const rd = bsReconciledData && bsReconciledData[code];
+          if (rd) return { ...found, reconciled: true, sourceBalance: rd.sourceBalance, variance: rd.variance, suggestions: rd.suggestionCount != null ? rd.suggestionCount : rd.suggestions, status: (STATUS_CONFIG[rd.status] && STATUS_CONFIG[rd.status].label) || "Reconciled" };
+          return found;
+        }
+      }
+    }
+    return null;
+  }).filter(Boolean);
+  const isDLA = item.code === "__dla__";
+  const [composing, setComposing] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const handleSubmit = () => { if (!commentText.trim()) return; onAddComment(item.code, commentText.trim()); setCommentText(""); setComposing(false); };
+  const handleCancel = () => { setCommentText(""); setComposing(false); };
+  const dividerStyle = { height: 1, background: "#E9E9EB", margin: 0 };
+  let headers, colTemplate;
+  if (isDLA) {
+    headers = ["Account", "Opening balance (1 Apr 2025)", "Movement in year", "Closing balance (31 Mar 2026)", "Status"];
+    colTemplate = "1.8fr 1fr 0.9fr 1fr 140px";
+  } else {
+    headers = ["Account", "Balance per Xero", "Balance per source", "Variance", "Suggestions", "Status"];
+    colTemplate = "1.8fr 1fr 1fr 1fr 1fr 140px";
+  }
+  const presetComments = (rowComments && rowComments[item.code]) || [];
+  return (
+    <div style={{ borderTop: "1px solid #E9E9EB", padding: "24px", background: "#FAFAFA" }}>
+      <div style={{ background: "#FFFFFF", borderRadius: 8, border: "1px solid #E9E9EB", padding: 24, display: "flex", flexDirection: "column", gap: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", marginBottom: 12, display: "block" }}>Reconciliation</span>
+        <div style={{ border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden" }}>
+          {/* Header row */}
+          <div style={{ display: "grid", gridTemplateColumns: colTemplate }}>
+            {headers.map((h, i) => (
+              <span key={h} style={{ padding: "10px 16px", fontSize: 14, fontWeight: 500, color: "#8C8C8B", borderBottom: "1px solid #E9E9EB", borderRight: i < headers.length - 1 ? "1px solid #E9E9EB" : "none", textAlign: h === "Account" ? "left" : h === "Status" ? "left" : "right" }}>{h}</span>
+            ))}
+          </div>
+          {/* Data rows */}
+          {memberRows.map((row, ri) => {
+            const rd = bsReconciledData && bsReconciledData[row.code];
+            const hasData = !!rd;
+            if (isDLA) {
+              const dlaRow = DLA_OVERVIEW_ROWS.find(r => !r.isSummary && r.account.startsWith(row.code));
+              return (
+                <div key={row.code} style={{ display: "grid", gridTemplateColumns: colTemplate, borderBottom: ri < memberRows.length - 1 ? "1px solid #E9E9EB" : "none" }}>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", borderRight: "1px solid #E9E9EB" }}>{row.code} – {row.account}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{dlaRow ? dlaRow.opening : "—"}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{dlaRow ? dlaRow.movement : "—"}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{dlaRow ? dlaRow.closing : "—"}</span>
+                  <span style={{ padding: "14px 16px", display: "flex", alignItems: "center" }}><StatusBadge status={hasData ? row.status || "Not started" : "Not started"} /></span>
+                </div>
+              );
+            } else {
+              return (
+                <div key={row.code} style={{ display: "grid", gridTemplateColumns: colTemplate, borderBottom: ri < memberRows.length - 1 ? "1px solid #E9E9EB" : "none" }}>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", borderRight: "1px solid #E9E9EB" }}>{row.code} – {row.account}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#080908", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{row.xeroBalance || "—"}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: hasData ? "#080908" : "#9D9D9E", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{hasData ? row.sourceBalance || "—" : "—"}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: hasData ? "#080908" : "#9D9D9E", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{hasData ? row.variance || "—" : "—"}</span>
+                  <span style={{ padding: "14px 16px", fontSize: 14, color: "#8C8C8B", textAlign: "right", borderRight: "1px solid #E9E9EB" }}>{row.suggestions != null ? row.suggestions : "—"}</span>
+                  <span style={{ padding: "14px 16px", display: "flex", alignItems: "center" }}><StatusBadge status={hasData ? row.status || "Not started" : "Not started"} /></span>
+                </div>
+              );
+            }
+          })}
+        </div>
+        <div style={{ ...dividerStyle, marginTop: 24, marginBottom: 24 }} />
+        {/* Comments section */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {presetComments.map((c, ci) => (
+            <div key={ci} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#080908" }}>{c.user}</span>
+                <span style={{ fontSize: 12, color: "#8C8C8B" }}>{c.timestamp}</span>
+              </div>
+              <span style={{ fontSize: 14, color: "#545453", lineHeight: "20px" }}>{c.text}</span>
+            </div>
+          ))}
+          {composing ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <textarea autoFocus value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Write a comment..." style={{ width: "100%", minHeight: 80, padding: "10px 12px", borderRadius: 8, border: "1px solid #E9E9EB", fontSize: 14, fontFamily: "'Inter', sans-serif", lineHeight: "22px", color: "#080908", resize: "vertical", outline: "none", boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={handleSubmit} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#080908", color: "#FFFFFF", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>Save comment</button>
+                <button onClick={handleCancel} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #E9E9EB", background: "#FFFFFF", color: "#080908", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setComposing(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", alignSelf: "flex-start" }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 7.667a5.334 5.334 0 0 1-5.333 5.333H3l-1.667.667V7.667a5.333 5.333 0 0 1 5.334-5.334A5.333 5.333 0 0 1 14 7.667Z" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Add comment
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Balance Sheet: ReconAccordionItem ────────────────────────────────────────
+function ReconAccordionItem({ item, bsReconciledData, onRunAccountReconciliation, rowComments, onAddComment }) {
+  const isDisabled = item.code === "__fixed_assets__";
+  const [expanded, setExpanded] = useState(false);
+  const hasComments = rowComments && rowComments[item.code] && rowComments[item.code].length > 0;
+  if (isDisabled) {
+    return (
+      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", opacity: 0.7 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>{item.title}</span>
+            <span style={{ fontSize: 14, color: "#8C8C8B" }}>{item.subtitle}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: 24, flexShrink: 0 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 4, fontSize: 12, fontWeight: 600, lineHeight: "17px", background: "#F0F5FC", border: "1px solid #D2DEF6", color: "#6389CF", whiteSpace: "nowrap" }}>Coming soon</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden" }}>
+      <div onClick={() => setExpanded(!expanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", cursor: "pointer" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>{item.title}</span>
+          <span style={{ fontSize: 14, color: "#8C8C8B" }}>{item.subtitle}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: 24, flexShrink: 0 }}>
+          <ReconciliationCell code={item.code} account={item.title} bsReconciledData={bsReconciledData} onRunReconciliation={e => { e?.stopPropagation?.(); onRunAccountReconciliation?.({ code: item.code, account: item.title }); }} />
+          <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+              <path d="M14 7.667C14.002 8.547 13.797 9.415 13.4 10.2c-.47.941-1.194 1.733-2.088 2.286-.895.554-1.926.847-2.979.847-.88.002-1.748-.203-2.533-.6L2 14l1.267-3.8A5.334 5.334 0 0 1 2.667 7.667a5.334 5.334 0 0 1 8.666-4.134A5.333 5.333 0 0 1 14 7.333v.334Z" stroke={hasComments ? "#6BAC5B" : "#8C8C8B"} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {hasComments && <span style={{ position: "absolute", top: -1, right: -1, width: 6, height: 6, borderRadius: "50%", background: "#6BAC5B" }} />}
+          </span>
+          <svg width={16} height={16} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}>
+            <path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      {expanded && <PresetExpandedContent item={item} bsReconciledData={bsReconciledData} rowComments={rowComments} onAddComment={onAddComment} />}
+    </div>
+  );
+}
+
 function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll, selectedPeriod, onPeriodChange, hideTabs = false, pageTitle = "Review" }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareValue, setCompareValue] = useState("Last month");
@@ -7859,84 +8057,23 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
         ) : (
           <>
           {/* Reconciliation section */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", margin: 0 }}>Reconciliation</h2>
-              <button
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "0 14px", height: 36, borderRadius: 8,
-                  border: "none", background: "#05A105", cursor: "pointer",
-                  fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#048c04"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#05A105"; }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 3.5V12.5M3.5 8H12.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <PrimaryButton icon={<PlayCircleIcon color="white" />} style={{ height: 44, boxSizing: "border-box", padding: "10px 16px" }} onClick={onRunBSReconciliation}>
                 Run reconciliation
-              </button>
+              </PrimaryButton>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", border: "1px solid #E9E9EB", borderRadius: 12, overflow: "hidden" }}>
-              {[
-                { label: "Payroll", desc: "Check payroll accounts against the payroll source for any balance discrepancies.", comingSoon: false },
-                { label: "Directors\u2019 loan account", desc: "Check payroll accounts against the payroll source for any balance discrepancies.", comingSoon: false },
-                { label: "Fixed assets", desc: "Check accounts for balance discrepancies, missing depreciation, and misclassified capex.", comingSoon: true },
-              ].map((item, idx, arr) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "16px 20px",
-                    borderBottom: idx < arr.length - 1 ? "1px solid #E9E9EB" : "none",
-                    background: "#FFFFFF",
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{item.label}</span>
-                    <span style={{ fontSize: 13, color: "#8C8C8B", lineHeight: "18px" }}>{item.desc}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 24 }}>
-                    {item.comingSoon ? (
-                      <span style={{
-                        fontSize: 12, fontWeight: 500, color: "#4C71DF",
-                        background: "#EEF2FF", borderRadius: 100, padding: "3px 10px",
-                        whiteSpace: "nowrap",
-                      }}>Coming soon</span>
-                    ) : (
-                      <>
-                        <button
-                          style={{
-                            fontSize: 13, fontWeight: 500, color: "#05A105",
-                            background: "none", border: "none", cursor: "pointer", padding: 0,
-                            whiteSpace: "nowrap",
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
-                          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
-                        >
-                          Run reconciliation
-                        </button>
-                        <button style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6, color: "#8C8C8B" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "#F4F4F5"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M5.33 13.33H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7.33a2 2 0 0 1-2 2h-1.33M8 7.33v6M5.33 10l2.67 2.67L10.67 10" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        <button style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6, color: "#8C8C8B" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "#F4F4F5"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {RECON_ACCORDIONS.map(item => (
+                <ReconAccordionItem
+                  key={item.code}
+                  item={item}
+                  bsReconciledData={bsReconciledData}
+                  onRunAccountReconciliation={onRunAccountReconciliation}
+                  rowComments={rowComments}
+                  onAddComment={onAddComment}
+                />
               ))}
             </div>
           </div>
@@ -9025,7 +9162,13 @@ export default function BankReconciliation() {
   };
 
   const handleRunBSReconciliation = () => setBsReconciling(true);
-  const handleRunAccountReconciliation = (acct) => setBsReconciling(acct); // { code, account }
+  const handleRunAccountReconciliation = (acct) => {
+    // Preset codes open the general BS flow
+    if (acct && acct.code === "__payroll__") { setBsReconciling("payroll"); return; }
+    if (acct && acct.code === "__dla__")     { setBsReconciling(true); return; }
+    if (acct && acct.code === "__fixed_assets__") { setBsReconciling(true); return; }
+    setBsReconciling(acct); // { code, account } for direct account flow
+  };
 
 
   const handleCloseBS = (partialState, accountFromChild) => {
