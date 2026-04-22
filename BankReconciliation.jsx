@@ -1175,8 +1175,8 @@ function RecommendationCard({
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", fontFamily: "'Inter', sans-serif" }}>
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: (isResolved || isIgnored) ? "pointer" : "default" }}
-        onClick={(isResolved || isIgnored) ? () => setExpanded(o => !o) : undefined}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+        onClick={() => setExpanded(o => !o)}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {(isResolved || isIgnored) && <SuccessIcon />}
@@ -8107,11 +8107,6 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
           {/* Workflows card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" style={{ flexShrink: 0 }}>
-                <rect width="40" height="40" rx="7" fill="#05A105"/>
-                <path d="M25.8 17.5C26.9201 17.5 27.4802 17.5 27.908 17.3443C28.2843 17.2074 28.5903 16.9888 28.782 16.72C29 16.4144 29 16.0144 29 15.2143V14.7857C29 13.9856 29 13.5856 28.782 13.28C28.5903 13.0112 28.2843 12.7926 27.908 12.6557C27.4802 12.5 26.9201 12.5 25.8 12.5H14.2C13.0799 12.5 12.5198 12.5 12.092 12.6557C11.7157 12.7926 11.4097 13.0112 11.218 13.28C11 13.5856 11 13.9856 11 14.7857V15.2143C11 16.0144 11 16.4144 11.218 16.72C11.4097 16.9888 11.7157 17.2074 12.092 17.3443C12.5198 17.5 13.0799 17.5 14.2 17.5H25.8Z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M25.8 27.5C26.9201 27.5 27.4802 27.5 27.908 27.3443C28.2843 27.2074 28.5903 26.9888 28.782 26.72C29 26.4144 29 26.0144 29 25.2143V24.7857C29 23.9856 29 23.5856 28.782 23.28C28.5903 23.0112 28.2843 22.7926 27.908 22.6557C27.4802 22.5 26.9201 22.5 25.8 22.5H14.2C13.0799 22.5 12.5198 22.5 12.092 22.6557C11.7157 22.7926 11.4097 23.0112 11.218 23.28C11 23.5856 11 23.9856 11 24.7857V25.2143C11 26.0144 11 26.4144 11.218 26.72C11.4097 26.9888 11.7157 27.2074 12.092 27.3443C12.5198 27.5 13.0799 27.5 14.2 27.5H25.8Z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
               <p style={{ fontSize: 18, fontWeight: 500, color: "#1F2024", margin: 0 }}>Workflows</p>
             </div>
             {[
@@ -8472,7 +8467,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     if (document.getElementById("_spin_kf")) return;
     const s = document.createElement("style");
     s.id = "_spin_kf";
-    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes stepPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }";
     document.head.appendChild(s);
   }, []);
 
@@ -8641,10 +8636,10 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                         const isLast = i === VAT_STEPS.length - 1;
                         return (
                           <div key={i} style={{ display: "flex", gap: 16 }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
-                              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.4s ease" }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                              <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                                 {status === "done" && (
-                                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                  <svg key={`done-${i}`} width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "stepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both", overflow: "visible" }}>
                                     <circle cx="10" cy="10" r="10" fill="#05A105"/>
                                     <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
@@ -8663,7 +8658,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                               {!isLast && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
                             </div>
                             <div style={{ paddingBottom: isLast ? 0 : 20 }}>
-                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "done" ? 500 : 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "all 0.3s ease" }}>{step.title}</div>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "color 0.3s ease" }}>{step.title}</div>
                               {(stepSubtexts[i] || status === "done") && step.subtext && (
                                 <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>{step.subtext}</div>
                               )}
@@ -9152,7 +9147,7 @@ export default function BankReconciliation() {
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         {activeNav === "Home" ? (
-          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size} />
+          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} />
         ) : activeNav === "Review" ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
         ) : (
