@@ -8789,12 +8789,13 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     if (stepsComplete) setResultsVisible(true);
   }, [stepsComplete]);
 
-  // Canvas content ready after slide-in animation
+  // Canvas content ready after slide-in animation — suggestion box slides in shortly after
   useEffect(() => {
     if (!resultsVisible) return;
-    if (showResults) { setCanvasReady(true); return; }
-    const t = setTimeout(() => setCanvasReady(true), 3200);
-    return () => clearTimeout(t);
+    if (showResults) { setCanvasReady(true); setBoxesOpen(true); return; }
+    const t1 = setTimeout(() => setCanvasReady(true), 3200);
+    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [resultsVisible]);
 
   // Spin keyframe
@@ -8993,7 +8994,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                               {!isLast && i + 1 < visibleSteps && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
                             </div>
                             <div style={{ paddingBottom: isLast ? 0 : 20 }}>
-                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "done" ? "#000000" : "#8C8C8B", transition: "color 0.3s ease" }}>{step.title}</div>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: status === "pending" ? 400 : 500, color: status === "pending" ? "#8C8C8B" : "#000000", transition: "color 0.3s ease, font-weight 0.3s ease" }}>{step.title}</div>
                               {(stepSubtexts[i] || status === "done") && step.subtext && (
                                 <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>{step.subtext}</div>
                               )}
