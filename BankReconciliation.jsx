@@ -2881,6 +2881,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [highlightedStart, setHighlightedStart] = useState(0);
   const [stepStatuses, setStepStatuses]       = useState(showResults ? RECONCILIATION_STEPS.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts]       = useState(showResults ? RECONCILIATION_STEPS.map(s => s.subtext || "") : []);
+  const [visibleSteps, setVisibleSteps]       = useState(showResults ? RECONCILIATION_STEPS.length : 0);
+  const [stepsPopulated, setStepsPopulated]   = useState(showResults);
   const [reconciliationCollapsed, setReconciliationCollapsed] = useState(showResults);
   const [userMessages, setUserMessages]       = useState([]);
   const [feedProceedChoice, setFeedProceedChoice] = useState(showResults ? "upload" : null);
@@ -2900,6 +2902,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
   const dropdownRef   = useRef(null);
+  const stepRowRefs   = useRef([]);
   const [batchDraftSidebar, setBatchDraftSidebar] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const ACCOUNT_TOTAL_SUGGESTIONS = {
@@ -3041,21 +3044,35 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     setReuploadPhase(true);
   };
 
+  // Phase 1: reveal steps one by one
   useEffect(() => {
     if (!startClicked || showResults) return;
+    const REVEAL_INTERVAL = 600;
+    const timers = [];
+    RECONCILIATION_STEPS.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setVisibleSteps(i + 1);
+      }, i * REVEAL_INTERVAL));
+    });
+    const totalRevealTime = (RECONCILIATION_STEPS.length - 1) * REVEAL_INTERVAL + 450;
+    timers.push(setTimeout(() => setStepsPopulated(true), totalRevealTime));
+    return () => timers.forEach(clearTimeout);
+  }, [startClicked]);
+
+  // Phase 2: run spinner through steps once all are populated
+  useEffect(() => {
+    if (!stepsPopulated || showResults) return;
     setStepStatuses(RECONCILIATION_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
     setStepSubtexts(RECONCILIATION_STEPS.map(() => false));
     let cumulative = 0;
     const timers = [];
     RECONCILIATION_STEPS.forEach((step, i) => {
       cumulative += step.duration;
-      // Show subtext 400ms before the step completes
       if (step.subtext) {
         timers.push(setTimeout(() => {
           setStepSubtexts(prev => { const next = [...prev]; next[i] = true; return next; });
         }, cumulative - 400));
       }
-      // Mark step done
       timers.push(setTimeout(() => {
         setStepStatuses(prev => {
           const next = [...prev];
@@ -3066,7 +3083,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       }, cumulative));
     });
     return () => timers.forEach(clearTimeout);
-  }, [startClicked]);
+  }, [stepsPopulated]);
 
   // After file is selected, wait 2.2s then start AI response (normal flow only)
   useEffect(() => {
@@ -3201,7 +3218,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone]);
+  }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps]);
 
   // Track whether the chat is scrolled to the bottom
   useEffect(() => {
@@ -3225,6 +3242,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes slideInFromRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        @keyframes stepPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
+        @keyframes stepReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       {/* Top bar */}
@@ -3399,10 +3418,10 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Chat area */}
       <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
-      <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", scrollBehavior: "smooth" }}>
         {/* Top fade — only in sidebar mode, inside scroll so it doesn't cover the scrollbar */}
         {resultsVisible && <div style={{ position: "sticky", top: 0, left: 0, right: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
-        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
 
           {!clientUpload && (
             <>
@@ -3417,16 +3436,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 )}
               </div>
             </>
-          )}
-
-          {/* Account picker — keyboard handler lives on window while picker is visible */}
-          {!clientUpload && isPicker && line2Done && !accountSelected && (
-            <AccountPicker
-              accounts={accounts}
-              highlightedAccount={highlightedAccount}
-              setHighlightedAccount={setHighlightedAccount}
-              onConfirm={(acc) => { setSelectedAccount(acc); setAccountSelected(true); }}
-            />
           )}
 
           {/* User reply bubble — appears after account is selected and line1 is done */}
@@ -3450,13 +3459,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {line3Trigger && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
               <p><StreamingMessage key="line3" segments={line3Segments} speed={18} instant={showResults} /></p>
-            </div>
-          )}
-
-          {/* Upload card — appears after line 3, hides after file chosen or re-upload phase */}
-          {line3Done && !uploadedFiles && !reuploadPhase && (
-            <div style={{ marginTop: 16 }}>
-              <UploadCard onFileSelected={handleFileSelected} onOpenAllDocs={() => setAllDocsOpen(true)} />
             </div>
           )}
 
@@ -3580,53 +3582,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </div>
           )}
 
-          {/* Ready to start card — hidden once Start reconciliation is clicked (normal flow only) */}
-          {line5Done && !startClicked && feedProceedChoice !== "convert" && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{
-                background: "#FFFFFF",
-                border: "1px solid #E9E9EB",
-                borderRadius: 8,
-                padding: "24px 24px 16px",
-                width: "100%",
-                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Ready to start?</p>
-                {startOptions.map(({ label, primary }, i) => {
-                  const isKeyActive = i === highlightedStart;
-                  return (
-                    <div
-                      key={label}
-                      onClick={() => { if (label === "Start reconciliation") setStartClicked(true); }}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        width: "100%", padding: "14px 18px", marginBottom: 8,
-                        background: isKeyActive ? "#E3E3E3" : "#F7F7F7",
-                        border: "none", borderRadius: 10, cursor: "pointer",
-                        fontSize: 14, fontWeight: isKeyActive ? 600 : 400, color: "#080908",
-                        boxSizing: "border-box", transition: "background 0.1s",
-                      }}
-                      onMouseEnter={e => { if (!isKeyActive) e.currentTarget.style.background = "#F0F0F0"; }}
-                      onMouseLeave={e => { if (!isKeyActive) e.currentTarget.style.background = "#F7F7F7"; }}
-                    >
-                      <span>{label}</span>
-                      {isKeyActive && (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
-                          <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
-                        </svg>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 }}>
-                <span style={{ fontSize: 12, color: "#8C8C8B" }}>↑↓ to navigate</span>
-                <span style={{ fontSize: 12, color: "#CFCFD1" }}>·</span>
-                <span style={{ fontSize: 12, color: "#8C8C8B" }}>Enter to select</span>
-              </div>
-            </div>
-          )}
-
           {/* User sent messages + re-upload flow */}
           {userMessages.map((msg, i) => (
             <div key={i}>
@@ -3642,13 +3597,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               )}
             </div>
           ))}
-
-          {/* Re-upload card */}
-          {reuploadPhase && !uploadedFiles && (
-            <div style={{ marginTop: 16 }}>
-              <UploadCard onFileSelected={file => { handleFileSelected(file); setReuploadPhase(false); }} onOpenAllDocs={() => setAllDocsOpen(true)} />
-            </div>
-          )}
 
           {/* User bubble — appears when "Start reconciliation" is clicked */}
           {startClicked && (
@@ -3669,7 +3617,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           )}
 
           {/* Reconciliation progress */}
-          {startClicked && stepStatuses.length > 0 && (
+          {startClicked && visibleSteps > 0 && (
             <div style={{ marginTop: 24 }}>
               {/* Header */}
               <div
@@ -3689,17 +3637,18 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     </svg>
                   </div>
                   <span style={{ fontSize: 13, color: "#8C8C8B" }}>
-                    {stepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
+                    {stepsPopulated && stepStatuses.every(s => s === "done") ? "Completed" : "In progress"}
                   </span>
                 </div>
               </div>
 
               {/* Steps */}
               {!reconciliationCollapsed && RECONCILIATION_STEPS.map((step, i) => {
-                const status = stepStatuses[i] || "pending";
+                if (i >= visibleSteps) return null;
+                const status = stepsPopulated ? (stepStatuses[i] || "pending") : "pending";
                 const isLast = i === RECONCILIATION_STEPS.length - 1;
                 return (
-                  <div key={i} style={{ display: "flex", gap: 16 }}>
+                  <div key={i} ref={el => stepRowRefs.current[i] = el} style={{ display: "flex", gap: 16, animation: "stepReveal 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
                     {/* Circle + connector line */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
                       <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
@@ -3720,7 +3669,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                           </svg>
                         )}
                       </div>
-                      {!isLast && (
+                      {!isLast && i + 1 < visibleSteps && (
                         <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />
                       )}
                     </div>
@@ -3762,32 +3711,116 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                   <p style={{ margin: 0 }}>{replaceRespChars}</p>
                 </div>
               )}
-              {/* Upload card — appears once AI response finishes */}
-              {replaceRespDone && (
-                <div style={{ marginTop: 16 }}>
-                  <UploadCard
-                    title="New statement"
-                    onFileSelected={file => {
-                      setReplaceStatementMode(false);
-                      setUploadedFiles([{ name: file.name, type: file.type }]);
-                      setPreviewUrl(null);
-                      setPrepDone(false);
-                      setStartClicked(false);
-                      setStepStatuses([]);
-                      setStepSubtexts([]);
-                      setResultsVisible(false);
-                      setCanvasReady(false);
-                    }}
-                    onOpenAllDocs={() => setAllDocsOpen(true)}
-                  />
-                </div>
-              )}
             </>
           )}
 
           <div ref={chatEndRef} />
         </div>
       </div>
+
+      {/* Account picker — pinned at the bottom */}
+      {!clientUpload && isPicker && line2Done && !accountSelected && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <AccountPicker
+              accounts={accounts}
+              highlightedAccount={highlightedAccount}
+              setHighlightedAccount={setHighlightedAccount}
+              onConfirm={(acc) => { setSelectedAccount(acc); setAccountSelected(true); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Upload card — pinned at the bottom */}
+      {!clientUpload && line3Done && !uploadedFiles && !reuploadPhase && !replaceStatementMode && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={handleFileSelected} onOpenAllDocs={() => setAllDocsOpen(true)} />
+          </div>
+        </div>
+      )}
+
+      {/* Re-upload card — pinned at the bottom */}
+      {reuploadPhase && !uploadedFiles && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={file => { handleFileSelected(file); setReuploadPhase(false); }} onOpenAllDocs={() => setAllDocsOpen(true)} />
+          </div>
+        </div>
+      )}
+
+      {/* Replace statement upload — pinned at the bottom */}
+      {replaceStatementMode && replaceRespDone && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard
+              title="New statement"
+              onFileSelected={file => {
+                setReplaceStatementMode(false);
+                setUploadedFiles([{ name: file.name, type: file.type }]);
+                setPreviewUrl(null);
+                setPrepDone(false);
+                setStartClicked(false);
+                setStepStatuses([]);
+                setStepSubtexts([]);
+                setResultsVisible(false);
+                setCanvasReady(false);
+              }}
+              onOpenAllDocs={() => setAllDocsOpen(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Ready to start card — pinned at the bottom */}
+      {line5Done && !startClicked && feedProceedChoice !== "convert" && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{
+              background: "#FFFFFF",
+              border: "1px solid #E9E9EB",
+              borderRadius: 8,
+              padding: "24px 24px 16px",
+              width: "100%",
+              boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Ready to start?</p>
+              {startOptions.map(({ label, primary }, i) => {
+                const isKeyActive = i === highlightedStart;
+                return (
+                  <div
+                    key={label}
+                    onClick={() => { if (label === "Start reconciliation") setStartClicked(true); }}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "14px 18px", marginBottom: 8,
+                      background: isKeyActive ? "#E3E3E3" : "#F7F7F7",
+                      border: "none", borderRadius: 10, cursor: "pointer",
+                      fontSize: 14, fontWeight: isKeyActive ? 600 : 400, color: "#080908",
+                      boxSizing: "border-box", transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => { if (!isKeyActive) e.currentTarget.style.background = "#F0F0F0"; }}
+                    onMouseLeave={e => { if (!isKeyActive) e.currentTarget.style.background = "#F7F7F7"; }}
+                  >
+                    <span>{label}</span>
+                    {isKeyActive && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                        <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>↑↓ to navigate</span>
+              <span style={{ fontSize: 12, color: "#CFCFD1" }}>·</span>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>Enter to select</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Preparing next step — shown while AI is streaming a response */}
       {(() => {
@@ -3833,7 +3866,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               </div>
             </div>
           </div>
-        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) ? null : (
+        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) ? null : (
           /* Standalone textarea — visible when AI is not streaming and no action card is showing */
           <div style={{ padding: resultsVisible ? "60px 12px 12px" : "0 12px 12px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -6195,7 +6228,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Chat area */}
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ maxWidth: resultsVisible ? "100%" : 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "32px 24px 24px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+        <div style={{ maxWidth: resultsVisible ? "100%" : 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "32px 24px 24px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
 
           {/* Workflow card */}
           <WorkflowCard label="Balance sheet reconciliation" />
@@ -6214,12 +6247,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               </div>
 
               {/* Upload card \u2014 appears after direct line 2 finishes */}
-              {directLine2Done && !uploadedFile && (
-                <div style={{ marginTop: 16 }}>
-                  <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
-                </div>
-              )}
-
               {/* User bubble \u2014 file preview after upload */}
               {uploadedFile && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6261,37 +6288,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               )}
 
               {/* Choice: start \u2014 appears after ready message finishes */}
-              {prepDone && line6Done && !readyChoice && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #E9E9EB",
-                    borderRadius: 8,
-                    padding: "20px 20px 12px",
-                    maxWidth: 480,
-                    boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                  }}>
-                    {["Start reconciliation", "Add another document"].map(opt => (
-                      <button
-                        key={opt}
-                        onClick={() => setReadyChoice(opt)}
-                        style={{
-                          display: "block", width: "100%", textAlign: "left",
-                          padding: "12px 16px", marginBottom: 8,
-                          background: "#F7F7F7", border: "none",
-                          borderRadius: 10, cursor: "pointer",
-                          fontSize: 14, fontWeight: 400, color: "#080908",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                        onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* User reply bubble for ready choice */}
               {readyChoice && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6307,11 +6303,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                     <p><StreamingMessage key={"add-doc-direct-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
                   </div>
-                  {addMoreRound === 0 && !addMoreWaitingUpload && (
-                    <div style={{ marginTop: 16 }}>
-                      <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
-                    </div>
-                  )}
                   {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
                     <div key={"add-preview-direct-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                       <div style={{ maxWidth: 320 }}>
@@ -6359,31 +6350,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       </div>
                     );
                   })()}
-                  {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-                    <div style={{ marginTop: 16 }}>
-                      <div style={{
-                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
-                        padding: "20px 20px 12px", maxWidth: 480,
-                        boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                      }}>
-                        {["Start reconciliation", "Add another document"].map(opt => (
-                          <button key={opt} onClick={() => {
-                            if (opt === "Start reconciliation") { setStartAfterMore(true); }
-                            else { setAddMoreWaitingUpload(true); }
-                          }} style={{
-                            display: "block", width: "100%", textAlign: "left",
-                            padding: "12px 16px", marginBottom: 8,
-                            background: "#F7F7F7", border: "none",
-                            borderRadius: 10, cursor: "pointer",
-                            fontSize: 14, fontWeight: 400, color: "#080908",
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                          onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                          >{opt}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {/* User chose "Add another document" — new upload round */}
                   {addMoreWaitingUpload && (
                     <>
@@ -6394,9 +6360,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       </div>
                       <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                         <p><StreamingMessage key={"add-doc-direct-waiting-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
-                      </div>
-                      <div style={{ marginTop: 16 }}>
-                        <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
                       </div>
                     </>
                   )}
@@ -6494,14 +6457,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
 
           {/* Type picker \u2014 appears after AI finishes line 2, before user selects */}
-          {!isDirectFlow && line2Done && !typeSelected && (
-            <BSOptionPicker
-              title="What would you like to reconcile?"
-              options={reconciliationTypes}
-              onSelect={(type) => { setSelectedType(type); setTypeSelected(true); }}
-            />
-          )}
-
           {/* User reply bubble \u2014 after type is selected */}
           {!isDirectFlow && typeSelected && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6523,65 +6478,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
               <p><StreamingMessage key="line3b" segments={[{ text: line3bText, bold: false }]} speed={18} instant={isResume} /></p>
-            </div>
-          )}
-
-          {/* BS Account picker card */}
-          {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && line3bDone && !pickedBSAccount && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{
-                background: "#FFFFFF",
-                border: "1px solid #E9E9EB",
-                borderRadius: 8,
-                padding: "20px 20px 12px",
-                maxWidth: 480,
-                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                height: 400,
-                display: "flex",
-                flexDirection: "column",
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, flexShrink: 0 }}>Select an account</p>
-                <input
-                  type="text"
-                  placeholder="Search accounts..."
-                  value={accountSearch}
-                  onChange={e => setAccountSearch(e.target.value)}
-                  style={{
-                    width: "100%", padding: "10px 12px", marginBottom: 10,
-                    border: "1px solid #E9E9EB", borderRadius: 8,
-                    fontSize: 14, color: "#080908", outline: "none",
-                    fontFamily: "'Inter', sans-serif",
-                    boxSizing: "border-box",
-                    flexShrink: 0,
-                  }}
-                  onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
-                  onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
-                />
-                <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-                  {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).map(acc => (
-                    <button
-                      key={acc.code}
-                      onClick={() => setPickedBSAccount(acc)}
-                      style={{
-                        display: "block", width: "100%", textAlign: "left",
-                        padding: "10px 16px", marginBottom: 6,
-                        background: "#F7F7F7", border: "none",
-                        borderRadius: 10, cursor: "pointer",
-                        fontSize: 14, fontWeight: 400, color: "#080908",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                    >
-                      <span style={{ fontWeight: 500 }}>{acc.code}</span>
-                      <span style={{ margin: "0 6px" }}>{"\u2013"}</span>
-                      <span>{acc.account}</span>
-                    </button>
-                  ))}
-                  {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).length === 0 && (
-                    <p style={{ fontSize: 14, color: "#8C8C8B", padding: "20px 16px", textAlign: "center" }}>No accounts found</p>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
@@ -6618,24 +6514,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       { text: " has already been " + statusLabel + ". Would you like to view the results or start fresh?", bold: false },
                     ]} speed={18} /></p>
                   </div>
-                  <BSOptionPicker
-                    options={["View reconciliation results", "Restart reconciliation"]}
-                    onSelect={(opt) => {
-                      setPickedAccountAction(opt);
-                      if (opt === "View reconciliation results") {
-                        const data = getAccountRecData(pickedBSAccount.code, pickedBSAccount.account);
-                        setStepStatuses(data.steps.map(() => "done"));
-                        setStepSubtexts(data.steps.map(() => true));
-                        setUploadedFile({ name: "Uploaded document.pdf", type: "application/pdf" });
-                        setPrepDone(true);
-                        setReadyChoice("Start reconciliation");
-                        setResultsVisible(true);
-                        setCanvasReady(true);
-                        if (pickedRecData.resolvedCards) setResolvedCards(new Set(pickedRecData.resolvedCards));
-                        if (pickedRecData.ignoredCards) setIgnoredCards(new Set(pickedRecData.ignoredCards));
-                      }
-                    }}
-                  />
                 </>
               );
             }
@@ -6704,13 +6582,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             );
           })()}
 
-          {/* Upload card for picked BS account */}
-          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && !uploadedFile && (
-            <div style={{ marginTop: 16 }}>
-              <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
-            </div>
-          )}
-
           {/* File preview for picked BS account */}
           {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && uploadedFile && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6751,14 +6622,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             </div>
           )}
 
-          {/* Start choice for picked BS account */}
-          {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && prepDone && line6Done && !readyChoice && (
-            <BSOptionPicker
-              options={["Start reconciliation", "Add another document"]}
-              onSelect={(opt) => setReadyChoice(opt)}
-            />
-          )}
-
           {/* User reply for start choice (picked BS account) */}
           {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && readyChoice && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6774,11 +6637,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                 <p><StreamingMessage key={"add-doc-bs-" + pickedBSAccount.code + "-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
               </div>
-              {addMoreRound === 0 && !addMoreWaitingUpload && (
-                <div style={{ marginTop: 16 }}>
-                  <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
-                </div>
-              )}
               {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
                 <div key={"add-preview-bs-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                   <div style={{ maxWidth: 320 }}>
@@ -6826,15 +6684,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   </div>
                 );
               })()}
-              {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-                <BSOptionPicker
-                  options={["Start reconciliation", "Add another document"]}
-                  onSelect={(opt) => {
-                    if (opt === "Start reconciliation") setStartAfterMore(true);
-                    else setAddMoreWaitingUpload(true);
-                  }}
-                />
-              )}
               {/* User chose "Add another document" — new upload round */}
               {addMoreWaitingUpload && (
                 <>
@@ -6845,9 +6694,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   </div>
                   <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                     <p><StreamingMessage key={"add-doc-bs-waiting-" + addMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
-                  </div>
-                  <div style={{ marginTop: 16 }}>
-                    <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
                   </div>
                 </>
               )}
@@ -6952,14 +6798,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
 
           {/* Choice: how to continue \u2014 appears after account list */}
-          {!isDirectFlow && typeSelected && selectedType === "Payroll" && line3Done && !accountChoiceSelected && (
-            <BSOptionPicker
-              title="How would you like to continue?"
-              options={["Continue with suggested accounts", "Pick accounts to reconcile"]}
-              onSelect={(opt) => setAccountChoiceSelected(opt)}
-            />
-          )}
-
           {/* User reply bubble for account choice */}
           {!isDirectFlow && accountChoiceSelected && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -6990,12 +6828,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
 
           {/* Upload card \u2014 appears after "Please upload a payroll report" finishes */}
-          {!isDirectFlow && !pickedBSAccount && line5Done && !uploadedFile && (
-            <div style={{ marginTop: 16 }}>
-              <UploadCard onFileSelected={handleFileSelected} title="Upload payroll report" />
-            </div>
-          )}
-
           {/* User bubble \u2014 file preview after upload */}
           {!isDirectFlow && !pickedBSAccount && uploadedFile && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -7033,13 +6865,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
 
           {/* Choice: start or add another \u2014 appears after ready message finishes */}
-          {!isDirectFlow && !pickedBSAccount && line6Done && !readyChoice && (
-            <BSOptionPicker
-              options={["Start reconciliation", "Add another payroll report"]}
-              onSelect={(opt) => setReadyChoice(opt)}
-            />
-          )}
-
           {/* User reply bubble for ready choice */}
           {!isDirectFlow && !pickedBSAccount && readyChoice && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -7063,11 +6888,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                 <p><StreamingMessage key={"add-doc-payroll-" + addMoreRound} segments={[{ text: "Upload another payroll report and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
               </div>
-              {addMoreRound === 0 && !addMoreWaitingUpload && (
-                <div style={{ marginTop: 16 }}>
-                  <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
-                </div>
-              )}
               {uploadedFiles.length > 1 && addMoreRound > 0 && uploadedFiles.slice(1).map((file, idx) => (
                 <div key={"add-preview-payroll-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
                   <div style={{ maxWidth: 320 }}>
@@ -7115,15 +6935,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   </div>
                 );
               })()}
-              {addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-                <BSOptionPicker
-                  options={["Start reconciliation", "Add another payroll report"]}
-                  onSelect={(opt) => {
-                    if (opt === "Start reconciliation") setStartAfterMore(true);
-                    else setAddMoreWaitingUpload(true);
-                  }}
-                />
-              )}
               {/* User chose "Add another payroll report" — new upload round */}
               {addMoreWaitingUpload && (
                 <>
@@ -7134,9 +6945,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   </div>
                   <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                     <p><StreamingMessage key={"add-doc-payroll-waiting-" + addMoreRound} segments={[{ text: "Upload another payroll report and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
-                  </div>
-                  <div style={{ marginTop: 16 }}>
-                    <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
                   </div>
                 </>
               )}
@@ -7247,18 +7055,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                 <p><StreamingMessage key="restart-ask" segments={[{ text: "How would you like to restart the reconciliation?", bold: false }]} speed={18} /></p>
               </div>
 
-              {/* Choice card: same file vs new file */}
-              {restartMode === "choosing" && !restartChoice && (
-                <BSOptionPicker
-                  options={["Reconcile against the same file", "Reconcile against another file"]}
-                  onSelect={(opt) => {
-                    setRestartChoice(opt);
-                    if (opt === "Reconcile against the same file") setRestartMode("same_file");
-                    else setRestartMode("new_file");
-                  }}
-                />
-              )}
-
               {/* User bubble for restart choice */}
               {restartChoice && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -7348,13 +7144,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                     ]} speed={18} /></p>
                   </div>
 
-                  {/* Upload card */}
-                  {restartUploadedFiles.length === 0 && (
-                    <div style={{ marginTop: 16 }}>
-                      <UploadCard onFileSelected={(file) => { setRestartUploadedFiles([{ ...file, label: "Reconciliation document" }]); }} title="Upload file" />
-                    </div>
-                  )}
-
                   {/* File preview (user bubble) */}
                   {restartUploadedFiles.length > 0 && restartUploadedFiles.map((file, idx) => (
                     <div key={"restart-file-" + idx} style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -7408,36 +7197,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                     );
                   })()}
 
-                  {/* Choice: start or add another */}
-                  {restartPrepDone && !restartReadyChoice && !restartStartAfterMore && restartAddMoreRound === 0 && (
-                    <div style={{ marginTop: 16 }}>
-                      <div style={{
-                        background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
-                        padding: "20px 20px 12px", maxWidth: 480,
-                        boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                      }}>
-                        {["Start reconciliation", "Add another document"].map(opt => (
-                          <button key={opt} onClick={() => {
-                            if (opt === "Start reconciliation") { setRestartReadyChoice("Start reconciliation"); }
-                            else {
-                              setRestartAddMorePrepDone(false);
-                              setRestartAddMoreRound(prev => prev + 1);
-                            }
-                          }} style={{
-                            display: "block", width: "100%", textAlign: "left",
-                            padding: "12px 16px", marginBottom: 8,
-                            background: "#F7F7F7", border: "none",
-                            borderRadius: 10, cursor: "pointer",
-                            fontSize: 14, fontWeight: 400, color: "#080908",
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                          onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                          >{opt}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* User bubble for start choice */}
                   {(restartReadyChoice === "Start reconciliation" || restartStartAfterMore) && (
                     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -7454,15 +7213,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                       <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20 }}>
                         <p><StreamingMessage key={"restart-add-doc-" + restartAddMoreRound} segments={[{ text: "Upload another document and I\u2019ll include it in the reconciliation.", bold: false }]} speed={18} /></p>
                       </div>
-                      {/* Upload card for additional file */}
-                      {!restartAddMorePrepDone && (
-                        <div style={{ marginTop: 16 }}>
-                          <UploadCard onFileSelected={(file) => {
-                            const label = restartUploadedFiles.length < 3 ? ["Reconciliation document", "Supporting document", "Additional document"][restartUploadedFiles.length] : "Document " + (restartUploadedFiles.length + 1);
-                            setRestartUploadedFiles(prev => [...prev, { ...file, label }]);
-                          }} title="Upload file" />
-                        </div>
-                      )}
                       {/* Prep status for add-more */}
                       {restartUploadedFiles.length > 1 && !restartAddMorePrepDone && (
                         <p style={{ fontSize: 13, color: "#BCBCBC", marginTop: 20, lineHeight: "20px" }}>
@@ -7492,32 +7242,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                           </div>
                         );
                       })()}
-                      {/* Choice after add-more */}
-                      {restartAddMorePrepDone && (
-                        <div style={{ marginTop: 16 }}>
-                          <div style={{
-                            background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
-                            padding: "20px 20px 12px", maxWidth: 480,
-                            boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                          }}>
-                            {["Start reconciliation", "Add another document"].map(opt => (
-                              <button key={opt} onClick={() => {
-                                if (opt === "Start reconciliation") { setRestartStartAfterMore(true); }
-                                else { setRestartAddMorePrepDone(false); setRestartAddMoreRound(prev => prev + 1); }
-                              }} style={{
-                                display: "block", width: "100%", textAlign: "left",
-                                padding: "12px 16px", marginBottom: 8,
-                                background: "#F7F7F7", border: "none",
-                                borderRadius: 10, cursor: "pointer",
-                                fontSize: 14, fontWeight: 400, color: "#080908",
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
-                              onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
-                              >{opt}</button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
 
@@ -7596,6 +7320,327 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           <div ref={chatEndRef} />
         </div>
       </div>
+
+      {/* ── Pinned action boxes ── */}
+
+      {/* Direct flow: upload card */}
+      {isDirectFlow && directLine2Done && !uploadedFile && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Direct flow: ready to start card (first upload) */}
+      {isDirectFlow && prepDone && line6Done && !readyChoice && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+              {["Start reconciliation", "Add another document"].map(opt => (
+                <button key={opt} onClick={() => setReadyChoice(opt)} style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", marginBottom: 8, background: "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#080908" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                >{opt}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct flow: add-more round 0 upload */}
+      {isDirectFlow && readyChoice === "Add another document" && addMoreRound === 0 && !addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Direct flow: add-more choice (after first extra doc) */}
+      {isDirectFlow && readyChoice === "Add another document" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+              {["Start reconciliation", "Add another document"].map(opt => (
+                <button key={opt} onClick={() => { if (opt === "Start reconciliation") setStartAfterMore(true); else setAddMoreWaitingUpload(true); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", marginBottom: 8, background: "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#080908" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                >{opt}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct flow: waiting for next upload */}
+      {isDirectFlow && addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct: type picker */}
+      {!isDirectFlow && line2Done && !typeSelected && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              title="What would you like to reconcile?"
+              options={reconciliationTypes}
+              onSelect={(type) => { setSelectedType(type); setTypeSelected(true); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct: BS account search card */}
+      {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && line3bDone && !pickedBSAccount && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)", height: 400, display: "flex", flexDirection: "column" }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, flexShrink: 0 }}>Select an account</p>
+              <input type="text" placeholder="Search accounts..." value={accountSearch} onChange={e => setAccountSearch(e.target.value)} style={{ width: "100%", padding: "10px 12px", marginBottom: 10, border: "1px solid #E9E9EB", borderRadius: 8, fontSize: 14, color: "#080908", outline: "none", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", flexShrink: 0 }}
+                onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
+                onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
+              />
+              <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+                {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).map(acc => (
+                  <button key={acc.code} onClick={() => setPickedBSAccount(acc)} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 16px", marginBottom: 6, background: "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#080908" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                  >
+                    <span style={{ fontWeight: 500 }}>{acc.code}</span>
+                    <span style={{ margin: "0 6px" }}>{"\u2013"}</span>
+                    <span>{acc.account}</span>
+                  </button>
+                ))}
+                {allBSAccounts.filter(acc => !accountSearch || acc.code.toLowerCase().includes(accountSearch.toLowerCase()) || acc.account.toLowerCase().includes(accountSearch.toLowerCase())).length === 0 && (
+                  <p style={{ fontSize: 14, color: "#8C8C8B", padding: "20px 16px", textAlign: "center" }}>No accounts found</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct: previously reconciled choice */}
+      {!isDirectFlow && pickedBSAccount && (() => {
+        const pickedRecData = bsReconciledData && bsReconciledData[pickedBSAccount.code];
+        const isPreviouslyReconciled = pickedRecData && (pickedRecData.status === "reconciled" || pickedRecData.status === "reviewing");
+        if (isPreviouslyReconciled && !pickedAccountAction) {
+          return (
+            <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+              <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                <BSOptionPicker
+                  options={["View reconciliation results", "Restart reconciliation"]}
+                  onSelect={(opt) => {
+                    setPickedAccountAction(opt);
+                    if (opt === "View reconciliation results") {
+                      const data = getAccountRecData(pickedBSAccount.code, pickedBSAccount.account);
+                      setStepStatuses(data.steps.map(() => "done"));
+                      setStepSubtexts(data.steps.map(() => true));
+                      setUploadedFile({ name: "Uploaded document.pdf", type: "application/pdf" });
+                      setPrepDone(true);
+                      setReadyChoice("Start reconciliation");
+                      setResultsVisible(true);
+                      setCanvasReady(true);
+                      if (pickedRecData.resolvedCards) setResolvedCards(new Set(pickedRecData.resolvedCards));
+                      if (pickedRecData.ignoredCards) setIgnoredCards(new Set(pickedRecData.ignoredCards));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
+      {/* Non-direct BS account: upload card */}
+      {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && !uploadedFile && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct BS account: start choice */}
+      {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && prepDone && line6Done && !readyChoice && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              options={["Start reconciliation", "Add another document"]}
+              onSelect={(opt) => setReadyChoice(opt)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct BS account add-more: round 0 upload */}
+      {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && readyChoice === "Add another document" && addMoreRound === 0 && !addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct BS account add-more: choice after first extra doc */}
+      {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && readyChoice === "Add another document" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              options={["Start reconciliation", "Add another document"]}
+              onSelect={(opt) => { if (opt === "Start reconciliation") setStartAfterMore(true); else setAddMoreWaitingUpload(true); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Non-direct BS account add-more: waiting upload */}
+      {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll: account choice */}
+      {!isDirectFlow && typeSelected && selectedType === "Payroll" && line3Done && !accountChoiceSelected && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              title="How would you like to continue?"
+              options={["Continue with suggested accounts", "Pick accounts to reconcile"]}
+              onSelect={(opt) => setAccountChoiceSelected(opt)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll: upload card */}
+      {!isDirectFlow && !pickedBSAccount && line5Done && !uploadedFile && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={handleFileSelected} title="Upload payroll report" />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll: ready to start */}
+      {!isDirectFlow && !pickedBSAccount && line6Done && !readyChoice && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              options={["Start reconciliation", "Add another payroll report"]}
+              onSelect={(opt) => setReadyChoice(opt)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll add-more: round 0 upload */}
+      {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && addMoreRound === 0 && !addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll add-more: choice after first extra report */}
+      {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              options={["Start reconciliation", "Add another payroll report"]}
+              onSelect={(opt) => { if (opt === "Start reconciliation") setStartAfterMore(true); else setAddMoreWaitingUpload(true); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payroll add-more: waiting upload */}
+      {!isDirectFlow && !pickedBSAccount && addMoreWaitingUpload && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
+          </div>
+        </div>
+      )}
+
+      {/* Restart: choice card */}
+      {restartMode === "choosing" && !restartChoice && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <BSOptionPicker
+              options={["Reconcile against the same file", "Reconcile against another file"]}
+              onSelect={(opt) => {
+                setRestartChoice(opt);
+                if (opt === "Reconcile against the same file") setRestartMode("same_file");
+                else setRestartMode("new_file");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Restart new-file: initial upload */}
+      {restartMode === "new_file" && restartUploadedFiles.length === 0 && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => { setRestartUploadedFiles([{ ...file, label: "Reconciliation document" }]); }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Restart new-file: start or add choice (round 0) */}
+      {restartMode === "new_file" && restartPrepDone && !restartReadyChoice && !restartStartAfterMore && restartAddMoreRound === 0 && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+              {["Start reconciliation", "Add another document"].map(opt => (
+                <button key={opt} onClick={() => { if (opt === "Start reconciliation") setRestartReadyChoice("Start reconciliation"); else { setRestartAddMorePrepDone(false); setRestartAddMoreRound(prev => prev + 1); } }} style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", marginBottom: 8, background: "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#080908" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                >{opt}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restart new-file add-more: upload for next file */}
+      {restartMode === "new_file" && restartAddMoreRound > 0 && !restartReadyChoice && !restartStartAfterMore && !restartAddMorePrepDone && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <UploadCard onFileSelected={(file) => {
+              const label = restartUploadedFiles.length < 3 ? ["Reconciliation document", "Supporting document", "Additional document"][restartUploadedFiles.length] : "Document " + (restartUploadedFiles.length + 1);
+              setRestartUploadedFiles(prev => [...prev, { ...file, label }]);
+            }} title="Upload file" />
+          </div>
+        </div>
+      )}
+
+      {/* Restart new-file add-more: choice after extra doc */}
+      {restartMode === "new_file" && restartAddMoreRound > 0 && !restartReadyChoice && !restartStartAfterMore && restartAddMorePrepDone && (
+        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+              {["Start reconciliation", "Add another document"].map(opt => (
+                <button key={opt} onClick={() => { if (opt === "Start reconciliation") setRestartStartAfterMore(true); else { setRestartAddMorePrepDone(false); setRestartAddMoreRound(prev => prev + 1); } }} style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", marginBottom: 8, background: "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#080908" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F0F0F0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F7F7F7"}
+                >{opt}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat input area \u2014 appears after canvas is ready */}
       {canvasReady && (
@@ -8579,12 +8624,12 @@ function ProcessingPanel({ files, onClose, onReview, onViewResults }) {
 
 // ── VAT Review Flow ───────────────────────────────────────────────────────────
 const VAT_STEPS = [
-  { title: "Pulling 184 transactions from Xero",      subtext: null,                                       duration: 900  },
-  { title: "Checking 184 VAT codes",                  subtext: "Comparing against HMRC VAT code list.",    duration: 1300 },
-  { title: "Matched 178 transactions, 6 flagged",     subtext: "6 entries require manual review.",         duration: 1500 },
-  { title: "Standard rate method (20%) confirmed",    subtext: "VAT scheme: Standard Rate.",               duration: 1000 },
-  { title: "1 duplicate entry detected",              subtext: null,                                       duration: 800  },
-  { title: "Generating suggestions",                  subtext: null,                                       duration: 1000 },
+  { title: "Pulling April 2026 transactions from Xero",   subtext: null,                         duration: 900  },
+  { title: "Scanning VAT codes & rates",                  subtext: "Pulled 184 transactions",    duration: 1300 },
+  { title: "Cross-referencing receipts & invoices",       subtext: "Checked 184 VAT codes",      duration: 1500 },
+  { title: "Running partial-exemption calculation",        subtext: "Matched 178, 6 flagged",     duration: 1000 },
+  { title: "Checking for duplicates and anomalies",       subtext: "1 duplicate found",          duration: 800  },
+  { title: "Generating suggestions",                      subtext: "6 suggestions ready",        duration: 1000 },
 ];
 
 const VAT_CARDS = [
@@ -8663,6 +8708,8 @@ const VAT_CAT_LABELS = {
 function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
   const [stepStatuses, setStepStatuses] = useState(showResults ? VAT_STEPS.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts] = useState(showResults ? VAT_STEPS.map(() => true) : []);
+  const [visibleSteps, setVisibleSteps] = useState(showResults ? VAT_STEPS.length : 0);
+  const [stepsPopulated, setStepsPopulated] = useState(showResults);
   const [stepsCollapsed, setStepsCollapsed] = useState(showResults);
   const [resultsVisible, setResultsVisible]   = useState(showResults);
   const [canvasReady, setCanvasReady]         = useState(showResults);
@@ -8674,6 +8721,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const [toast, setToast]                     = useState(null);
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
+  const stepRowRefs   = useRef([]);
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const stepsComplete = stepStatuses.length > 0 && stepStatuses.every(s => s === "done");
@@ -8688,9 +8736,24 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const introFull = introSegments.map(s => s.text).join("");
   const { done: introDone } = useTypewriter(introFull, 18, showResults);
 
-  // Auto-start steps once intro message finishes typing
+  // Phase 1: reveal steps one by one once intro finishes
   useEffect(() => {
     if (!introDone || showResults) return;
+    const REVEAL_INTERVAL = 600;
+    const timers = [];
+    VAT_STEPS.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setVisibleSteps(i + 1);
+      }, i * REVEAL_INTERVAL));
+    });
+    const totalRevealTime = (VAT_STEPS.length - 1) * REVEAL_INTERVAL + 450;
+    timers.push(setTimeout(() => setStepsPopulated(true), totalRevealTime));
+    return () => timers.forEach(clearTimeout);
+  }, [introDone]);
+
+  // Phase 2: run spinner through steps once all are populated
+  useEffect(() => {
+    if (!stepsPopulated || showResults) return;
     setStepStatuses(VAT_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
     setStepSubtexts(VAT_STEPS.map(() => false));
     let cumulative = 0;
@@ -8712,7 +8775,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
       }, cumulative));
     });
     return () => timers.forEach(clearTimeout);
-  }, [introDone]);
+  }, [stepsPopulated]);
 
   // Collapse steps when chat slides into sidebar
   useEffect(() => {
@@ -8746,7 +8809,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   // Auto-scroll to bottom
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [stepStatuses, stepsCollapsed, resultsVisible]);
+  }, [stepStatuses, stepsCollapsed, resultsVisible, visibleSteps]);
 
   // Track whether chat is scrolled to bottom
   useEffect(() => {
@@ -8797,6 +8860,8 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
         @keyframes resultsFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes stepPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
+        @keyframes stepReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       {/* Top bar — matches bank reconciliation style */}
@@ -8866,9 +8931,9 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
           {/* Chat scroll area */}
           <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
-            <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", scrollBehavior: "smooth" }}>
               {resultsVisible && <div style={{ position: "sticky", top: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
-              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
 
                 {/* Workflow card */}
                 <WorkflowCard label={`VAT review for ${selectedPeriod}`} />
@@ -8880,7 +8945,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 </div>
 
                 {/* Steps block */}
-                {stepStatuses.length > 0 && (
+                {visibleSteps > 0 && (
                   <div style={{ marginTop: 24 }}>
                     <div onClick={() => setStepsCollapsed(c => !c)} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: stepsCollapsed ? 0 : 20, cursor: "pointer" }}>
                       <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -8895,16 +8960,17 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                             <path d="M3 8.5L7 4.5L11 8.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
-                        <span style={{ fontSize: 13, color: "#8C8C8B" }}>{stepsComplete ? "Completed" : "In progress"}</span>
+                        <span style={{ fontSize: 13, color: "#8C8C8B" }}>{stepsPopulated && stepsComplete ? "Completed" : "In progress"}</span>
                       </div>
                     </div>
 
                     <div style={{ overflow: "hidden", maxHeight: stepsCollapsed ? 0 : 800, opacity: stepsCollapsed ? 0 : 1, transition: "max-height 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease" }}>
                       {VAT_STEPS.map((step, i) => {
-                        const status = stepStatuses[i] || "pending";
+                        if (i >= visibleSteps) return null;
+                        const status = stepsPopulated ? (stepStatuses[i] || "pending") : "pending";
                         const isLast = i === VAT_STEPS.length - 1;
                         return (
-                          <div key={i} style={{ display: "flex", gap: 16 }}>
+                          <div key={i} ref={el => stepRowRefs.current[i] = el} style={{ display: "flex", gap: 16, animation: "stepReveal 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
                               <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
                                 {status === "done" && (
@@ -8924,10 +8990,10 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                                   </svg>
                                 )}
                               </div>
-                              {!isLast && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
+                              {!isLast && i + 1 < visibleSteps && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
                             </div>
                             <div style={{ paddingBottom: isLast ? 0 : 20 }}>
-                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "pending" ? "#BCBCBC" : "#080908", transition: "color 0.3s ease" }}>{step.title}</div>
+                              <div style={{ fontSize: 14, lineHeight: "24px", fontWeight: 400, color: status === "done" ? "#000000" : "#8C8C8B", transition: "color 0.3s ease" }}>{step.title}</div>
                               {(stepSubtexts[i] || status === "done") && step.subtext && (
                                 <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "fadeIn 0.3s ease" }}>{step.subtext}</div>
                               )}
