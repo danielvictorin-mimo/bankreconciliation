@@ -4391,7 +4391,7 @@ function MainMenu({
       </div>
 
       {/* Company selector — white bordered card */}
-      <div style={{ padding: "0 8px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
+      <div style={{ padding: "0 16px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 16, width: "100%",
           height: 42, padding: "0 16px", background: "#FFFFFF",
