@@ -4174,11 +4174,11 @@ function TopBar({
   }, [dropdownOpen]);
 
   return (
-    <div style={{ height: 60, background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
+    <div style={{ height: 60, background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px 0 16px", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 14, color: "#8C8C8B" }}>{contextLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#7b7b7b" }}>{contextLabel}</span>
         <div ref={ref} style={{ position: "relative" }}>
-        <button onClick={() => setDropdownOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+        <button onClick={() => setDropdownOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 10px", height: 32, border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
           onMouseEnter={e => e.currentTarget.style.borderColor = "#CFCFD1"}
           onMouseLeave={e => e.currentTarget.style.borderColor = "#E9E9EB"}>
           {period} <Chevron up={dropdownOpen} color="#080908" size={13} />
@@ -8035,7 +8035,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
 
             {/* Card header: badge + buttons */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 24px 16px 20px" }}>
-              <span style={{ fontSize: 12, fontWeight: 500, color: "#05A105", background: "#F1F8F0", borderRadius: 6, padding: "0 10px", height: 32, display: "inline-flex", alignItems: "center" }}>Preparing</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#05A105", background: "#F1F8F0", borderRadius: 6, padding: "0 10px", height: 32, display: "inline-flex", alignItems: "center" }}>Preparing</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <SecondaryButton style={{ height: 40, padding: "0 16px", borderRadius: 8 }}>Send back</SecondaryButton>
                 <button style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 16px 0 12px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", transition: "background 0.15s ease" }}
@@ -8142,7 +8142,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
           </div>
 
           {/* Client context card */}
-          <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Badge */}
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F1F8F0", borderRadius: 6, padding: "4px 10px", alignSelf: "flex-start", fontSize: 13, fontWeight: 500, color: "#05A105" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -8156,7 +8156,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
               <p style={{ fontSize: 15, color: "#8C8C8B", margin: 0, lineHeight: "24px" }}>The more you share about your client, the more relevant its suggestions and analysis will be.</p>
             </div>
             {/* Button */}
-            <SecondaryButton style={{ alignSelf: "flex-start" }}>Manage Client Context</SecondaryButton>
+            <SecondaryButton style={{ alignSelf: "flex-start" }}>Manage client context</SecondaryButton>
           </div>
 
 
