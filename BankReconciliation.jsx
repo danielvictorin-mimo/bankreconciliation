@@ -9517,16 +9517,21 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   if (related.length === 0) return null;
                   return (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F0F0F0" }}>
-                      <style>{`@keyframes skeletonPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }`}</style>
+                      <style>{`
+                        @keyframes skeletonShimmer {
+                          0%   { background-position: -400px 0; }
+                          100% { background-position: 400px 0; }
+                        }
+                      `}</style>
                       <p style={{ fontSize: 16, fontWeight: 500, color: "#000000", margin: "0 0 6px 4px" }}>Related workflows for this page</p>
                       {pageLoading ? (
-                        [60, 80, 50].slice(0, related.length).map((w, i) => (
+                        [140, 170, 120].slice(0, related.length).map((w, i) => (
                           <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", borderTop: i === 0 ? "none" : "1px solid #EFF1F4" }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                              <div style={{ height: 13, width: `${w + 80}px`, borderRadius: 4, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.1}s infinite` }} />
-                              <div style={{ height: 11, width: `${w}px`, borderRadius: 4, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.15}s infinite` }} />
+                              <div style={{ height: 13, width: `${w}px`, borderRadius: 4, background: "linear-gradient(90deg,#ECECEC 25%,#E0E0E0 50%,#ECECEC 75%)", backgroundSize: "400px 100%", animation: "skeletonShimmer 1.4s linear infinite" }} />
+                              <div style={{ height: 11, width: `${Math.round(w * 0.6)}px`, borderRadius: 4, background: "linear-gradient(90deg,#ECECEC 25%,#E0E0E0 50%,#ECECEC 75%)", backgroundSize: "400px 100%", animation: "skeletonShimmer 1.4s linear 0.1s infinite" }} />
                             </div>
-                            <div style={{ height: 30, width: 60, borderRadius: 6, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.2}s infinite` }} />
+                            <div style={{ height: 30, width: 60, borderRadius: 6, background: "linear-gradient(90deg,#ECECEC 25%,#E0E0E0 50%,#ECECEC 75%)", backgroundSize: "400px 100%", animation: "skeletonShimmer 1.4s linear 0.2s infinite" }} />
                           </div>
                         ))
                       ) : related.map(({ label, status, onClick }, i) => (
