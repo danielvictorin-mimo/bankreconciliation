@@ -4435,7 +4435,7 @@ function MainMenu({
   const [paymentsOpen, setPaymentsOpen]   = useState(false);
 
   return (
-    <aside style={{
+    <aside data-main-nav="true" style={{
       width: 264, flexShrink: 0, display: "flex", flexDirection: "column",
       background: "#FFFFFF", borderRight: "1px solid #E9E9EB", height: "100vh",
       fontFamily: "'Inter', sans-serif",
@@ -9245,17 +9245,28 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   const [hovered, setHovered] = useState(false);
   const [btnAnim, setBtnAnim] = useState(false);
 
-  // ⌘+J keyboard shortcut to toggle popup
+  const popupRef = useRef(null);
+
+  // ⌘+J to toggle, ESC to close
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
-        e.preventDefault();
-        setOpen(o => !o);
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); setOpen(o => !o); }
+      if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // Close on outside click — but not when clicking the main nav
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (e.target.closest("[data-main-nav]")) return; // nav click → keep open
+      if (popupRef.current && !popupRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   // Inject slide-in keyframe once
   useEffect(() => {
@@ -9274,6 +9285,29 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   }, []);
 
   const [view, setView] = useState("home"); // "home" | "workflows"
+  const viewWrapperRef = useRef(null);
+  const prevHeightRef = useRef(null);
+
+  // Capture height before switching, animate to new height after render
+  const switchView = (next) => {
+    if (viewWrapperRef.current) prevHeightRef.current = viewWrapperRef.current.offsetHeight;
+    setView(next);
+  };
+
+  useEffect(() => {
+    const el = viewWrapperRef.current;
+    if (!el || prevHeightRef.current === null) return;
+    const newH = el.scrollHeight;
+    el.style.height = `${prevHeightRef.current}px`;
+    el.style.overflow = "hidden";
+    requestAnimationFrame(() => {
+      el.style.transition = "height 0.38s cubic-bezier(0.16,1,0.3,1)";
+      el.style.height = `${newH}px`;
+      const done = () => { el.style.height = ""; el.style.overflow = ""; el.style.transition = ""; };
+      el.addEventListener("transitionend", done, { once: true });
+    });
+    prevHeightRef.current = null;
+  }, [view]);
 
   // Reset to home whenever popup closes
   useEffect(() => { if (!open) setTimeout(() => setView("home"), 300); }, [open]);
@@ -9357,10 +9391,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 
   return (
     <>
-      {/* No backdrop — popup stays open during navigation */}
+      {/* Outside click handled via document listener (see useEffect above) */}
 
       {/* Wrapper — anchors both popup and button to bottom-right */}
-      <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 499, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, pointerEvents: "none" }}>
+      <div ref={popupRef} style={{ position: "fixed", bottom: 16, right: 16, zIndex: 499, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, pointerEvents: "none" }}>
 
       {/* Popup — grows from bottom-right corner */}
       <div style={{
@@ -9382,7 +9416,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {view === "workflows" && (
                 <button
-                  onClick={() => setView("home")}
+                  onClick={() => switchView("home")}
                   style={{ ...iconBtnStyle, marginRight: 2 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -9392,7 +9426,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   </svg>
                 </button>
               )}
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#080908" }}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>
                 {view === "home" ? "Mimo agent" : "Run a workflow"}
               </span>
             </div>
@@ -9405,24 +9439,24 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             </div>
           </div>
 
-          {/* Sliding view container */}
-          <div style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{
-              display: "flex",
-              transform: view === "home" ? "translateX(0)" : "translateX(-100%)",
-              transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1)",
-            }}>
+          {/* View — re-mounts on switch so height always fits content */}
+          <style>{`
+            @keyframes slideInFromRight { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+            @keyframes slideInFromLeft  { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
+          `}</style>
+          <div ref={viewWrapperRef}>
+          <div key={view} style={{ animation: `${view === "home" ? "slideInFromLeft" : "slideInFromRight"} 0.22s cubic-bezier(0.16,1,0.3,1) both` }}>
 
-              {/* ── HOME VIEW ── */}
-              <div style={{ minWidth: "100%", padding: "16px 16px 8px" }}>
-                <p style={{ fontSize: 18, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>How can we help?</p>
+          {view === "home" ? (
+              <div style={{ padding: "16px 16px 8px" }}>
+                <p style={{ fontSize: 18, fontWeight: 500, color: "#080908", margin: "0 0 8px" }}>How can I help?</p>
 
                 {[
                   {
                     label: "Run a workflow",
                     desc: "Reconcile accounts, VAT, balance sheet and more",
-                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 18.33A8.33 8.33 0 1 0 10 1.67a8.33 8.33 0 0 0 0 16.66Z" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M7.5 7.24c0-.4 0-.6.08-.71a.5.5 0 0 1 .22-.19c.14-.09.31 0 .65.19l4 2.5c.29.17.43.26.48.37a.42.42 0 0 1 0 .38c-.05.11-.19.2-.48.37l-4 2.5c-.34.19-.51.28-.65.19a.5.5 0 0 1-.22-.19C7.5 12.36 7.5 12.16 7.5 11.76V7.24Z" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                    onClick: () => setView("workflows"),
+                    icon: <PlayCircleIcon color="#545453" size={18} />,
+                    onClick: () => switchView("workflows"),
                     badge: null,
                   },
                   {
@@ -9446,29 +9480,26 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                     onClick: () => {},
                     badge: null,
                   },
-                ].map(({ label, desc, icon, onClick, badge }, i) => {
-                  const [h, setH] = useState(false);
-                  return (
+                ].map(({ label, desc, icon, onClick, badge }, i) => (
                     <div
                       key={label}
                       onClick={onClick}
-                      onMouseEnter={() => setH(true)}
-                      onMouseLeave={() => setH(false)}
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderRadius: 8, cursor: "pointer", background: h ? "#F5F5F5" : "transparent", transition: "background 0.1s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderRadius: 8, cursor: "pointer", background: "transparent", transition: "background 0.1s" }}
                     >
                       <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {icon}
                       </span>
                       <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
-                        {badge && <span style={{ fontSize: 11, fontWeight: 600, color: "#4C71DF", background: "#EEF2FB", borderRadius: 4, padding: "1px 6px" }}>{badge}</span>}
+                        {badge && <span style={{ fontSize: 11, fontWeight: 600, color: "#4C71DF", background: "#EEF2FB", borderRadius: 4, padding: "3px 6px" }}>{badge}</span>}
                       </div>
                       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
                         <path d="M4.167 10h11.666M10 4.167 15.833 10 10 15.833" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
-                  );
-                })}
+                ))}
 
                 {/* Related workflows — context-aware */}
                 {(() => {
@@ -9485,11 +9516,8 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                         { label: "Fixed assets", status: notStarted, onClick: () => { close(); onStartBS(); } },
                         { label: "VAT and miscoding review", status: vatStatus, onClick: () => { close(); onStartVAT(); } },
                       ]
-                    : [
-                        { label: "Bank reconciliation", status: bankStatus, onClick: () => { close(); onStartReconciliation(); } },
-                        { label: "VAT and miscoding review", status: vatStatus, onClick: () => { close(); onStartVAT(); } },
-                        { label: "Balance sheet reconciliation", status: bsStatus, onClick: () => { close(); onStartBS(); } },
-                      ];
+                    : [];
+                  if (related.length === 0) return null;
                   return (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F0F0F0" }}>
                       <style>{`@keyframes skeletonPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }`}</style>
@@ -9512,8 +9540,8 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                 })()}
               </div>
 
-              {/* ── WORKFLOWS VIEW ── */}
-              <div style={{ minWidth: "100%", padding: "16px 16px 8px" }}>
+          ) : (
+              <div style={{ padding: "16px 16px 8px" }}>
                 <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 12px" }}>Select a workflow to run</p>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <WorkflowRow isFirst label="Bank reconciliation" status={bankStatus} onClick={() => { close(); onStartReconciliation(); }} />
@@ -9524,34 +9552,38 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   <WorkflowRow label="Balance sheet reconciliation" status={bsStatus} onClick={() => { close(); onStartBS(); }} />
                 </div>
               </div>
-
-            </div>
-          </div>
+          )}
+          </div>{/* end key={view} animation div */}
+          </div>{/* end viewWrapperRef */}
 
           {/* Divider */}
           <div style={{ height: 1, background: "#F0F0F0" }} />
 
-          {/* Chat input */}
+          {/* Chat input — matches left sidebar chat */}
           <div style={{ padding: 12 }}>
             <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
               <textarea
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
-                placeholder="Ask me anything..."
+                placeholder="Ask for changes or information..."
                 rows={3}
                 style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#080908", lineHeight: "22px", background: "transparent", fontFamily: "'Inter', sans-serif", display: "block" }}
               />
               <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+                {/* Attachment */}
+                <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, color: "#8C8C8B", padding: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M15.5 8.5L8.5 15.5C7.12 16.88 4.88 16.88 3.5 15.5C2.12 14.12 2.12 11.88 3.5 10.5L10.5 3.5C11.33 2.67 12.67 2.67 13.5 3.5C14.33 4.33 14.33 5.67 13.5 6.5L6.5 13.5C6.08 13.92 5.42 13.92 5 13.5C4.58 13.08 4.58 12.42 5 12L11.5 5.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
                 <div style={{ flex: 1 }} />
-                <button style={{
-                  width: 32, height: 32, borderRadius: "50%",
-                  background: inputValue.trim() ? "#1F2024" : "#E9E9EB",
-                  border: "none", cursor: inputValue.trim() ? "pointer" : "default",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "background 0.15s", flexShrink: 0,
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke={inputValue.trim() ? "white" : "#BCBCBC"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                {/* Send */}
+                <button style={{ width: 36, height: 36, marginLeft: 6, border: "1px solid #E9E9EB", borderRadius: 10, background: inputValue.trim() ? "#05A105" : "#FAFAFA", cursor: inputValue.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", padding: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M9.99984 15.8346V4.16797M9.99984 4.16797L4.1665 10.0013M9.99984 4.16797L15.8332 10.0013" stroke={inputValue.trim() ? "#FFFFFF" : "#8C8C8B"} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
