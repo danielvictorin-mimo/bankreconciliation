@@ -1199,7 +1199,11 @@ function RecommendationCard({
               {Object.entries(tableRow).map(([key, val], i, arr) => (
                 <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr", borderBottom: i < arr.length - 1 ? "1px solid #E9E9EB" : "none", background: "#FFFFFF" }}>
                   <div style={{ padding: "12px 16px", fontSize: 14, fontWeight: 400, color: "#000000", borderRight: "1px solid #E9E9EB" }}>{key}</div>
-                  <div style={{ padding: "12px 16px", fontSize: 14, color: "#080908" }}>{val}</div>
+                  <div style={{ padding: "12px 16px", fontSize: 14, color: "#080908" }}>
+                    {val && typeof val === "object" && val.strikethrough
+                      ? <span style={{ textDecoration: "line-through", color: "#000000" }}>{val.text}</span>
+                      : val}
+                  </div>
                 </div>
               ))}
             </div>
@@ -8422,7 +8426,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
             </div>
             {[
               { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${fullyReconciled} of ${totalAccounts} accounts reconciled`, btnLabel: "Select account", dataflowIcon: true },
-              { label: "VAT and miscoding review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", btnLabel: vatReviewCompleted ? "Review" : "Run" },
+              { label: "VAT and miscoding review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 5 ? "Completed" : `${vatResolvedCount} of 5 suggestions resolved`) : "Not started", btnLabel: vatReviewCompleted ? "Review" : "Run" },
               { label: "Payroll reconciliation",       onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
@@ -8629,80 +8633,106 @@ const VAT_STEPS = [
   { title: "Cross-referencing receipts & invoices",       subtext: "Checked 184 VAT codes",      duration: 1500 },
   { title: "Running partial-exemption calculation",        subtext: "Matched 178, 6 flagged",     duration: 1000 },
   { title: "Checking for duplicates and anomalies",       subtext: "1 duplicate found",          duration: 800  },
-  { title: "Generating suggestions",                      subtext: "6 suggestions ready",        duration: 1000 },
+  { title: "Generating suggestions",                      subtext: "5 suggestions ready",        duration: 1000 },
 ];
 
 const VAT_CARDS = [
   {
-    idx: 0, cat: "wrong-code", score: 94,
-    title: "Incorrect VAT rate applied",
-    contact: "Hartley & Sons Supplies",
-    description: "An exempt supply from Hartley & Sons Supplies has been coded at the standard 20% rate. This overstates input VAT and could trigger a compliance query from HMRC.",
-    tableRow: { Date: "12 Mar 2026", Contact: "Hartley & Sons Supplies", Description: "Professional services", Amount: "£1,200.00", "VAT Code": "T1 (20%)", "VAT Amount": "£240.00" },
-    primaryLabel: "Correct VAT code",
-    secondaryLabel: "View invoice",
+    idx: 0, cat: "uncertain", score: null,
+    title: "Yorkshire Tea Estates: Uncertain VAT",
+    contact: "Yorkshire Tea Estates",
+    description: "The VAT treatment on this transaction is uncertain and requires manual review. Please check the invoice to confirm the correct VAT code.",
+    tableRow: {
+      "Contact": "Yorkshire Tea Estates",
+      "Expense account": "620 – General Expenses",
+      "Date": "8 Mar 2026",
+      "Amount": "£640.00",
+      "VAT rate name": { text: "No VAT", strikethrough: true },
+      "Suggested": "—",
+    },
+    primaryLabel: "Review invoice",
+    secondaryLabel: null,
   },
   {
-    idx: 1, cat: "wrong-code", score: 67,
-    title: "Wrong VAT code on zero-rated supply",
-    contact: "Meridian Freight Ltd",
-    description: "A zero-rated freight supply from Meridian Freight Ltd has been posted with a standard-rate VAT code, incorrectly claiming £180 of input VAT.",
-    tableRow: { Date: "18 Mar 2026", Contact: "Meridian Freight Ltd", Description: "International freight", Amount: "£900.00", "VAT Code": "T1 (20%)", "VAT Amount": "£180.00" },
-    primaryLabel: "Correct VAT code",
-    secondaryLabel: "View invoice",
+    idx: 1, cat: "wrong-code", score: null,
+    title: "Yorkshire Tea Estates: 20% (VAT on Expenses) → No VAT",
+    contact: "Yorkshire Tea Estates",
+    description: "This transaction has been coded as 20% VAT on Expenses but the supply appears to be outside the scope of VAT. Recommend recoding to No VAT.",
+    tableRow: {
+      "Contact": "Yorkshire Tea Estates",
+      "Expense account": "620 – General Expenses",
+      "Date": "15 Mar 2026",
+      "Amount": "£380.00",
+      "VAT rate name": { text: "20% (VAT on Expenses)", strikethrough: true },
+      "Suggested": "No VAT",
+    },
+    primaryLabel: "Accept",
+    secondaryLabel: "Review",
   },
   {
-    idx: 2, cat: "missing-vat", score: 38,
-    title: "Missing VAT registration number",
-    contact: "Premier Office Supplies",
-    description: "The invoice from Premier Office Supplies does not include the supplier's VAT registration number. HMRC requires this for input VAT claims to be valid.",
-    tableRow: { Date: "5 Mar 2026", Contact: "Premier Office Supplies", Description: "Office consumables", Amount: "£450.00", "VAT Code": "T1 (20%)", "VAT Amount": "£90.00" },
-    primaryLabel: "Request VAT invoice",
-    secondaryLabel: "View invoice",
+    idx: 2, cat: "reverse-charge", score: null,
+    title: "Brightside Electrical Ltd: Tax on Purchases (20%) → Reverse Charge (20%)",
+    contact: "Brightside Electrical Ltd",
+    description: "Scanned invoice from Brightside Electrical Ltd shows \"Domestic Reverse Charge applies – do not pay VAT to supplier\" in the payment terms, indicating a CIS subcontractor supply.",
+    tableRow: {
+      "Contact": "Brightside Electrical Ltd",
+      "Expense account": "310 – Subcontractor Costs",
+      "Date": "17 Mar 2026",
+      "Amount": "£240.00",
+      "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
+      "Suggested": "Reverse Charge (20%)",
+    },
+    primaryLabel: "Accept",
+    secondaryLabel: "Edit",
   },
   {
-    idx: 3, cat: "duplicate", score: 88,
-    title: "Duplicate VAT entry",
-    contact: "Premier Office Supplies",
-    description: "Invoice #INV-2026-0341 from Premier Office Supplies appears to have been posted twice, resulting in a duplicate input VAT claim of £90.00.",
-    tableRow: { Date: "5 Mar 2026", Contact: "Premier Office Supplies", Description: "Office consumables (duplicate)", Amount: "£450.00", "VAT Code": "T1 (20%)", "VAT Amount": "£90.00" },
-    primaryLabel: "Delete duplicate",
-    secondaryLabel: "Compare entries",
+    idx: 3, cat: "non-reclaimable", score: null,
+    title: "The Ivy Private Dining: Tax on Purchases (20%) → Tax Exempt",
+    contact: "The Ivy Private Dining",
+    description: "Client entertainment is fully blocked for input tax recovery under HMRC Notice 700/65 — no VAT reclaimable on this invoice from The Ivy Private Dining.",
+    tableRow: {
+      "Contact": "The Ivy Private Dining",
+      "Expense account": "420 – Entertainment",
+      "Date": "27 Mar 2026",
+      "Amount": "£1,150.00",
+      "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
+      "Suggested": "Tax Exempt",
+    },
+    primaryLabel: "Accept",
+    secondaryLabel: "Edit",
   },
   {
-    idx: 4, cat: "non-reclaimable", score: 72,
-    title: "Non-reclaimable VAT — client entertainment",
-    contact: "Client Entertainment Ltd",
-    description: "VAT on business entertainment for clients is blocked under VATA 1994 s.84. The £96 of VAT on this entry cannot be reclaimed and should be excluded.",
-    tableRow: { Date: "22 Mar 2026", Contact: "Client Entertainment Ltd", Description: "Client dinner", Amount: "£480.00", "VAT Code": "T1 (20%)", "VAT Amount": "£96.00" },
-    primaryLabel: "Mark as non-reclaimable",
-    secondaryLabel: "View invoice",
-  },
-  {
-    idx: 5, cat: "late-claim", score: 41,
-    title: "Late VAT claim — outside 4-year limit",
-    contact: "Westbrook Services",
-    description: "This invoice is dated March 2021, more than 4 years ago. HMRC's 4-year cap on input VAT claims means this amount can no longer be reclaimed.",
-    tableRow: { Date: "14 Mar 2021", Contact: "Westbrook Services", Description: "Consulting services", Amount: "£2,100.00", "VAT Code": "T1 (20%)", "VAT Amount": "£420.00" },
-    primaryLabel: "Write off VAT",
-    secondaryLabel: "View invoice",
+    idx: 4, cat: "pva", score: null,
+    title: "DHL / HMRC Customs: No VAT → Tax on Purchases (20%) (PVA)",
+    contact: "DHL / HMRC Customs",
+    description: "Client imports goods from non-UK suppliers regularly — the £3,600 Customs charge from HMRC on this DHL consignment likely relates to postponed VAT accounting and should be reconciled against the monthly PVA statement.",
+    tableRow: {
+      "Contact": "DHL / HMRC Customs",
+      "Expense account": "510 – Import Duties",
+      "Date": "3 Mar 2026",
+      "Amount": "£3,600.00",
+      "VAT rate name": { text: "No VAT", strikethrough: true },
+      "Suggested": "Tax on Purchases (20%) (PVA)",
+    },
+    primaryLabel: "Accept",
+    secondaryLabel: "Edit",
   },
 ];
 
 const VAT_NAV_CATS = [
-  { key: "wrong-code",      label: "Wrong VAT code",      baseIdx: 0, items: [{ contact: "Hartley & Sons Supplies" }, { contact: "Meridian Freight Ltd" }] },
-  { key: "missing-vat",     label: "Missing VAT number",  baseIdx: 2, items: [{ contact: "Premier Office Supplies" }] },
-  { key: "duplicate",       label: "Duplicates",          baseIdx: 3, items: [{ contact: "Premier Office Supplies" }] },
-  { key: "non-reclaimable", label: "Non-reclaimable VAT", baseIdx: 4, items: [{ contact: "Client Entertainment Ltd" }] },
-  { key: "late-claim",      label: "Late VAT claim",      baseIdx: 5, items: [{ contact: "Westbrook Services" }] },
+  { key: "uncertain",       label: "Uncertain VAT",        baseIdx: 0, items: [{ contact: "Yorkshire Tea Estates" }] },
+  { key: "wrong-code",      label: "Wrong VAT code",       baseIdx: 1, items: [{ contact: "Yorkshire Tea Estates" }] },
+  { key: "reverse-charge",  label: "Reverse charge",       baseIdx: 2, items: [{ contact: "Brightside Electrical Ltd" }] },
+  { key: "non-reclaimable", label: "Non-reclaimable VAT",  baseIdx: 3, items: [{ contact: "The Ivy Private Dining" }] },
+  { key: "pva",             label: "Postponed VAT (PVA)",  baseIdx: 4, items: [{ contact: "DHL / HMRC Customs" }] },
 ];
 
 const VAT_CAT_LABELS = {
+  "uncertain":       "Uncertain VAT",
   "wrong-code":      "Wrong VAT code",
-  "missing-vat":     "Missing VAT number",
-  "duplicate":       "Duplicates",
+  "reverse-charge":  "Reverse charge",
   "non-reclaimable": "Non-reclaimable VAT",
-  "late-claim":      "Late VAT claim",
+  "pva":             "Postponed VAT (PVA)",
 };
 
 function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
@@ -8841,7 +8871,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  const catOrder = ["wrong-code", "missing-vat", "duplicate", "non-reclaimable", "late-claim"];
+  const catOrder = ["uncertain", "wrong-code", "reverse-charge", "non-reclaimable", "pva"];
   const groupedCards = catOrder.reduce((acc, key) => {
     const items = VAT_CARDS.filter(c => c.cat === key);
     if (items.length) acc.push({ key, items });
@@ -9267,7 +9297,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 
   const vatStatus = !vatReviewCompleted
     ? { label: "Not started", color: "#8C8C8B" }
-    : vatResolvedCards.size >= 6
+    : vatResolvedCards.size >= 5
     ? { label: "Completed", color: "#05A105" }
     : { label: `${vatResolvedCards.size} of 6 suggestions resolved`, color: "#4C71DF" };
 
