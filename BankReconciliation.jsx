@@ -9244,14 +9244,24 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   const [inputValue, setInputValue] = useState("");
   const [hovered, setHovered] = useState(false);
   const [btnAnim, setBtnAnim] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const popupRef = useRef(null);
 
-  // ⌘+J to toggle, ESC to close
+  // ⌘+J to toggle, ESC to close — use refs so handlers always see current values
+  const openRef = useRef(open);
+  const closingRef = useRef(closing);
+  useEffect(() => { openRef.current = open; }, [open]);
+  useEffect(() => { closingRef.current = closing; }, [closing]);
+
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); open ? close() : setOpen(true); }
-      if (e.key === "Escape" && open) close();
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
+        e.preventDefault();
+        if (openRef.current && !closingRef.current) close();
+        else if (!openRef.current) setOpen(true);
+      }
+      if (e.key === "Escape" && openRef.current && !closingRef.current) close();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -9294,7 +9304,6 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   }, []);
 
   const [view, setView] = useState("home"); // "home" | "workflows"
-  const [closing, setClosing] = useState(false);
   const viewWrapperRef = useRef(null);
   const prevHeightRef = useRef(null);
 
@@ -9419,13 +9428,14 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
         fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
         transformOrigin: "bottom right",
-        animation: closing
-          ? "mimoPopupClose 0.16s cubic-bezier(0.4,0,1,1) forwards"
+        transform: (open && !closing) ? "scale(1)" : "scale(0)",
+        opacity: (open && !closing) ? 1 : 0,
+        pointerEvents: (open && !closing) ? "auto" : "none",
+        transition: closing
+          ? "transform 0.16s cubic-bezier(0.4,0,1,1), opacity 0.12s ease"
           : open
-          ? "mimoPopupOpen 0.36s cubic-bezier(0.16,1,0.3,1) forwards"
+          ? "transform 0.36s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease"
           : "none",
-        pointerEvents: open && !closing ? "auto" : "none",
-        display: open || closing ? "block" : "none",
       }}>
           {/* Persistent top bar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 12px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
@@ -9656,10 +9666,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             <svg width="24" height="22" viewBox="0 0 22 20" fill="none"
               style={{
                 position: "absolute", top: "50%", left: "50%",
-                transform: open
+                transform: (open && !closing)
                   ? "translate(-50%, -50%) scale(0.2) rotate(-70deg)"
                   : "translate(-50%, -50%) scale(1) rotate(0deg)",
-                opacity: open ? 0 : 1,
+                opacity: (open && !closing) ? 0 : 1,
                 transition: "opacity 0.18s ease, transform 0.36s cubic-bezier(0.4,0,0.2,1)",
               }}>
               <path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#000000"/>
@@ -9670,10 +9680,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
               style={{
                 position: "absolute", top: "50%", left: "50%",
-                transform: open
+                transform: (open && !closing)
                   ? "translate(-50%, -50%) scale(1) rotate(0deg)"
                   : "translate(-50%, -50%) scale(0.2) rotate(110deg)",
-                opacity: open ? 1 : 0,
+                opacity: (open && !closing) ? 1 : 0,
                 transition: "opacity 0.12s ease 0.1s, transform 0.42s cubic-bezier(0.34,1.56,0.64,1)",
               }}>
               <path d="M6 9L12 15L18 9" stroke="#080908" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
