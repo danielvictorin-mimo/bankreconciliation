@@ -9455,28 +9455,28 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   {
                     label: "Run a workflow",
                     desc: "Reconcile accounts, VAT, balance sheet and more",
-                    icon: <PlayCircleIcon color="#545453" size={18} />,
+                    icon: <PlayCircleIcon color="#000000" size={20} />,
                     onClick: () => switchView("workflows"),
                     badge: null,
                   },
                   {
                     label: "Create a custom workflow",
                     desc: "Build and automate your own workflow",
-                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 1.667v16.666M1.667 10h16.666" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1.667v16.666M1.667 10h16.666" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                     onClick: () => {},
                     badge: "New",
                   },
                   {
                     label: "Summarize this period",
                     desc: `Get a quick overview of ${selectedPeriod}`,
-                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M2.5 5h15M2.5 8.33h15M2.5 11.67h10" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2.5 5h15M2.5 8.33h15M2.5 11.67h10" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                     onClick: () => {},
                     badge: null,
                   },
                   {
-                    label: "Analyze for insights",
-                    desc: "Spot anomalies, trends and discrepancies",
-                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M9.167 16.667A7.5 7.5 0 1 0 9.167 1.667a7.5 7.5 0 0 0 0 15ZM18.333 18.333l-4.167-4.167" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.167 6.667v2.5M9.167 11.667h.008" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    label: "Download client report",
+                    desc: "Download client report",
+                    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 12.5V6.8C20 5.11984 20 4.27976 19.673 3.63803C19.3854 3.07354 18.9265 2.6146 18.362 2.32698C17.7202 2 16.8802 2 15.2 2H8.8C7.11984 2 6.27976 2 5.63803 2.32698C5.07354 2.6146 4.6146 3.07354 4.32698 3.63803C4 4.27976 4 5.11984 4 6.8V17.2C4 18.8802 4 19.7202 4.32698 20.362C4.6146 20.9265 5.07354 21.3854 5.63803 21.673C6.27976 22 7.1198 22 8.79986 22H12.5M14 11H8M10 15H8M16 7H8M15 19L18 22M18 22L21 19M18 22V16" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                     onClick: () => {},
                     badge: null,
                   },
@@ -9495,9 +9495,6 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                         <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
                         {badge && <span style={{ fontSize: 11, fontWeight: 600, color: "#4C71DF", background: "#EEF2FB", borderRadius: 4, padding: "3px 6px" }}>{badge}</span>}
                       </div>
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
-                        <path d="M4.167 10h11.666M10 4.167 15.833 10 10 15.833" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
                     </div>
                 ))}
 
@@ -9560,7 +9557,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
           <div style={{ height: 1, background: "#F0F0F0" }} />
 
           {/* Chat input — matches left sidebar chat */}
-          <div style={{ padding: 12 }}>
+          <div style={{ padding: 16 }}>
             <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
               <textarea
                 value={inputValue}
@@ -9625,31 +9622,31 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             transition: "transform 0.2s ease, box-shadow 0.2s ease",
           }}
         >
-          {/* Both icons overlaid — rotate + scale + fade on open/close */}
+          {/* Both icons — continuous left-rotation handoff */}
           <div style={{ position: "relative", width: 24, height: 24 }}>
-            {/* M logo — rotates out when opening */}
+            {/* M logo — rotates left and shrinks out */}
             <svg width="24" height="22" viewBox="0 0 22 20" fill="none"
               style={{
                 position: "absolute", top: "50%", left: "50%",
                 transform: open
-                  ? "translate(-50%, -50%) scale(0.5) rotate(-25deg)"
+                  ? "translate(-50%, -50%) scale(0.2) rotate(-70deg)"
                   : "translate(-50%, -50%) scale(1) rotate(0deg)",
                 opacity: open ? 0 : 1,
-                transition: "opacity 0.15s ease, transform 0.32s cubic-bezier(0.16,1,0.3,1)",
+                transition: "opacity 0.18s ease, transform 0.36s cubic-bezier(0.4,0,0.2,1)",
               }}>
               <path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#000000"/>
               <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#000000"/>
               <path d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z" fill="#000000"/>
             </svg>
-            {/* Chevron — enters from same rotation direction, spring back to 0 */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            {/* Chevron — starts where M left off, springs into place */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
               style={{
                 position: "absolute", top: "50%", left: "50%",
                 transform: open
                   ? "translate(-50%, -50%) scale(1) rotate(0deg)"
-                  : "translate(-50%, -50%) scale(0.5) rotate(-25deg)",
+                  : "translate(-50%, -50%) scale(0.2) rotate(110deg)",
                 opacity: open ? 1 : 0,
-                transition: "opacity 0.15s ease 0.08s, transform 0.38s cubic-bezier(0.34,1.56,0.64,1)",
+                transition: "opacity 0.12s ease 0.1s, transform 0.42s cubic-bezier(0.34,1.56,0.64,1)",
               }}>
               <path d="M6 9L12 15L18 9" stroke="#080908" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
