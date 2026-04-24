@@ -8265,7 +8265,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
   const adjustTasks = [
     { label: "Handle prepayment suggestions", count: null              },
     { label: "Handle accrual suggestions",    count: null              },
-    { label: "VAT review",                    count: null, arrow: true },
+    { label: "VAT and miscoding review",                    count: null, arrow: true },
     { label: "Review Profit & Loss",          count: null, arrow: true },
     { label: "Reconcile balance sheet",       count: null, arrow: true, onClick: () => { onNavigate?.("Review"); onSetBsTab?.("Balance sheet"); } },
   ];
@@ -8422,7 +8422,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
             </div>
             {[
               { label: "Bank reconciliation",          onRun: onRunBankRec, status: `${fullyReconciled} of ${totalAccounts} accounts reconciled`, btnLabel: "Select account", dataflowIcon: true },
-              { label: "VAT review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", btnLabel: vatReviewCompleted ? "Review" : "Run" },
+              { label: "VAT and miscoding review",                   onRun: onRunVatReview, status: vatReviewCompleted ? (vatResolvedCount >= 6 ? "Completed" : `${vatResolvedCount} of 6 suggestions resolved`) : "Not started", btnLabel: vatReviewCompleted ? "Review" : "Run" },
               { label: "Payroll reconciliation",       onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
@@ -8730,7 +8730,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   // Typewriter messages — defined before effects so introDone is in scope
   const introSegments = [
     { text: "Great, let's do a ", bold: false },
-    { text: "VAT review.", bold: true },
+    { text: "VAT and miscoding review.", bold: true },
     { text: " Let me run through some things, then we can look at the results together.", bold: false },
   ];
   const introFull = introSegments.map(s => s.text).join("");
@@ -8867,7 +8867,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
       {/* Top bar — matches bank reconciliation style */}
       <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #ECECEC", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
-        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>VAT review</span>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", flexShrink: 0, letterSpacing: "-1px" }}>VAT and miscoding review</span>
 
         {/* Period badge — styled like the account dropdown */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", fontSize: 14, fontWeight: 500, color: "#080908" }}>
@@ -8937,7 +8937,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
               <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
 
                 {/* Workflow card */}
-                <WorkflowCard label={`VAT review for ${selectedPeriod}`} />
+                <WorkflowCard label={`VAT and miscoding review for ${selectedPeriod}`} />
                 <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
 
                 {/* Intro AI message */}
@@ -8956,7 +8956,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>VAT review</span>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>VAT and miscoding review</span>
                           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform 0.2s ease", transform: stepsCollapsed ? "rotate(180deg)" : "rotate(0deg)" }}>
                             <path d="M3 8.5L7 4.5L11 8.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
@@ -9123,7 +9123,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                   </button>
                   {analysisOpen && (
                     <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
-                      The VAT review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
+                      The VAT and miscoding review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
                     </div>
                   )}
                 </div>
@@ -9186,7 +9186,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
               navCategories={VAT_NAV_CATS}
               resolvedCards={resolvedCards}
               ignoredCards={ignoredCards}
-              completedTitle="VAT review complete"
+              completedTitle="VAT and miscoding review complete"
               completedDescription="All suggestions have been addressed. Your VAT return is ready to submit."
               completedColor="#05A105"
             />
@@ -9208,9 +9208,402 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   );
 }
 
+// ── Mimo Assistant floating button + popup ────────────────────────────────────
+function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPayroll, reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, vatReviewCompleted = false, vatResolvedCards = new Set(), bsReconciledData = {}, selectedPeriod = "April 2026", totalBankAccounts = 6, activeNav = "Home", isInReconciliation = false, isInVAT = false, isInBS = false, pageLoading = false }) {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [hovered, setHovered] = useState(false);
+  const [btnAnim, setBtnAnim] = useState(false);
+
+  // ⌘+J keyboard shortcut to toggle popup
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
+        e.preventDefault();
+        setOpen(o => !o);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Inject slide-in keyframe once
+  useEffect(() => {
+    if (document.getElementById("_mimo_kf")) return;
+    const s = document.createElement("style");
+    s.id = "_mimo_kf";
+    s.textContent = `
+      @keyframes mimoSlideIn {
+        0%   { transform: translateY(80px); opacity: 0; }
+        60%  { transform: translateY(-5px); opacity: 1; }
+        80%  { transform: translateY(3px); }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(s);
+  }, []);
+
+  const [view, setView] = useState("home"); // "home" | "workflows"
+
+  // Reset to home whenever popup closes
+  useEffect(() => { if (!open) setTimeout(() => setView("home"), 300); }, [open]);
+
+  const close = () => setOpen(false);
+
+  // ── Derive live statuses ──────────────────────────────────────────────────
+  const bankReconciledCount = [...reconciledAccounts].filter(n => reconciledStatuses[n] === "reconciled").length;
+  const bankSuggestionsCount = [...reconciledAccounts].filter(n => reconciledStatuses[n] === "suggestions").length;
+  const bankTotalSuggestions = Object.values(reconciledCounts).reduce((s, v) => s + (v || 0), 0);
+  const bankStarted = reconciledAccounts.size > 0;
+  const allBankDone = bankReconciledCount === totalBankAccounts;
+
+  const bankStatus = !bankStarted
+    ? { label: "Not started", color: "#8C8C8B" }
+    : allBankDone
+    ? { label: "Completed", color: "#05A105" }
+    : bankSuggestionsCount > 0
+    ? { label: `${bankReconciledCount} of ${totalBankAccounts} accounts reconciled`, color: "#4C71DF" }
+    : { label: `${bankReconciledCount} of ${totalBankAccounts} accounts reconciled`, color: "#4C71DF" };
+
+  const vatStatus = !vatReviewCompleted
+    ? { label: "Not started", color: "#8C8C8B" }
+    : vatResolvedCards.size >= 6
+    ? { label: "Completed", color: "#05A105" }
+    : { label: `${vatResolvedCards.size} of 6 suggestions resolved`, color: "#4C71DF" };
+
+  const bsReconciledCount = Object.entries(bsReconciledData).filter(([code, d]) => BS_ALL_CODES.has(code) && d.status === "reconciled").length;
+  const bsTotalAccounts = BS_ALL_ACCOUNTS.length;
+  const bsStatus = bsReconciledCount === 0
+    ? { label: "Not started", color: "#8C8C8B" }
+    : bsReconciledCount === bsTotalAccounts
+    ? { label: "Completed", color: "#05A105" }
+    : { label: `${bsReconciledCount} of ${bsTotalAccounts} accounts reconciled`, color: "#4C71DF" };
+
+  const notStarted = { label: "Not started", color: "#8C8C8B" };
+
+  const iconBtnStyle = {
+    width: 28, height: 28, border: "none", background: "transparent",
+    borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+    transition: "background 0.1s",
+  };
+
+  const WorkflowRow = ({ label, status, onClick, isFirst }) => {
+    const [rowHovered, setRowHovered] = useState(false);
+    return (
+      <div
+        onMouseEnter={() => setRowHovered(true)}
+        onMouseLeave={() => setRowHovered(false)}
+        style={{
+          borderTop: isFirst ? "none" : "1px solid #EFF1F4",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 4px", cursor: "pointer",
+          background: rowHovered ? "#FAFAFA" : "transparent",
+          transition: "background 0.1s",
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>{label}</div>
+          <div style={{ fontSize: 14, color: status.color, marginTop: 3 }}>{status.label}</div>
+        </div>
+        <button
+          onClick={onClick}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            height: 34, padding: "0 12px",
+            background: "#FFFFFF", border: "1px solid #E9E9EB",
+            borderRadius: 6, cursor: "pointer",
+            fontSize: 13, fontWeight: 500, color: "#080908",
+            flexShrink: 0, transition: "all 0.15s ease",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+        >
+          Run
+          <PlayCircleIcon color="#080908" size={16} />
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {/* No backdrop — popup stays open during navigation */}
+
+      {/* Wrapper — anchors both popup and button to bottom-right */}
+      <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 499, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, pointerEvents: "none" }}>
+
+      {/* Popup — grows from bottom-right corner */}
+      <div style={{
+        width: 400,
+        background: "#FFFFFF",
+        border: "1px solid #E9E9EB",
+        borderRadius: 8,
+        boxShadow: "0 16px 48px 0 rgba(0,0,0,0.12)",
+        fontFamily: "'Inter', sans-serif",
+        overflow: "hidden",
+        transformOrigin: "bottom right",
+        transform: open ? "scale(1)" : "scale(0)",
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? "auto" : "none",
+        transition: "transform 0.32s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease",
+      }}>
+          {/* Persistent top bar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 12px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {view === "workflows" && (
+                <button
+                  onClick={() => setView("home")}
+                  style={{ ...iconBtnStyle, marginRight: 2 }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 3L5 8L10 13" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#080908" }}>
+                {view === "home" ? "Mimo agent" : "Run a workflow"}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button onClick={close} style={iconBtnStyle} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8H13" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Sliding view container */}
+          <div style={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{
+              display: "flex",
+              transform: view === "home" ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1)",
+            }}>
+
+              {/* ── HOME VIEW ── */}
+              <div style={{ minWidth: "100%", padding: "16px 16px 8px" }}>
+                <p style={{ fontSize: 18, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>How can we help?</p>
+
+                {[
+                  {
+                    label: "Run a workflow",
+                    desc: "Reconcile accounts, VAT, balance sheet and more",
+                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 18.33A8.33 8.33 0 1 0 10 1.67a8.33 8.33 0 0 0 0 16.66Z" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M7.5 7.24c0-.4 0-.6.08-.71a.5.5 0 0 1 .22-.19c.14-.09.31 0 .65.19l4 2.5c.29.17.43.26.48.37a.42.42 0 0 1 0 .38c-.05.11-.19.2-.48.37l-4 2.5c-.34.19-.51.28-.65.19a.5.5 0 0 1-.22-.19C7.5 12.36 7.5 12.16 7.5 11.76V7.24Z" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    onClick: () => setView("workflows"),
+                    badge: null,
+                  },
+                  {
+                    label: "Create a custom workflow",
+                    desc: "Build and automate your own workflow",
+                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 1.667v16.666M1.667 10h16.666" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    onClick: () => {},
+                    badge: "New",
+                  },
+                  {
+                    label: "Summarize this period",
+                    desc: `Get a quick overview of ${selectedPeriod}`,
+                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M2.5 5h15M2.5 8.33h15M2.5 11.67h10" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    onClick: () => {},
+                    badge: null,
+                  },
+                  {
+                    label: "Analyze for insights",
+                    desc: "Spot anomalies, trends and discrepancies",
+                    icon: <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M9.167 16.667A7.5 7.5 0 1 0 9.167 1.667a7.5 7.5 0 0 0 0 15ZM18.333 18.333l-4.167-4.167" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.167 6.667v2.5M9.167 11.667h.008" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                    onClick: () => {},
+                    badge: null,
+                  },
+                ].map(({ label, desc, icon, onClick, badge }, i) => {
+                  const [h, setH] = useState(false);
+                  return (
+                    <div
+                      key={label}
+                      onClick={onClick}
+                      onMouseEnter={() => setH(true)}
+                      onMouseLeave={() => setH(false)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderRadius: 8, cursor: "pointer", background: h ? "#F5F5F5" : "transparent", transition: "background 0.1s" }}
+                    >
+                      <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {icon}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
+                        {badge && <span style={{ fontSize: 11, fontWeight: 600, color: "#4C71DF", background: "#EEF2FB", borderRadius: 4, padding: "1px 6px" }}>{badge}</span>}
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
+                        <path d="M4.167 10h11.666M10 4.167 15.833 10 10 15.833" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  );
+                })}
+
+                {/* Related workflows — context-aware */}
+                {(() => {
+                  const isBSPage = activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss" || isInBS;
+                  const isBankRecPage = !isInReconciliation && !isInVAT && !isInBS && activeNav !== "Home" && !isBSPage;
+                  const related = (isInReconciliation || isBankRecPage)
+                    ? [{ label: "Bank reconciliation", status: bankStatus, onClick: () => { close(); onStartReconciliation(); } }]
+                    : isInVAT
+                    ? [{ label: "VAT and miscoding review", status: vatStatus, onClick: () => { close(); onStartVAT(); } }]
+                    : isBSPage
+                    ? [
+                        { label: "Payroll reconciliation", status: notStarted, onClick: () => { close(); onStartPayroll?.(); } },
+                        { label: "Director's loan account", status: notStarted, onClick: () => { close(); onStartBS(); } },
+                        { label: "Fixed assets", status: notStarted, onClick: () => { close(); onStartBS(); } },
+                        { label: "VAT and miscoding review", status: vatStatus, onClick: () => { close(); onStartVAT(); } },
+                      ]
+                    : [
+                        { label: "Bank reconciliation", status: bankStatus, onClick: () => { close(); onStartReconciliation(); } },
+                        { label: "VAT and miscoding review", status: vatStatus, onClick: () => { close(); onStartVAT(); } },
+                        { label: "Balance sheet reconciliation", status: bsStatus, onClick: () => { close(); onStartBS(); } },
+                      ];
+                  return (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F0F0F0" }}>
+                      <style>{`@keyframes skeletonPulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }`}</style>
+                      <p style={{ fontSize: 16, fontWeight: 500, color: "#000000", margin: "0 0 6px 4px" }}>Related workflows for this page</p>
+                      {pageLoading ? (
+                        [60, 80, 50].slice(0, related.length).map((w, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 4px", borderTop: i === 0 ? "none" : "1px solid #EFF1F4" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <div style={{ height: 13, width: `${w + 80}px`, borderRadius: 4, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.1}s infinite` }} />
+                              <div style={{ height: 11, width: `${w}px`, borderRadius: 4, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.15}s infinite` }} />
+                            </div>
+                            <div style={{ height: 30, width: 60, borderRadius: 6, background: "#ECECEC", animation: `skeletonPulse 1.2s ease ${i * 0.2}s infinite` }} />
+                          </div>
+                        ))
+                      ) : related.map(({ label, status, onClick }, i) => (
+                        <WorkflowRow key={label} isFirst={i === 0} label={label} status={status} onClick={onClick} />
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* ── WORKFLOWS VIEW ── */}
+              <div style={{ minWidth: "100%", padding: "16px 16px 8px" }}>
+                <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 12px" }}>Select a workflow to run</p>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <WorkflowRow isFirst label="Bank reconciliation" status={bankStatus} onClick={() => { close(); onStartReconciliation(); }} />
+                  <WorkflowRow label="VAT and miscoding review" status={vatStatus} onClick={() => { close(); onStartVAT(); }} />
+                  <WorkflowRow label="Payroll reconciliation" status={notStarted} onClick={() => { close(); onStartPayroll?.(); }} />
+                  <WorkflowRow label="Director's loan account" status={notStarted} onClick={() => { close(); onStartBS(); }} />
+                  <WorkflowRow label="Fixed assets" status={notStarted} onClick={() => { close(); onStartBS(); }} />
+                  <WorkflowRow label="Balance sheet reconciliation" status={bsStatus} onClick={() => { close(); onStartBS(); }} />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: "#F0F0F0" }} />
+
+          {/* Chat input */}
+          <div style={{ padding: 12 }}>
+            <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
+              <textarea
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                placeholder="Ask me anything..."
+                rows={3}
+                style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#080908", lineHeight: "22px", background: "transparent", fontFamily: "'Inter', sans-serif", display: "block" }}
+              />
+              <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+                <div style={{ flex: 1 }} />
+                <button style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: inputValue.trim() ? "#1F2024" : "#E9E9EB",
+                  border: "none", cursor: inputValue.trim() ? "pointer" : "default",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "background 0.15s", flexShrink: 0,
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 19V5M12 5L5 12M12 5L19 12" stroke={inputValue.trim() ? "white" : "#BCBCBC"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* Floating button — always visible, shows chevron when popup is open */}
+      <div style={{ position: "relative", pointerEvents: "auto" }}>
+        {/* Tooltip */}
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", right: 0,
+          background: "#2A2A2A", color: "#FFFFFF",
+          fontSize: 14, fontWeight: 400, lineHeight: "20px",
+          padding: "6px 8px", borderRadius: 8,
+          display: "flex", alignItems: "center", gap: 6,
+          whiteSpace: "nowrap", fontFamily: "'Inter', sans-serif",
+          opacity: hovered && !open ? 1 : 0,
+          transform: hovered && !open ? "translateY(0)" : "translateY(4px)",
+          transition: "opacity 0.18s ease, transform 0.18s ease",
+          pointerEvents: "none",
+          zIndex: 9999,
+        }}>
+          <span>Workflows</span>
+          <span style={{ color: "#8C8C8B" }}>⌘+J</span>
+        </div>
+
+        <button
+          onClick={() => { setHovered(false); setOpen(o => !o); }}
+          onMouseEnter={e => { setHovered(true); e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.18)"; }}
+          onMouseLeave={e => { setHovered(false); e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
+          style={{
+            width: 60, height: 60, borderRadius: "50%",
+            background: "#FFFFFF",
+            border: "1px solid #E9E9EB",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          }}
+        >
+          {/* Both icons overlaid — rotate + scale + fade on open/close */}
+          <div style={{ position: "relative", width: 24, height: 24 }}>
+            {/* M logo — rotates out when opening */}
+            <svg width="24" height="22" viewBox="0 0 22 20" fill="none"
+              style={{
+                position: "absolute", top: "50%", left: "50%",
+                transform: open
+                  ? "translate(-50%, -50%) scale(0.5) rotate(-25deg)"
+                  : "translate(-50%, -50%) scale(1) rotate(0deg)",
+                opacity: open ? 0 : 1,
+                transition: "opacity 0.15s ease, transform 0.32s cubic-bezier(0.16,1,0.3,1)",
+              }}>
+              <path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#000000"/>
+              <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#000000"/>
+              <path d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z" fill="#000000"/>
+            </svg>
+            {/* Chevron — enters from same rotation direction, spring back to 0 */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              style={{
+                position: "absolute", top: "50%", left: "50%",
+                transform: open
+                  ? "translate(-50%, -50%) scale(1) rotate(0deg)"
+                  : "translate(-50%, -50%) scale(0.5) rotate(-25deg)",
+                opacity: open ? 1 : 0,
+                transition: "opacity 0.15s ease 0.08s, transform 0.38s cubic-bezier(0.34,1.56,0.64,1)",
+              }}>
+              <path d="M6 9L12 15L18 9" stroke="#080908" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      </div>{/* end wrapper */}
+    </>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
+  const [pageLoading, setPageLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState("April 2026");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
@@ -9488,6 +9881,8 @@ export default function BankReconciliation() {
         <MainMenu activeNav={activeNav} onNavChange={(nav) => {
           if (nav === "Balance sheet") { setBsActiveTab("Balance sheet"); }
           if (nav === "Profit & Loss") { setBsActiveTab("Profit and Loss"); }
+          setPageLoading(true);
+          setTimeout(() => setPageLoading(false), 600);
           setActiveNav(nav);
         }} />
 
@@ -9619,6 +10014,27 @@ export default function BankReconciliation() {
           }}
         />
       )}
+
+      {/* Mimo Assistant floating button */}
+      <MimoAssistant
+        onStartReconciliation={() => setReconciling("__picker__")}
+        onStartVAT={() => setVatReviewActive(true)}
+        onStartBS={() => setBsReconciling(true)}
+        onStartPayroll={() => setBsReconciling("payroll")}
+        reconciledAccounts={reconciledAccounts}
+        reconciledStatuses={reconciledStatuses}
+        reconciledCounts={reconciledCounts}
+        vatReviewCompleted={vatReviewCompleted}
+        vatResolvedCards={vatResolvedCards}
+        bsReconciledData={bsReconciledData}
+        selectedPeriod={selectedPeriod}
+        totalBankAccounts={bankAccounts.length}
+        activeNav={activeNav}
+        isInReconciliation={!!reconciling}
+        isInVAT={vatReviewActive}
+        isInBS={!!bsReconciling}
+        pageLoading={pageLoading}
+      />
 
       {/* BS reconciled success toast */}
       {bsReconciledAlert && (
