@@ -9250,8 +9250,8 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   // ⌘+J to toggle, ESC to close
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); setOpen(o => !o); }
-      if (e.key === "Escape") setOpen(false);
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); open ? close() : setOpen(true); }
+      if (e.key === "Escape" && open) close();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -9262,7 +9262,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
     if (!open) return;
     const handler = (e) => {
       if (e.target.closest("[data-main-nav]")) return; // nav click → keep open
-      if (popupRef.current && !popupRef.current.contains(e.target)) setOpen(false);
+      if (popupRef.current && !popupRef.current.contains(e.target)) close();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -9280,11 +9280,21 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
         80%  { transform: translateY(3px); }
         100% { transform: translateY(0); opacity: 1; }
       }
+      @keyframes mimoPopupOpen {
+        0%   { transform: scale(0); opacity: 0; }
+        70%  { transform: scale(1.03); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes mimoPopupClose {
+        0%   { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+      }
     `;
     document.head.appendChild(s);
   }, []);
 
   const [view, setView] = useState("home"); // "home" | "workflows"
+  const [closing, setClosing] = useState(false);
   const viewWrapperRef = useRef(null);
   const prevHeightRef = useRef(null);
 
@@ -9312,7 +9322,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
   // Reset to home whenever popup closes
   useEffect(() => { if (!open) setTimeout(() => setView("home"), 300); }, [open]);
 
-  const close = () => setOpen(false);
+  const close = () => {
+    setClosing(true);
+    setTimeout(() => { setOpen(false); setClosing(false); }, 160);
+  };
 
   // ── Derive live statuses ──────────────────────────────────────────────────
   const bankReconciledCount = [...reconciledAccounts].filter(n => reconciledStatuses[n] === "reconciled").length;
@@ -9406,10 +9419,13 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
         fontFamily: "'Inter', sans-serif",
         overflow: "hidden",
         transformOrigin: "bottom right",
-        transform: open ? "scale(1)" : "scale(0)",
-        opacity: open ? 1 : 0,
-        pointerEvents: open ? "auto" : "none",
-        transition: "transform 0.32s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease",
+        animation: closing
+          ? "mimoPopupClose 0.16s cubic-bezier(0.4,0,1,1) forwards"
+          : open
+          ? "mimoPopupOpen 0.36s cubic-bezier(0.16,1,0.3,1) forwards"
+          : "none",
+        pointerEvents: open && !closing ? "auto" : "none",
+        display: open || closing ? "block" : "none",
       }}>
           {/* Persistent top bar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 12px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
@@ -9614,7 +9630,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
         </div>
 
         <button
-          onClick={() => { setHovered(false); setOpen(o => !o); }}
+          onClick={() => { setHovered(false); open ? close() : setOpen(true); }}
           onMouseEnter={e => { setHovered(true); e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.18)"; }}
           onMouseLeave={e => { setHovered(false); e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
           style={{
