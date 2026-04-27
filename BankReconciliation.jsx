@@ -4418,6 +4418,7 @@ function _MM_Chevron({ up = false, color = "#545453", size = 14 }) {
 function MainMenu({
   activeNav,
   onNavChange,
+  onExpandFromHover,
   companyName = "Seabrook Foods Ltd.",
   userName = "Laura Bennett",
   userRole = "Clifton & Harrow",
@@ -4433,79 +4434,156 @@ function MainMenu({
 }) {
   const [associateOpen, setAssociateOpen] = useState(true);
   const [paymentsOpen, setPaymentsOpen]   = useState(false);
+  const [collapsed, setCollapsed]         = useState(false);
+  const [hoverMenu, setHoverMenu]         = useState(false);
+  const [noWrapTransition, setNoWrapTransition] = useState(false);
+  const [skipTransition, setSkipTransition] = useState(false);
+  const [navTip, setNavTip]               = useState(null); // { text, x, y }
+
+  // Auto-collapse when below 1280px — never auto-expand (respect user's manual choice)
+  useEffect(() => {
+    const check = () => { if (window.innerWidth < 1280) setCollapsed(true); };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const W = collapsed ? 72 : 264;
+  const tr = "none"; // aside fills wrapper — wrapper handles the transition
+
+  const iconBtn = (onClick, children, tooltip) => (
+    <div style={{ position: "relative", display: "flex", justifyContent: "center" }}
+      onMouseEnter={e => { if (collapsed) showTip(e, tooltip); }}
+      onMouseLeave={hideTip}
+    >
+      <button onClick={onClick} style={{ width: 40, height: 40, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+        onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      >{children}</button>
+      {collapsed && tooltip && (
+        <div data-tip style={{ position: "absolute", left: "calc(100% + 8px)", top: "50%", transform: "translateY(-50%)", background: "#2A2A2A", color: "#FFFFFF", fontSize: 14, fontWeight: 400, lineHeight: "20px", padding: "6px 8px", borderRadius: 8, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.15s", zIndex: 9999 }}>{tooltip}</div>
+      )}
+    </div>
+  );
+
+  const tipStyle = { position: "fixed", background: "#2A2A2A", color: "#FFFFFF", fontSize: 14, fontWeight: 400, lineHeight: "20px", padding: "6px 8px", borderRadius: 8, whiteSpace: "nowrap", pointerEvents: "none", zIndex: 99999, fontFamily: "'Inter', sans-serif", transform: "translateY(-50%)" };
+  const showTip = (e, text) => { const r = e.currentTarget.getBoundingClientRect(); setNavTip({ text, x: r.right + 8, y: r.top + r.height / 2 }); };
+  const hideTip = () => setNavTip(null);
 
   return (
-    <aside data-main-nav="true" style={{
-      width: 264, flexShrink: 0, display: "flex", flexDirection: "column",
-      background: "#FFFFFF", borderRight: "1px solid #E9E9EB", height: "100vh",
-      fontFamily: "'Inter', sans-serif",
-    }}>
+    <>
+    {navTip && <div style={{ ...tipStyle, left: navTip.x, top: navTip.y }}>{navTip.text}</div>}
 
-      {/* Mimo logo — 96px header */}
-      <div style={{ height: 96, display: "flex", alignItems: "center", padding: "0 32px", flexShrink: 0 }}>
-        <svg width="110" height="24" viewBox="0 0 98 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g clipPath="url(#mimoClip)">
-            <path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/>
+    {/* Wrapper — single onMouseLeave covers both aside and floating menu, no flickering */}
+    <div
+      style={{ position: "relative", flexShrink: 0, height: "100vh", width: W, transition: noWrapTransition ? "none" : "width 0.28s cubic-bezier(0.16,1,0.3,1)", zIndex: 10 }}
+      onMouseLeave={() => { if (collapsed) setHoverMenu(false); }}
+    >
+    <aside data-main-nav="true"
+      style={{
+        width: "100%", height: "100%", display: "flex", flexDirection: "column",
+        background: "#FFFFFF", borderRight: "1px solid #E9E9EB",
+        fontFamily: "'Inter', sans-serif", overflow: "hidden",
+        transition: tr,
+      }}>
+
+      {/* Logo header */}
+      <div style={{ height: 96, display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? 0 : "0 32px", flexShrink: 0, overflow: "hidden", transition: tr }}>
+        {collapsed ? (
+          /* M mark only */
+          <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
+            <path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#1F2024"/>
             <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/>
-            <path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/>
-            <path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/>
-            <path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/>
-            <path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/>
-            <path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/>
-          </g>
-          <defs>
-            <clipPath id="mimoClip">
-              <rect width="98" height="20.2181" fill="white"/>
-            </clipPath>
-          </defs>
-        </svg>
+            <path d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z" fill="#1F2024"/>
+          </svg>
+        ) : (
+          /* Full Mimo wordmark */
+          <svg width="110" height="24" viewBox="0 0 98 21" fill="none">
+            <g clipPath="url(#mimoClip)">
+              <path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/>
+              <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/>
+              <path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/>
+              <path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/>
+              <path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/>
+              <path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/>
+              <path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/>
+            </g>
+            <defs>
+              <clipPath id="mimoClip">
+                <rect width="98" height="20.2181" fill="white"/>
+              </clipPath>
+            </defs>
+          </svg>
+        )}
       </div>
 
-      {/* Company selector — white bordered card */}
-      <div style={{ padding: "0 16px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 16, width: "100%",
-          height: 42, padding: "0 16px", background: "#FFFFFF",
-          border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer",
-        }}>
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-            <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{companyName}</span>
-        </div>
+      {/* Company selector */}
+      <div style={{ padding: "0 8px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
+        {collapsed ? (
+          <button
+            style={{ width: 39, height: 42, display: "flex", alignItems: "center", justifyContent: "center", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer", margin: "0 auto", boxSizing: "border-box" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; showTip(e, companyName); }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; hideTip(); }}
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", height: 42, padding: "0 16px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer", margin: "0 8px", boxSizing: "border-box" }}>
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{companyName}</span>
+          </div>
+        )}
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "0 8px 0", overflowY: "auto" }}>
+      <nav style={{ flex: 1, padding: "0 8px", overflowY: "auto", overflowX: "hidden" }}>
 
-        {/* Divider above Associate */}
         <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
 
-        {/* Associate */}
-        <button
-          onClick={() => setAssociateOpen(o => !o)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-          onMouseLeave={e => e.currentTarget.style.background = "none"}
-        >
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Associate</span>
-          <_MM_Chevron up={associateOpen} size={18} />
-        </button>
+        {/* Associate header — hidden when collapsed */}
+        {!collapsed && (
+          <button
+            onClick={() => setAssociateOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "none"}
+          >
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Associate</span>
+            <_MM_Chevron up={associateOpen} size={18} />
+          </button>
+        )}
 
-        {associateOpen && navItems.map(item => {
+        {collapsed && <div style={{ height: 16 }} />}
+
+        {(associateOpen || collapsed) && navItems.map(item => {
           const active = activeNav === item.label;
+          if (collapsed) {
+            return (
+              <div key={item.label} style={{ position: "relative", display: "flex", justifyContent: "center", marginBottom: 2, marginLeft: 4, marginRight: 4 }}
+                onMouseEnter={e => showTip(e, item.label)}
+                onMouseLeave={hideTip}
+              >
+                <button
+                  onClick={() => onNavChange?.(item.label)}
+                  style={{ width: 39, height: 40, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: active ? "#F5F5F5" : "transparent" }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? "#F5F5F5" : "transparent"; }}
+                >
+                  <_MM_NavIcon name={item.icon} color={active ? "#080908" : "#4F4F4F"} />
+                </button>
+                <div data-tip style={{ position: "absolute", left: "calc(100% + 8px)", top: "50%", transform: "translateY(-50%)", background: "#2A2A2A", color: "#FFFFFF", fontSize: 14, fontWeight: 400, lineHeight: "20px", padding: "6px 8px", borderRadius: 8, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.15s", zIndex: 9999 }}>{item.label}</div>
+              </div>
+            );
+          }
           return (
             <button
               key={item.label}
               onClick={() => onNavChange?.(item.label)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 12,
-                height: 40, padding: "0 16px",
-                marginLeft: 8, marginRight: 8, width: "calc(100% - 16px)",
-                borderRadius: 6, border: "none", cursor: "pointer",
-                background: active ? "#F5F5F5" : "transparent",
-                textAlign: "left", boxShadow: "none",
-              }}
+              style={{ display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, width: "calc(100% - 16px)", borderRadius: 6, border: "none", cursor: "pointer", background: active ? "#F5F5F5" : "transparent", textAlign: "left", boxShadow: "none" }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
             >
@@ -4517,66 +4595,245 @@ function MainMenu({
           );
         })}
 
-        {/* Divider */}
-        <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
+        {!collapsed && (
+          <>
+            <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
+            <button
+              onClick={() => setPaymentsOpen(o => !o)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}
+            >
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Payments</span>
+              <_MM_Chevron up={paymentsOpen} size={18} />
+            </button>
+          </>
+        )}
 
-        {/* Payments */}
-        <button
-          onClick={() => setPaymentsOpen(o => !o)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-          onMouseLeave={e => e.currentTarget.style.background = "none"}
-        >
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Payments</span>
-          <_MM_Chevron up={paymentsOpen} size={18} />
-        </button>
-
-        {/* Divider */}
         <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
 
         {/* Settings */}
-        <button
-          style={{
-            width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 12,
-            height: 40, padding: "0 16px",
-            marginLeft: 8, marginRight: 8,
-            borderRadius: 6, border: "none", cursor: "pointer",
-            background: "transparent", textAlign: "left", boxShadow: "none",
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-        >
-          <_MM_NavIcon name="settings" color="#4F4F4F" />
-          <span style={{ fontSize: 14, fontWeight: 400, color: "#4F4F4F" }}>Settings</span>
-        </button>
-
+        {collapsed ? (
+          <div style={{ position: "relative", display: "flex", justifyContent: "center", marginTop: 8, marginLeft: 4, marginRight: 4 }}
+            onMouseEnter={e => showTip(e, "Settings")}
+            onMouseLeave={hideTip}
+          >
+            <button style={{ width: 44, height: 40, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <_MM_NavIcon name="settings" color="#4F4F4F" />
+            </button>
+            <div data-tip style={{ position: "absolute", left: "calc(100% + 8px)", top: "50%", transform: "translateY(-50%)", background: "#2A2A2A", color: "#FFFFFF", fontSize: 14, fontWeight: 400, lineHeight: "20px", padding: "6px 8px", borderRadius: 8, whiteSpace: "nowrap", pointerEvents: "none", opacity: 0, transition: "opacity 0.15s", zIndex: 9999 }}>Settings</div>
+          </div>
+        ) : (
+          <button
+            style={{ width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, borderRadius: 6, border: "none", cursor: "pointer", background: "transparent", textAlign: "left", boxShadow: "none" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <_MM_NavIcon name="settings" color="#4F4F4F" />
+            <span style={{ fontSize: 14, fontWeight: 400, color: "#4F4F4F" }}>Settings</span>
+          </button>
+        )}
       </nav>
+
+      {/* Collapse / expand button */}
+      <div style={{ padding: "8px 8px 12px", flexShrink: 0, position: "relative" }}>
+        <button
+          onClick={() => { setCollapsed(c => !c); setHoverMenu(false); }}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          style={{ display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 0, height: 42, padding: collapsed ? "0" : "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", position: "relative", margin: collapsed ? "0 auto" : "0 8px", width: collapsed ? 39 : "calc(100% - 16px)" }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "#F5F5F5";
+            if (collapsed) { setHoverMenu(true); }
+          }}
+          onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
+        >
+          {collapsed ? (
+            <div key={`collapsed-${collapsed}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", animation: "btnContentIn 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          ) : (
+            <div key={`expanded-${collapsed}`} style={{ display: "flex", alignItems: "center", width: "100%", animation: "btnContentIn 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
+                <path d="M9 3V21M7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ flex: 1, textAlign: "center" }}>Collapse sidebar</span>
+            </div>
+          )}
+        </button>
+      </div>
 
       {/* Divider above user */}
       <div style={{ height: 1, background: "#E9E9EB", margin: "0 16px", flexShrink: 0 }} />
 
       {/* User profile */}
       <div
-        style={{ padding: "16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0, cursor: "pointer", borderRadius: 8, margin: "8px", transition: "background 0.15s" }}
+        style={{ padding: "16px", display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 10, flexShrink: 0, cursor: "pointer", borderRadius: 8, margin: "8px", transition: "background 0.15s" }}
         onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
       >
-        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#4C71DF" }}>{userName.charAt(0)}</span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
-          <div style={{ fontSize: 14, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userRole}</div>
-        </div>
-        <button style={{ border: "none", background: "none", cursor: "pointer", padding: 4, display: "flex", alignItems: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="3" r="1.2" fill="#545453"/>
-            <circle cx="8" cy="8" r="1.2" fill="#545453"/>
-            <circle cx="8" cy="13" r="1.2" fill="#545453"/>
-          </svg>
-        </button>
+        {!collapsed && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+            <div style={{ fontSize: 14, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userRole}</div>
+          </div>
+        )}
       </div>
     </aside>
+
+    {/* Floating hover menu — position:absolute so it overlays content without pushing it */}
+    {collapsed && hoverMenu && (
+      <div
+        data-main-nav="true"
+        style={{
+          position: "absolute", top: 0, left: 0, width: 264, height: "100%",
+          background: "#FFFFFF", borderRight: "1px solid #E9E9EB",
+          boxShadow: "4px 0 24px rgba(0,0,0,0.10)",
+          zIndex: 1000, display: "flex", flexDirection: "column",
+          fontFamily: "'Inter', sans-serif",
+          animation: "slideInFromLeft 0.22s cubic-bezier(0.16,1,0.3,1) both",
+        }}
+      >
+        {/* Logo — full wordmark */}
+        <div style={{ height: 96, display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "0 32px", flexShrink: 0, overflow: "hidden" }}>
+          <svg width="110" height="24" viewBox="0 0 98 21" fill="none">
+            <g clipPath="url(#mimoClipFloat)">
+              <path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/>
+              <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/>
+              <path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/>
+              <path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/>
+              <path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/>
+              <path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/>
+              <path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/>
+            </g>
+            <defs>
+              <clipPath id="mimoClipFloat">
+                <rect width="98" height="20.2181" fill="white"/>
+              </clipPath>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Company selector */}
+        <div style={{ padding: "0 8px", margin: "12px 0 0", flexShrink: 0, height: 42, display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", height: 42, padding: "0 16px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer", margin: "0 8px", boxSizing: "border-box" }}>
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{companyName}</span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "0 8px", overflowY: "auto", overflowX: "hidden" }}>
+          <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
+
+          {/* Associate header */}
+          <button
+            onClick={() => setAssociateOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "none"}
+          >
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Associate</span>
+            <_MM_Chevron up={associateOpen} size={18} />
+          </button>
+
+          {associateOpen && navItems.map(item => {
+            const active = activeNav === item.label;
+            return (
+              <button
+                key={item.label}
+                onClick={() => { onNavChange?.(item.label); setHoverMenu(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, width: "calc(100% - 16px)", borderRadius: 6, border: "none", cursor: "pointer", background: active ? "#F5F5F5" : "transparent", textAlign: "left", boxShadow: "none" }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              >
+                <_MM_NavIcon name={item.icon} color={active ? "#080908" : "#4F4F4F"} />
+                <span style={{ fontSize: 14, fontWeight: active ? 600 : 400, color: active ? "#080908" : "#4F4F4F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+
+          <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
+
+          {/* Payments */}
+          <button
+            onClick={() => setPaymentsOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, marginBottom: 1, width: "calc(100% - 16px)", background: "none", border: "none", cursor: "pointer", borderRadius: 6 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "none"}
+          >
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Payments</span>
+            <_MM_Chevron up={paymentsOpen} size={18} />
+          </button>
+
+          <div style={{ height: 1, background: "#E9E9EB", margin: "16px 8px" }} />
+
+          {/* Settings */}
+          <button
+            style={{ width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, borderRadius: 6, border: "none", cursor: "pointer", background: "transparent", textAlign: "left", boxShadow: "none" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <_MM_NavIcon name="settings" color="#4F4F4F" />
+            <span style={{ fontSize: 14, fontWeight: 400, color: "#4F4F4F" }}>Settings</span>
+          </button>
+        </nav>
+
+        {/* Expand button */}
+        <div style={{ padding: "8px 8px 12px", flexShrink: 0 }}>
+          <button
+            onClick={() => {
+              setNoWrapTransition(true);          // sidebar snaps instantly, no visual growth
+              setCollapsed(false);
+              setHoverMenu(false);
+              onExpandFromHover?.();              // content area animates on root side
+              setTimeout(() => setNoWrapTransition(false), 50);
+            }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 0, height: 42, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", margin: "0 8px", width: "calc(100% - 16px)" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+            onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+          >
+            <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
+                <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ flex: 1, textAlign: "center" }}>Expand sidebar</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Divider above user */}
+        <div style={{ height: 1, background: "#E9E9EB", margin: "0 16px", flexShrink: 0 }} />
+
+        {/* User profile */}
+        <div
+          style={{ padding: "16px", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 10, flexShrink: 0, cursor: "pointer", borderRadius: 8, margin: "8px", transition: "background 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#4C71DF" }}>{userName.charAt(0)}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+            <div style={{ fontSize: 14, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userRole}</div>
+          </div>
+        </div>
+      </div>
+    )}
+    </div> {/* end wrapper */}
+    </>
   );
 }
 
@@ -8244,6 +8501,16 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
 function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {} }) {
+  const [pageW, setPageW] = useState(window.innerWidth);
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const obs = new ResizeObserver(entries => {
+      for (const e of entries) setPageW(e.contentRect.width);
+    });
+    if (containerRef.current) obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
+  const isMedium = pageW < 768; // stacks at this width
   const AVATAR_COLORS = ["#6389CF", "#6389CF", "#6389CF", "#6389CF", "#6389CF"];
   const members = [
     { initial: "C", name: "Courtney Lemke",  role: "Accountant" },
@@ -8332,21 +8599,21 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
       <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
 
       {/* Page header */}
-      <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
+      <div style={{ padding: isMedium ? "24px 24px 24px" : "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
-          <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
+          <h1 style={{ fontSize: isMedium ? 28 : 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px", margin: 0 }}>Seabrook Foods Ltd.</h1>
         </div>
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: 48, paddingTop: 0, background: "#FFFFFF" }}>
+      <div ref={containerRef} style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isMedium ? 24 : 48, paddingTop: 0, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
 
-        {/* Two-column layout */}
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", minWidth: 0 }}>
+        {/* Two-column layout — wraps naturally when container is too narrow */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
 
           {/* LEFT — Month-end close card */}
-          <div style={{ flex: "1 1 500px", minWidth: 0, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
+          <div style={{ flex: "1 1 460px", minWidth: 0, border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
 
             {/* Card header: badge + buttons */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 24px 16px 20px" }}>
@@ -8417,7 +8684,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
           </div>
 
           {/* RIGHT column */}
-          <div style={{ flex: "0 0 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ flex: "1 1 400px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Workflows card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", overflow: "hidden" }}>
@@ -9284,6 +9551,14 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
     const s = document.createElement("style");
     s.id = "_mimo_kf";
     s.textContent = `
+      @keyframes btnContentIn {
+        0%   { opacity: 0; transform: translateX(-6px); }
+        100% { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes slideInFromLeft {
+        from { opacity: 0; transform: translateX(-24px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
       @keyframes mimoSlideIn {
         0%   { transform: translateY(80px); opacity: 0; }
         60%  { transform: translateY(-5px); opacity: 1; }
@@ -9701,6 +9976,19 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
   const [pageLoading, setPageLoading] = useState(false);
+  const [contentShift, setContentShift] = useState(false);
+  const contentRef = useRef(null);
+  const handleExpandFromHover = () => {
+    const el = contentRef.current;
+    if (!el) return;
+    el.style.transition = "none";
+    el.style.transform = "translateX(-192px)";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = "transform 0.28s cubic-bezier(0.16,1,0.3,1)";
+      el.style.transform = "translateX(0)";
+      setTimeout(() => { el.style.transition = ""; el.style.transform = ""; }, 320);
+    }));
+  };
   const [selectedPeriod, setSelectedPeriod] = useState("April 2026");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
@@ -9975,7 +10263,7 @@ export default function BankReconciliation() {
       <div style={{ display: "flex", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FFFFFF", overflow: "hidden" }}>
 
         {/* ── LEFT MAIN MENU (from MainMenu.jsx) ─────────────────────────── */}
-        <MainMenu activeNav={activeNav} onNavChange={(nav) => {
+        <MainMenu activeNav={activeNav} onExpandFromHover={handleExpandFromHover} onNavChange={(nav) => {
           if (nav === "Balance sheet") { setBsActiveTab("Balance sheet"); }
           if (nav === "Profit & Loss") { setBsActiveTab("Profit and Loss"); }
           setPageLoading(true);
@@ -9984,6 +10272,7 @@ export default function BankReconciliation() {
         }} />
 
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
+        <div ref={contentRef} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {activeNav === "Home" ? (
           <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
@@ -10060,6 +10349,7 @@ export default function BankReconciliation() {
           </div>
         </div>
         )}
+        </div>{/* end content ref wrapper */}
       </div>
 
       {/* Upload Statements Sidebar */}
