@@ -9595,7 +9595,8 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 
   const [view, setView] = useState("home"); // "home" | "workflows" | "convertFile"
   const [convertFiles, setConvertFiles] = useState([]); // array of { file, csv }
-  const [convertState, setConvertState] = useState("idle"); // "idle" | "converting" | "done"
+  const [convertState, setConvertState] = useState("idle"); // "idle" | "confirm" | "converting" | "done"
+  const addMoreConvertRef = useRef(null);
   const setConvertStateAnimated = (next) => {
     if (viewWrapperRef.current) prevHeightRef.current = viewWrapperRef.current.offsetHeight;
     setConvertState(next);
@@ -9889,7 +9890,66 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
           ) : (
               /* Convert file to CSV view */
               <div>
-                {convertState === "converting" ? (
+                {convertState === "confirm" && convertFiles.length > 0 ? (
+                  /* Confirm state — review files before converting */
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 32 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", margin: 0 }}>
+                      {convertFiles.length} {convertFiles.length === 1 ? "file is" : "files are"} ready for conversion
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {convertFiles.map(({ file }, i) => (
+                        <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 14px", height: 62, display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF" }}>
+                          <FileIcon file={file} width={20} height={24} />
+                          <span style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <input ref={addMoreConvertRef} type="file" multiple style={{ display: "none" }}
+                        onChange={e => {
+                          const added = Array.from(e.target.files || []);
+                          if (!added.length) return;
+                          const mockCsv = "Date,Description,Reference,Amount,Balance\n01 Apr 2026,Opening balance,,0.00,0.00\n30 Apr 2026,Closing balance,,4210.00,4210.00";
+                          const results = [...convertFiles];
+                          let done = 0;
+                          added.forEach(f => {
+                            const n = f.name.toLowerCase();
+                            if (n.endsWith(".csv") || n.endsWith(".tsv")) {
+                              const reader = new FileReader();
+                              reader.onload = ev => {
+                                const csv = n.endsWith(".tsv") ? ev.target.result.split("\n").map(r=>r.split("\t").map(c=>`"${c}"`).join(",")).join("\n") : ev.target.result;
+                                results.push({ file: f, csv });
+                                if (++done === added.length) setConvertFiles([...results]);
+                              };
+                              reader.readAsText(f);
+                            } else {
+                              results.push({ file: f, csv: mockCsv });
+                              if (++done === added.length) setConvertFiles([...results]);
+                            }
+                          });
+                          e.target.value = "";
+                        }}
+                      />
+                      <PrimaryButton
+                        style={{ width: "100%", justifyContent: "center", height: 40, borderRadius: 8 }}
+                        onClick={() => {
+                          setConvertStep(0);
+                          setConvertStateAnimated("converting");
+                          [1,2,3,4].forEach((s, i) => setTimeout(() => setConvertStep(s), i * 480));
+                          setTimeout(() => setConvertStateAnimated("done"), 2200);
+                        }}
+                      >
+                        Convert {convertFiles.length} {convertFiles.length === 1 ? "file" : "files"} to CSV
+                      </PrimaryButton>
+                      <SecondaryButton
+                        style={{ width: "100%", justifyContent: "center", height: 40, borderRadius: 8, boxSizing: "border-box" }}
+                        onClick={() => addMoreConvertRef.current?.click()}
+                      >
+                        Add files
+                      </SecondaryButton>
+                    </div>
+                  </div>
+                ) : convertState === "converting" ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 32 }}>
                     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
                       <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
@@ -9906,13 +9966,15 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                       </svg>
                       <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{convertFiles.length} {convertFiles.length === 1 ? "file has" : "files have"} been converted to CSV</span>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {convertFiles.map(({ file }, i) => (
-                        <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 14px", height: 62, display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF" }}>
-                          <CsvIcon width={20} height={24} />
-                          <span style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{(file.name.replace(/\.[^.]+$/, "") || "converted") + ".csv"}</span>
-                        </div>
-                      ))}
+                    {/* Single ZIP file row */}
+                    <div style={{ border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 14px", height: 62, display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF" }}>
+                      {/* ZIP icon */}
+                      <svg width="21" height="25" viewBox="0 0 31 37" fill="none" style={{ flexShrink: 0 }}>
+                        <path d="M0 3.42593C0 1.53384 1.54213 0 3.44444 0H21.7L25.75 5.22177L31 11.9907V33.5741C31 35.4662 29.4579 37 27.5556 37H3.44444C1.54213 37 0 35.4662 0 33.5741V3.42593Z" fill="#F4F4F2"/>
+                        <path d="M15.5 13.25V15.5M15.5 18.875V21.125M15.5 24.5V26.75M8.96583 16.9929L12.2568 19.5244C12.4671 19.6862 12.5723 19.7672 12.6101 19.8658C12.6432 19.9522 12.6432 20.0478 12.6101 20.1342C12.5723 20.2328 12.4671 20.3138 12.2568 20.4756L8.96583 23.0071C8.65562 23.2457 8.50051 23.365 8.37041 23.3634C8.25721 23.362 8.1507 23.3096 8.08059 23.2207C8 23.1185 8 22.9229 8 22.5315V17.4685C8 17.0771 8 16.8815 8.08059 16.7793C8.1507 16.6904 8.25721 16.638 8.37041 16.6366C8.50051 16.635 8.65562 16.7543 8.96583 16.9929ZM22.0342 16.9929L18.7432 19.5244C18.5329 19.6862 18.4277 19.7672 18.3899 19.8658C18.3568 19.9522 18.3568 20.0478 18.3899 20.1342C18.4277 20.2328 18.5329 20.3138 18.7432 20.4756L22.0342 23.0071C22.3444 23.2457 22.4995 23.365 22.6296 23.3634C22.7428 23.362 22.8493 23.3096 22.9194 23.2207C23 23.1185 23 22.9229 23 22.5315V17.4685C23 17.0771 23 16.8815 22.9194 16.7793C22.8493 16.6904 22.7428 16.638 22.6296 16.6366C22.4995 16.635 22.3444 16.7543 22.0342 16.9929Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M21.7 10.0637V0L31 11.9907H23.6375C22.7241 11.9907 22.2674 11.9907 21.9837 11.7085C21.7 11.4263 21.7 10.9721 21.7 10.0637Z" fill="#D6D6D4"/>
+                      </svg>
+                      <span style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>mimo-converted-csv-files.zip</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <button
@@ -9958,7 +10020,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                             Downloaded
                           </>
                         ) : (
-                          `Download ${convertFiles.length} ${convertFiles.length === 1 ? "file" : "files"}`
+                          "Download compressed file"
                         )}
                       </button>
                       <SecondaryButton
@@ -9979,8 +10041,6 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   </div>
                 ) : (
                   <UploadCard bare noDash onFilesSelected={files => {
-                    setConvertStep(0);
-                    setConvertStateAnimated("converting");
                     // Animate steps in
                     [1,2,3,4].forEach((s, i) => setTimeout(() => setConvertStep(s), i * 480));
                     const results = [];
@@ -9994,12 +10054,12 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                           const content = e.target.result;
                           const csv = n.endsWith(".tsv") ? content.split("\n").map(r => r.split("\t").map(c => `"${c}"`).join(",")).join("\n") : content;
                           results.push({ file: f, csv });
-                          if (++done === files.length) { setConvertFiles(results); setTimeout(() => setConvertStateAnimated("done"), 2200); }
+                          if (++done === files.length) { setConvertFiles(results); setConvertStateAnimated("confirm"); }
                         };
                         reader.readAsText(f);
                       } else {
                         results.push({ file: f, csv: mockCsv });
-                        if (++done === files.length) { setConvertFiles(results); setTimeout(() => setConvertStateAnimated("done"), 2200); }
+                        if (++done === files.length) { setConvertFiles(results); setConvertStateAnimated("confirm"); }
                       }
                     });
                   }} />
