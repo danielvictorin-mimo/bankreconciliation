@@ -4440,9 +4440,17 @@ function MainMenu({
   const [skipTransition, setSkipTransition] = useState(false);
   const [navTip, setNavTip]               = useState(null); // { text, x, y }
 
-  // Auto-collapse when below 1280px — never auto-expand (respect user's manual choice)
+  const userCollapsedRef = useRef(false); // true only when user manually collapsed
+
+  // Auto-collapse below 1280px; auto-expand above 1280px unless user manually collapsed
   useEffect(() => {
-    const check = () => { if (window.innerWidth < 1280) setCollapsed(true); };
+    const check = () => {
+      if (window.innerWidth < 1280) {
+        setCollapsed(true); // auto-collapse — never touch userCollapsedRef
+      } else {
+        if (!userCollapsedRef.current) setCollapsed(false); // auto-expand only if not manually collapsed
+      }
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -4641,8 +4649,13 @@ function MainMenu({
       {/* Collapse / expand button */}
       <div style={{ padding: "8px 8px 12px", flexShrink: 0, position: "relative" }}>
         <button
-          onClick={() => { setCollapsed(c => !c); setHoverMenu(false); }}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={() => {
+            const next = !collapsed;
+            userCollapsedRef.current = next; // true = user manually collapsed, false = user manually expanded
+            setCollapsed(next);
+            setHoverMenu(false);
+          }}
+          title={collapsed ? "Expand" : "Collapse"}
           style={{ display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 0, height: 42, padding: collapsed ? "0" : "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", position: "relative", margin: collapsed ? "0 auto" : "0 8px", width: collapsed ? 39 : "calc(100% - 16px)" }}
           onMouseEnter={e => {
             e.currentTarget.style.background = "#F5F5F5";
@@ -4657,11 +4670,11 @@ function MainMenu({
               </svg>
             </div>
           ) : (
-            <div key={`expanded-${collapsed}`} style={{ display: "flex", alignItems: "center", width: "100%", animation: "btnContentIn 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
+            <div key={`expanded-${collapsed}`} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", animation: "btnContentIn 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
                 <path d="M9 3V21M7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span style={{ flex: 1, textAlign: "center" }}>Collapse sidebar</span>
+              <span>Collapse</span>
             </div>
           )}
         </button>
@@ -4794,21 +4807,22 @@ function MainMenu({
         <div style={{ padding: "8px 8px 12px", flexShrink: 0 }}>
           <button
             onClick={() => {
-              setNoWrapTransition(true);          // sidebar snaps instantly, no visual growth
+              userCollapsedRef.current = false;   // user explicitly expanded
+              setNoWrapTransition(true);
               setCollapsed(false);
               setHoverMenu(false);
-              onExpandFromHover?.();              // content area animates on root side
+              onExpandFromHover?.();
               setTimeout(() => setNoWrapTransition(false), 50);
             }}
             style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 0, height: 42, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", margin: "0 8px", width: "calc(100% - 16px)" }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
             onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
           >
-            <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
                 <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span style={{ flex: 1, textAlign: "center" }}>Expand sidebar</span>
+              <span>Expand</span>
             </div>
           </button>
         </div>
