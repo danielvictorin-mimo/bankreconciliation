@@ -4807,12 +4807,9 @@ function MainMenu({
         <div style={{ padding: "8px 8px 12px", flexShrink: 0 }}>
           <button
             onClick={() => {
-              userCollapsedRef.current = false;   // user explicitly expanded
-              setNoWrapTransition(true);
+              userCollapsedRef.current = false;
               setCollapsed(false);
-              setHoverMenu(false);
-              onExpandFromHover?.();
-              setTimeout(() => setNoWrapTransition(false), 50);
+              setTimeout(() => setHoverMenu(false), 290); // hide once wrapper has expanded
             }}
             style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 0, height: 42, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", margin: "0 8px", width: "calc(100% - 16px)" }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
@@ -9990,19 +9987,8 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
   const [pageLoading, setPageLoading] = useState(false);
-  const [contentShift, setContentShift] = useState(false);
   const contentRef = useRef(null);
-  const handleExpandFromHover = () => {
-    const el = contentRef.current;
-    if (!el) return;
-    el.style.transition = "none";
-    el.style.transform = "translateX(-192px)";
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.style.transition = "transform 0.28s cubic-bezier(0.16,1,0.3,1)";
-      el.style.transform = "translateX(0)";
-      setTimeout(() => { el.style.transition = ""; el.style.transform = ""; }, 320);
-    }));
-  };
+  const handleExpandFromHover = () => {}; // no-op: sidebar snaps, content reflows cleanly
   const [selectedPeriod, setSelectedPeriod] = useState("April 2026");
   const [reconciling, setReconciling] = useState(null); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
