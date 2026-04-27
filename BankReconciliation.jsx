@@ -9940,7 +9940,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                           a.download = "mimo-converted-csv-files.zip";
                           a.click();
                           URL.revokeObjectURL(url);
-                          setTimeout(() => setDownloadState("done"), 1200);
+                          setTimeout(() => {
+                            setDownloadState("done");
+                            setTimeout(() => setDownloadState("idle"), 5000);
+                          }, 1200);
                         }}
                       >
                         {downloadState === "downloading" ? (
