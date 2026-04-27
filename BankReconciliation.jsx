@@ -1095,7 +1095,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
 // ── Reconciliation progress steps ─────────────────────────────────────────────
 const RECONCILIATION_STEPS = [
   { title: "Reading source",                                    subtext: null,                                                    duration: 900  },
-  { title: "Parsing bank statement",                            subtext: "Found 380 transactions. Period 1-31 Mar 2026.",         duration: 1500 },
+  { title: "Parsing bank statement",                            subtext: "Found 380 transactions. Period 1-30 Apr 2026.",         duration: 1500 },
   { title: "Checking transactions against statement balance",   subtext: "Balance matching (£12,439.00)",                        duration: 1300 },
   { title: "Matching GL records",                               subtext: "361 of 380 bank statement lines are matching.",         duration: 1800 },
   { title: "Summarise and suggest actions",                     subtext: null,                                                    duration: 1000 },
@@ -3151,7 +3151,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   ] : [
     { text: "I couldn't find any bank statement for ", bold: false },
     { text: selectedAccount,                          bold: true  },
-    { text: ". Could you upload the bank statement for me.", bold: false },
+    { text: ". Could you upload the bank statement for me, or click All documents and select one that has already been uploaded.", bold: false },
   ];
   const line3Full = line3Segments.map(s => s.text).join("");
   const line3Trigger = isPicker ? accountSelected : (line1Done && accountSelected);
