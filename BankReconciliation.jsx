@@ -4725,6 +4725,7 @@ function MainMenu({
                   <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <span>Expand</span>
+                <span style={{ fontSize: 12, color: "#8C8C8B", position: "absolute", right: 4 }}>⌘+B</span>
               </div>
             ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -9445,6 +9446,34 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   );
 }
 
+// ── Minimal ZIP builder ───────────────────────────────────────────────────────
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const b16 = (n) => { const b = new Uint8Array(2); b[0]=n&0xFF; b[1]=(n>>8)&0xFF; return b; };
+  const b32 = (n) => { const b = new Uint8Array(4); b[0]=n&0xFF; b[1]=(n>>8)&0xFF; b[2]=(n>>16)&0xFF; b[3]=(n>>24)&0xFF; return b; };
+  const concat = (arrays) => { const total = arrays.reduce((s,a)=>s+a.length,0); const out = new Uint8Array(total); let p=0; arrays.forEach(a=>{out.set(a,p);p+=a.length;}); return out; };
+  // CRC32 lookup table
+  const crcT = new Uint32Array(256);
+  for (let i=0;i<256;i++){let c=i>>>0;for(let j=0;j<8;j++)c=c&1?(0xEDB88320^(c>>>1))>>>0:(c>>>1)>>>0;crcT[i]=c;}
+  const crc32 = (b) => { let c=0xFFFFFFFF>>>0; for(let i=0;i<b.length;i++)c=(crcT[(c^b[i])&0xFF]^(c>>>8))>>>0; return (c^0xFFFFFFFF)>>>0; };
+
+  const localParts = []; const cdParts = []; let offset = 0;
+  for (const { name, data } of files) {
+    const nameB = enc.encode(name);
+    const dataB = enc.encode(data);
+    const crc = crc32(dataB);
+    const sig3 = new Uint8Array([0x50,0x4B,0x03,0x04]);
+    const sig12 = new Uint8Array([0x50,0x4B,0x01,0x02]);
+    const lh = concat([sig3, b16(20), b16(0), b16(0), b16(0), b16(0), b32(crc), b32(dataB.length), b32(dataB.length), b16(nameB.length), b16(0), nameB, dataB]);
+    const cd = concat([sig12, b16(20), b16(20), b16(0), b16(0), b16(0), b16(0), b32(crc), b32(dataB.length), b32(dataB.length), b16(nameB.length), b16(0), b16(0), b16(0), b16(0), b32(0), b32(offset), nameB]);
+    localParts.push(lh); cdParts.push(cd); offset += lh.length;
+  }
+  const cdData = concat(cdParts);
+  const sig56 = new Uint8Array([0x50,0x4B,0x05,0x06]);
+  const eocd = concat([sig56, b16(0), b16(0), b16(files.length), b16(files.length), b32(cdData.length), b32(offset), b16(0)]);
+  return new Blob([concat([...localParts, cdData, eocd])], { type: "application/zip" });
+}
+
 // ── Convert file steps animation ─────────────────────────────────────────────
 const CONVERT_STEPS = ["Reading file content", "Parsing data structure", "Mapping columns", "Generating CSV output"];
 function ConvertingSteps({ step }) {
@@ -9900,17 +9929,17 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                         onClick={() => {
                           if (downloadState !== "idle") return;
                           setDownloadState("downloading");
-                          convertFiles.forEach(({ file, csv }, i) => {
-                            setTimeout(() => {
-                              const blob = new Blob([csv], { type: "text/csv" });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = (file.name.replace(/\.[^.]+$/, "") || "converted") + ".csv";
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }, i * 300);
-                          });
+                          const zipFiles = convertFiles.map(({ file, csv }) => ({
+                            name: (file.name.replace(/\.[^.]+$/, "") || "converted") + ".csv",
+                            data: csv,
+                          }));
+                          const zipBlob = buildZip(zipFiles);
+                          const url = URL.createObjectURL(zipBlob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = "mimo-converted-csv-files.zip";
+                          a.click();
+                          URL.revokeObjectURL(url);
                           setTimeout(() => setDownloadState("done"), 1200);
                         }}
                       >
@@ -10027,7 +10056,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
           pointerEvents: "none",
           zIndex: 9999,
         }}>
-          <span>Workflows</span>
+          <span>Mimo agent</span>
           <span style={{ color: "#8C8C8B" }}>⌘+J</span>
         </div>
 
