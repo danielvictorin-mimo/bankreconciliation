@@ -564,10 +564,24 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
               </div>
 
               {/* Feed balance */}
-              <div style={cell({ display: "flex", alignItems: "center", fontSize: 14, color: row.noFeedBalance ? "#9D9D9E" : "#080908", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" })} {...cellProps}>
+              <div style={cell({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 14, color: row.noFeedBalance ? "#9D9D9E" : "#080908", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" })} {...cellProps}>
                 {row.noFeedBalance ? (
                   <Tooltip text="This account has no connected bank feed">No feed balance</Tooltip>
-                ) : row.feedBalance}
+                ) : (
+                  <>
+                    {row.feedBalance}
+                    <span
+                      style={{ fontSize: 11, fontWeight: 500, color: "#7C7C7C", background: "#ECECEC", borderRadius: 4, padding: "0 6px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", flexShrink: 0, cursor: "default" }}
+                      onMouseEnter={e => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setBadgeTooltip({ visible: true, x: rect.left + rect.width / 2, y: rect.top, text: "Last synced: 3 April at 14:57" });
+                      }}
+                      onMouseLeave={() => setBadgeTooltip(t => ({ ...t, visible: false }))}
+                    >
+                      3 Apr
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Statement balance */}
@@ -937,7 +951,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
 }
 
 // ── Upload card ───────────────────────────────────────────────────────────────
-function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Upload bank statement" }) {
+function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Upload bank statement", bare = false, noDash = false }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const fileInputRef = useRef(null);
@@ -960,21 +974,8 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
     }
   };
 
-  return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #E9E9EB",
-      borderRadius: 8,
-      padding: "24px",
-      width: "100%",
-      maxWidth: 480,
-      boxSizing: "border-box",
-      boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-    }}>
-      {/* Heading */}
-      <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", marginBottom: 20 }}>
-        {title}
-      </p>
+  const inner = (
+    <React.Fragment>
 
       {/* Hidden file input */}
       <input
@@ -990,7 +991,14 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
-        style={{
+        style={noDash ? {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: 32,
+          background: dragging ? "#F4F9F1" : "transparent",
+          transition: "background 0.15s",
+        } : {
           border: `1.5px dashed ${dragging ? "#05A105" : "#DBDBDB"}`,
           borderRadius: 12,
           padding: "36px 24px 28px",
@@ -1032,7 +1040,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
           </g>
         </svg>
 
-        {/* Primary instruction — two lines matching screenshot */}
+        {/* Primary instruction */}
         <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", textAlign: "center", margin: "0 0 2px" }}>
           Drag &amp; drop your file here, or
         </p>
@@ -1054,40 +1062,44 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
           </p>
         )}
 
-        {/* Buttons row — inside the drop zone */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, width: "100%" }}>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              flex: "1 1 180px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "10px 16px",
-              background: "#05A105", border: "none", borderRadius: 8,
-              cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF",
-            }}
+        {/* Buttons */}
+        <div style={{ display: "flex", flexDirection: noDash ? "column" : "row", flexWrap: noDash ? "nowrap" : "wrap", gap: 10, alignItems: noDash ? "center" : "stretch" }}>
+          <button onClick={() => fileInputRef.current?.click()}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 16px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", width: noDash ? "100%" : undefined }}
             onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
             onMouseLeave={e => e.currentTarget.style.background = "#05A105"}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/></svg>
             Upload document
           </button>
-          <button
-            onClick={() => onOpenAllDocs?.()}
-            style={{
-              flex: "1 1 180px", display: "inline-flex", alignItems: "center", justifyContent: "center",
-              padding: "10px 16px",
-              background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8,
-              cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#DBDBDB"; }}
-          >
-            All documents
-          </button>
+          {noDash ? (
+            <button onClick={() => onOpenAllDocs?.()}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap", width: "100%" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#DBDBDB"; }}
+            >All documents</button>
+          ) : (
+            <button onClick={() => onOpenAllDocs?.()}
+              style={{ flex: "1 1 180px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#DBDBDB"; }}
+            >All documents</button>
+          )}
         </div>
       </div>
+    </React.Fragment>
+  );
 
+  if (bare) return inner;
+
+  return (
+    <div style={{
+      background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
+      padding: "24px", width: "100%", maxWidth: 480, boxSizing: "border-box",
+      boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+    }}>
+      <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", marginBottom: 20 }}>{title}</p>
+      {inner}
     </div>
   );
 }
@@ -4457,6 +4469,22 @@ function MainMenu({
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // ⌘+B to toggle collapse/expand
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        setCollapsed(c => {
+          userCollapsedRef.current = !c;
+          return !c;
+        });
+        setHoverMenu(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   const W = collapsed ? 72 : 264;
   const tr = "width 0.28s cubic-bezier(0.16,1,0.3,1)";
   const collapsedView = collapsed && !hoverMenu;
@@ -4486,28 +4514,29 @@ function MainMenu({
 
     {/* Wrapper — single onMouseLeave covers both aside and floating menu, no flickering */}
     <div
-      style={{ position: "relative", flexShrink: 0, height: "100vh", width: W, transition: noWrapTransition ? "none" : "width 0.28s cubic-bezier(0.16,1,0.3,1)", zIndex: 10 }}
+      style={{ position: "relative", flexShrink: 0, height: "100vh", width: W, transition: noWrapTransition ? "none" : "width 0.28s cubic-bezier(0.16,1,0.3,1)", overflow: "visible" }}
       onMouseLeave={() => { if (collapsed) setHoverMenu(false); }}
     >
     <aside data-main-nav="true"
       style={{
-        position: (collapsed && hoverMenu) ? "fixed" : "relative",
-        left: 0, top: 0, bottom: 0,
-        width: (collapsed && !hoverMenu) ? 72 : 264,
-        height: (collapsed && hoverMenu) ? "100vh" : "100%",
+        position: "relative",
+        width: collapsedView ? 72 : 264,
+        height: "100%",
         display: "flex", flexDirection: "column",
         background: "#FFFFFF", borderRight: "1px solid #E9E9EB",
         fontFamily: "'Inter', sans-serif", overflow: "hidden",
         boxShadow: (collapsed && hoverMenu) ? "4px 0 24px rgba(0,0,0,0.10)" : "none",
-        zIndex: (collapsed && hoverMenu) ? 9999 : "auto",
-        transition: (!collapsed || !hoverMenu) ? "width 0.28s cubic-bezier(0.16,1,0.3,1)" : "none",
+        zIndex: (collapsed && hoverMenu) ? 9999 : 10,
+        transition: "width 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease",
+        animation: (collapsed && hoverMenu) ? "sidebarHoverIn 0.28s cubic-bezier(0.16,1,0.3,1)" : "none",
+        flexShrink: 0,
       }}>
 
       {/* Logo header */}
       <div style={{ height: 96, display: "flex", alignItems: "center", justifyContent: collapsedView ? "center" : "flex-start", padding: collapsedView ? 0 : "0 32px", flexShrink: 0, overflow: "hidden", transition: tr }}>
         {collapsedView ? (
           /* M mark only */
-          <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
+          <svg width="26" height="24" viewBox="0 0 22 20" fill="none">
             <path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#1F2024"/>
             <path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/>
             <path d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z" fill="#1F2024"/>
@@ -4550,7 +4579,7 @@ function MainMenu({
             <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
               <path d="M10 12.5L5.5 8L10 3.5" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{companyName}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{companyName}</span>
           </div>
         )}
       </div>
@@ -4656,50 +4685,52 @@ function MainMenu({
 
       {/* Collapse / expand button */}
       <div style={{ padding: "8px 8px 12px", flexShrink: 0, position: "relative" }}>
-        {collapsedView ? (
-          /* Icon-only expand button — visible when collapsed and not hovering */
+        {collapsed ? (
+          /* Icon-only expand button — stays as icon even during hover animation to avoid text flying in */
           <button
             onClick={() => {
-              userCollapsedRef.current = true;
-              setCollapsed(true);
-              setHoverMenu(false);
+              if (hoverMenu) {
+                // hovering: permanently expand
+                userCollapsedRef.current = false;
+                setCollapsed(false);
+                setHoverMenu(false);
+                setNoWrapTransition(true);
+                onExpandFromHover?.();
+                setTimeout(() => setNoWrapTransition(false), 50);
+              } else {
+                userCollapsedRef.current = true;
+                setCollapsed(true);
+                setHoverMenu(false);
+              }
             }}
             title="Expand"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 42, padding: "0", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", boxSizing: "border-box", margin: "0 auto", width: 39 }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = "#F5F5F5";
-              setHoverMenu(true);
+            style={{
+              display: "flex", alignItems: "center",
+              justifyContent: hoverMenu ? "flex-start" : "center",
+              height: 42,
+              padding: hoverMenu ? "0 12px" : "0",
+              border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF",
+              cursor: "pointer", boxSizing: "border-box",
+              margin: hoverMenu ? "0 8px" : "0 auto",
+              width: hoverMenu ? "calc(100% - 16px)" : 39,
+              fontSize: 14, fontWeight: 400, color: "#4F4F4F",
+              transition: "background 0.1s",
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; if (!hoverMenu) setHoverMenu(true); }}
             onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+            {hoverMenu ? (
+              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
+                  <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Expand</span>
+              </div>
+            ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                 <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
-          </button>
-        ) : collapsed ? (
-          /* Expanded text "Expand" button — visible when collapsed but hovering (hover mode) */
-          <button
-            onClick={() => {
-              userCollapsedRef.current = false;
-              setCollapsed(false);
-              setHoverMenu(false);
-              setNoWrapTransition(true);
-              onExpandFromHover?.();
-              setTimeout(() => setNoWrapTransition(false), 50);
-            }}
-            title="Expand"
-            style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 0, height: 42, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", margin: "0 8px", width: "calc(100% - 16px)" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
-          >
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
-                <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Expand</span>
-            </div>
+            )}
           </button>
         ) : (
           /* Collapse button — visible when fully expanded */
@@ -4719,6 +4750,7 @@ function MainMenu({
                 <path d="M9 3V21M7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span>Collapse</span>
+              <span style={{ fontSize: 12, color: "#8C8C8B", position: "absolute", right: 4 }}>⌘+B</span>
             </div>
           </button>
         )}
@@ -8830,8 +8862,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "No VAT", strikethrough: true },
       "Suggested": "—",
     },
-    primaryLabel: "Review invoice",
-    secondaryLabel: null,
+    primaryLabel: "Review invoice", secondaryLabel: null,
   },
   {
     idx: 1, cat: "wrong-code", score: null,
@@ -8846,8 +8877,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "20% (VAT on Expenses)", strikethrough: true },
       "Suggested": "No VAT",
     },
-    primaryLabel: "Accept",
-    secondaryLabel: "Review",
+    primaryLabel: "Accept", secondaryLabel: "Review",
   },
   {
     idx: 2, cat: "reverse-charge", score: null,
@@ -8862,8 +8892,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
       "Suggested": "Reverse Charge (20%)",
     },
-    primaryLabel: "Accept",
-    secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Edit",
   },
   {
     idx: 3, cat: "non-reclaimable", score: null,
@@ -8878,8 +8907,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
       "Suggested": "Tax Exempt",
     },
-    primaryLabel: "Accept",
-    secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Edit",
   },
   {
     idx: 4, cat: "pva", score: null,
@@ -8894,17 +8922,16 @@ const VAT_CARDS = [
       "VAT rate name": { text: "No VAT", strikethrough: true },
       "Suggested": "Tax on Purchases (20%) (PVA)",
     },
-    primaryLabel: "Accept",
-    secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Edit",
   },
 ];
 
 const VAT_NAV_CATS = [
-  { key: "uncertain",       label: "Uncertain VAT",        baseIdx: 0, items: [{ contact: "Yorkshire Tea Estates" }] },
-  { key: "wrong-code",      label: "Wrong VAT code",       baseIdx: 1, items: [{ contact: "Yorkshire Tea Estates" }] },
-  { key: "reverse-charge",  label: "Reverse charge",       baseIdx: 2, items: [{ contact: "Brightside Electrical Ltd" }] },
-  { key: "non-reclaimable", label: "Non-reclaimable VAT",  baseIdx: 3, items: [{ contact: "The Ivy Private Dining" }] },
-  { key: "pva",             label: "Postponed VAT (PVA)",  baseIdx: 4, items: [{ contact: "DHL / HMRC Customs" }] },
+  { key: "uncertain",       label: "Uncertain VAT",       baseIdx: 0, items: [{ contact: "Yorkshire Tea Estates" }] },
+  { key: "wrong-code",      label: "Wrong VAT code",      baseIdx: 1, items: [{ contact: "Yorkshire Tea Estates" }] },
+  { key: "reverse-charge",  label: "Reverse charge",      baseIdx: 2, items: [{ contact: "Brightside Electrical Ltd" }] },
+  { key: "non-reclaimable", label: "Non-reclaimable VAT", baseIdx: 3, items: [{ contact: "The Ivy Private Dining" }] },
+  { key: "pva",             label: "Postponed VAT (PVA)", baseIdx: 4, items: [{ contact: "DHL / HMRC Customs" }] },
 ];
 
 const VAT_CAT_LABELS = {
@@ -9418,6 +9445,43 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   );
 }
 
+// ── Convert file steps animation ─────────────────────────────────────────────
+const CONVERT_STEPS = ["Reading file content", "Parsing data structure", "Mapping columns", "Generating CSV output"];
+function ConvertingSteps({ step }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", padding: "8px 0" }}>
+      <style>{`@keyframes convertStepIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }`}</style>
+      {CONVERT_STEPS.map((label, i) => {
+        if (i >= step) return null;
+        const isActive = i === step - 1;
+        const isDone = i < step - 1;
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 4px", animation: "convertStepIn 0.35s cubic-bezier(0.16,1,0.3,1) both" }}>
+            <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {isDone ? (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="10" fill="#05A105"/>
+                  <path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : isActive ? (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                  <circle cx="10" cy="10" r="8" stroke="#E9E9EB" strokeWidth="1.5"/>
+                  <path d="M10 2a8 8 0 0 1 8 8" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="8" stroke="#E9E9EB" strokeWidth="1.5"/>
+                </svg>
+              )}
+            </div>
+            <span style={{ fontSize: 14, fontWeight: isActive || isDone ? 500 : 400, color: isActive || isDone ? "#080908" : "#8C8C8B" }}>{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Mimo Assistant floating button + popup ────────────────────────────────────
 function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPayroll, reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, vatReviewCompleted = false, vatResolvedCards = new Set(), bsReconciledData = {}, selectedPeriod = "April 2026", totalBankAccounts = 6, activeNav = "Home", isInReconciliation = false, isInVAT = false, isInBS = false, pageLoading = false }) {
   const [open, setOpen] = useState(false);
@@ -9464,6 +9528,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
     const s = document.createElement("style");
     s.id = "_mimo_kf";
     s.textContent = `
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       @keyframes btnContentIn {
         0%   { opacity: 0; transform: translateX(-6px); }
         100% { opacity: 1; transform: translateX(0); }
@@ -9471,6 +9536,14 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
       @keyframes slideInFromLeft {
         from { opacity: 0; transform: translateX(-24px); }
         to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes navMenuSlideIn {
+        from { transform: translateX(-100%); }
+        to   { transform: translateX(0); }
+      }
+      @keyframes sidebarHoverIn {
+        from { box-shadow: none; opacity: 0.7; }
+        to   { box-shadow: 4px 0 24px rgba(0,0,0,0.10); opacity: 1; }
       }
       @keyframes mimoSlideIn {
         0%   { transform: translateY(80px); opacity: 0; }
@@ -9491,7 +9564,15 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
     document.head.appendChild(s);
   }, []);
 
-  const [view, setView] = useState("home"); // "home" | "workflows"
+  const [view, setView] = useState("home"); // "home" | "workflows" | "convertFile"
+  const [convertFiles, setConvertFiles] = useState([]); // array of { file, csv }
+  const [convertState, setConvertState] = useState("idle"); // "idle" | "converting" | "done"
+  const setConvertStateAnimated = (next) => {
+    if (viewWrapperRef.current) prevHeightRef.current = viewWrapperRef.current.offsetHeight;
+    setConvertState(next);
+  };
+  const [convertStep, setConvertStep] = useState(0); // 0-based index of visible steps
+  const [downloadState, setDownloadState] = useState("idle"); // "idle" | "downloading" | "done"
   const viewWrapperRef = useRef(null);
   const prevHeightRef = useRef(null);
 
@@ -9514,10 +9595,10 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
       el.addEventListener("transitionend", done, { once: true });
     });
     prevHeightRef.current = null;
-  }, [view]);
+  }, [view, convertState]);
 
   // Reset to home whenever popup closes
-  useEffect(() => { if (!open) setTimeout(() => setView("home"), 300); }, [open]);
+  useEffect(() => { if (!open) setTimeout(() => { setView("home"); setConvertFiles([]); setConvertState("idle"); setDownloadState("idle"); setConvertStep(0); }, 300); }, [open]);
 
   const close = () => {
     setClosing(true);
@@ -9628,7 +9709,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
           {/* Persistent top bar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 12px", borderBottom: "1px solid #F0F0F0", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {view === "workflows" && (
+              {view !== "home" && (
                 <button
                   onClick={() => switchView("home")}
                   style={{ ...iconBtnStyle, marginRight: 2 }}
@@ -9641,7 +9722,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                 </button>
               )}
               <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>
-                {view === "home" ? "Mimo agent" : "Run a workflow"}
+                {view === "home" ? "Mimo agent" : view === "workflows" ? "Run a workflow" : "Convert file to CSV"}
               </span>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
@@ -9660,6 +9741,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
           `}</style>
           <div ref={viewWrapperRef}>
           <div key={view} style={{ animation: `${view === "home" ? "slideInFromLeft" : "slideInFromRight"} 0.22s cubic-bezier(0.16,1,0.3,1) both` }}>
+
 
           {view === "home" ? (
               <div style={{ padding: "16px 16px 8px" }}>
@@ -9684,7 +9766,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                     label: "Convert file to CSV",
                     desc: "Convert file to CSV",
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M17 2L21 6M21 6L17 10M21 6H7.8C6.11984 6 5.27976 6 4.63803 6.32698C4.07354 6.6146 3.6146 7.07354 3.32698 7.63803C3 8.27976 3 9.11984 3 10.8V11M3 18H16.2C17.8802 18 18.7202 18 19.362 17.673C19.9265 17.3854 20.3854 16.9265 20.673 16.362C21 15.7202 21 14.8802 21 13.2V13M3 18L7 22M3 18L7 14" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                    onClick: () => {},
+                    onClick: () => switchView("convertFile"),
                     badge: null,
                   },
                   {
@@ -9763,7 +9845,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                 })()}
               </div>
 
-          ) : (
+          ) : view === "workflows" ? (
               <div style={{ padding: "16px 16px 8px" }}>
                 <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 12px" }}>Select a workflow to run</p>
                 <div style={{ display: "flex", flexDirection: "column" }}>
@@ -9775,15 +9857,130 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                   <WorkflowRow label="Balance sheet reconciliation" status={bsStatus} onClick={() => { close(); onStartBS(); }} />
                 </div>
               </div>
+          ) : (
+              /* Convert file to CSV view */
+              <div>
+                {convertState === "converting" ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 32 }}>
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                      <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Converting {convertFiles.length} {convertFiles.length === 1 ? "file" : "files"} to CSV</span>
+                  </div>
+                ) : convertState === "done" && convertFiles.length > 0 ? (
+                  /* Result state */
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 32 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 8 }}>
+                      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <circle cx="22" cy="22" r="22" fill="#F1F8F0"/>
+                        <path d="M13 22l7 7 12-14" stroke="#05A105" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{convertFiles.length} {convertFiles.length === 1 ? "file has" : "files have"} been converted to CSV</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {convertFiles.map(({ file }, i) => (
+                        <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 14px", height: 62, display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF" }}>
+                          <CsvIcon width={20} height={24} />
+                          <span style={{ fontSize: 14, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{(file.name.replace(/\.[^.]+$/, "") || "converted") + ".csv"}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <button
+                        disabled={downloadState !== "idle"}
+                        style={{
+                          width: "100%", height: 40, borderRadius: 8, border: "none",
+                          cursor: downloadState === "idle" ? "pointer" : "default",
+                          background: downloadState === "idle" ? "#05A105" : "#F5F5F5",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                          fontSize: 14, fontWeight: 500,
+                          color: downloadState === "idle" ? "#FFFFFF" : "#080908",
+                          transition: "background 0.2s, color 0.2s",
+                        }}
+                        onClick={() => {
+                          if (downloadState !== "idle") return;
+                          setDownloadState("downloading");
+                          convertFiles.forEach(({ file, csv }, i) => {
+                            setTimeout(() => {
+                              const blob = new Blob([csv], { type: "text/csv" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = (file.name.replace(/\.[^.]+$/, "") || "converted") + ".csv";
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }, i * 300);
+                          });
+                          setTimeout(() => setDownloadState("done"), 1200);
+                        }}
+                      >
+                        {downloadState === "downloading" ? (
+                          <svg width="20" height="20" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                            <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3" strokeLinecap="round"/>
+                          </svg>
+                        ) : downloadState === "done" ? (
+                          <>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                              <path d="M2 8l4 4 8-8" stroke="#05A105" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Downloaded
+                          </>
+                        ) : (
+                          `Download ${convertFiles.length} ${convertFiles.length === 1 ? "file" : "files"}`
+                        )}
+                      </button>
+                      <SecondaryButton
+                        style={{ width: "100%", justifyContent: "center", height: 40, borderRadius: 8, boxSizing: "border-box" }}
+                        onClick={() => { setConvertFiles([]); setConvertState("idle"); setDownloadState("idle"); setConvertStep(0); switchView("home"); }}
+                      >
+                        Upload and scan
+                      </SecondaryButton>
+                      <button
+                        style={{ width: "100%", height: 40, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#000000", transition: "background 0.1s", boxSizing: "border-box" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        onClick={() => { setConvertFiles([]); setConvertStateAnimated("idle"); setDownloadState("idle"); setConvertStep(0); }}
+                      >
+                        Convert more files
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <UploadCard bare noDash onFilesSelected={files => {
+                    setConvertStep(0);
+                    setConvertStateAnimated("converting");
+                    // Animate steps in
+                    [1,2,3,4].forEach((s, i) => setTimeout(() => setConvertStep(s), i * 480));
+                    const results = [];
+                    let done = 0;
+                    files.forEach(f => {
+                      const n = f.name.toLowerCase();
+                      const mockCsv = "Date,Description,Reference,Amount,Balance\n01 Apr 2026,Opening balance,,0.00,0.00\n03 Apr 2026,Yorkshire Tea Estates,INV-2026-0041,-640.00,-640.00\n30 Apr 2026,Closing balance,,4210.00,4210.00";
+                      if (n.endsWith(".csv") || n.endsWith(".tsv")) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          const content = e.target.result;
+                          const csv = n.endsWith(".tsv") ? content.split("\n").map(r => r.split("\t").map(c => `"${c}"`).join(",")).join("\n") : content;
+                          results.push({ file: f, csv });
+                          if (++done === files.length) { setConvertFiles(results); setTimeout(() => setConvertStateAnimated("done"), 2200); }
+                        };
+                        reader.readAsText(f);
+                      } else {
+                        results.push({ file: f, csv: mockCsv });
+                        if (++done === files.length) { setConvertFiles(results); setTimeout(() => setConvertStateAnimated("done"), 2200); }
+                      }
+                    });
+                  }} />
+                )}
+              </div>
           )}
           </div>{/* end key={view} animation div */}
           </div>{/* end viewWrapperRef */}
 
-          {/* Divider */}
-          <div style={{ height: 1, background: "#F0F0F0" }} />
+          {/* Divider + chat input — hidden on convert view */}
+          {view !== "convertFile" && <div style={{ height: 1, background: "#F0F0F0" }} />}
+          {view !== "convertFile" && <div style={{ padding: 16 }}>
 
-          {/* Chat input — matches left sidebar chat */}
-          <div style={{ padding: 16 }}>
             <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
               <textarea
                 value={inputValue}
@@ -9811,7 +10008,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                 </button>
               </div>
             </div>
-          </div>
+          </div>}
         </div>
 
       {/* Floating button — always visible, shows chevron when popup is open */}
@@ -10054,7 +10251,7 @@ export default function BankReconciliation() {
   // Post-reconciliation data per account (statement balance, difference, matching)
   const reconciledData = {
     "Lloyds Bank - Operations GBP":   { statementBalance: "£127,000.00", difference: "£27,000.00", matched: "361/380", suggestions: 3 },
-    "Lloyds Bank - Business":          { statementBalance: "£152,500.00", difference: "£2,500.00",  matched: "241/244", suggestions: 2 },
+    "Lloyds Bank - Business":          { statementBalance: "£155,000.00", difference: "£0.00",      matched: "241/244", suggestions: 2 },
     "HSBC - Business Transactions":   { statementBalance: "£95,500.00",  difference: "£2,500.00",  matched: "189/195", suggestions: 2 },
     "Barclays - Operations":          { statementBalance: "£374,000.00", difference: "£6,000.00",  matched: "409/420", suggestions: 5 },
     "American Express OP GBP":        { statementBalance: "£127,000.00", difference: "£27,000.00", matched: "98/105",  suggestions: 4 },
@@ -10062,7 +10259,7 @@ export default function BankReconciliation() {
   };
 
   const bankAccounts = [
-    { name: "Lloyds Bank - Business",          feedBalance: "£155,000.00", glBalance: "£155,000.00", glSub: "£0,00", trMatching: "241/244" },
+    { name: "Lloyds Bank - Business",          feedBalance: "£155,000.00", glBalance: "£143,000.00", glSub: "£0,00", trMatching: "241/244" },
     { name: "Lloyds Bank - Operations GBP",   feedBalance: "£127,000.00", glBalance: "£100,000.00", glSub: "£0,00", trMatching: "361/380" },
     { name: "HSBC - Business Transactions",   feedBalance: "£93,000.00",  glBalance: "£93,000.00",  glSub: "£0,00", trMatching: "189/195" },
     { name: "Barclays - Operations",          feedBalance: "£374,000.00", glBalance: "£380,000.00", glSub: "£0,00", trMatching: "409/420" },
