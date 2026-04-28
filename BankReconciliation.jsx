@@ -10127,7 +10127,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
     transition: "background 0.1s",
   };
 
-  const WorkflowRow = ({ label, status, onClick, isFirst }) => {
+  const WorkflowRow = ({ label, status, onClick, isFirst, buttonLabel = "Run", buttonIcon }) => {
     const [rowHovered, setRowHovered] = useState(false);
     return (
       <div
@@ -10152,14 +10152,14 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
             height: 34, padding: "0 12px",
             background: "#FFFFFF", border: "1px solid #E9E9EB",
             borderRadius: 6, cursor: "pointer",
-            fontSize: 13, fontWeight: 500, color: "#080908",
+            fontSize: 14, fontWeight: 500, color: "#080908",
             flexShrink: 0, transition: "all 0.15s ease",
           }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
         >
-          Run
-          <PlayCircleIcon color="#080908" size={16} />
+          {buttonLabel}
+          {buttonIcon || <PlayCircleIcon color="#080908" size={16} />}
         </button>
       </div>
     );
@@ -10332,10 +10332,14 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
 
           ) : view === "workflows" ? (
               <div style={{ padding: "16px 16px 8px" }}>
-                <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 12px" }}>Select a workflow to run</p>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <WorkflowRow isFirst label="Bank reconciliation" status={bankStatus} onClick={() => { close(); onStartReconciliation(); }} />
-                  <WorkflowRow label="VAT and miscoding review" status={vatStatus} onClick={() => { close(); onStartVAT(); }} />
+                  <WorkflowRow isFirst label="Bank reconciliation" status={bankStatus} onClick={() => { close(); onStartReconciliation(); }}
+                    buttonLabel="Select account"
+                    buttonIcon={<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4.167 10h11.666M10 4.167 15.833 10 10 15.833" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  />
+                  <WorkflowRow label="VAT and miscoding review" status={vatStatus} onClick={() => { close(); onStartVAT(); }}
+                    buttonLabel={vatReviewCompleted || vatResolvedCards.size > 0 ? "Review" : "Run"}
+                  />
                   <WorkflowRow label="Payroll reconciliation" status={notStarted} onClick={() => { close(); onStartPayroll?.(); }} />
                   <WorkflowRow label="Director's loan account" status={notStarted} onClick={() => { close(); onStartBS(); }} />
                   <WorkflowRow label="Fixed assets" status={notStarted} onClick={() => { close(); onStartBS(); }} />
