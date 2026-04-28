@@ -3172,9 +3172,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
   // Auto-scroll chat to bottom whenever new content appears
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
+    // Small delay so step reveal animations finish before we measure height
+    const t = setTimeout(() => {
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" });
+      }
+    }, 120);
+    return () => clearTimeout(t);
   }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps]);
 
   // Track whether the chat is scrolled to the bottom
@@ -3378,7 +3382,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", scrollBehavior: "smooth" }}>
         {/* Top fade — only in sidebar mode, inside scroll so it doesn't cover the scrollbar */}
         {resultsVisible && <div style={{ position: "sticky", top: 0, left: 0, right: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
-        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 72px", flex: 1, display: "flex", flexDirection: "column" }}>
 
           {!clientUpload && (
             <>
