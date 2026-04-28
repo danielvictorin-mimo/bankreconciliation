@@ -9282,7 +9282,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
   // Phase 1: reveal steps one by one once intro finishes (or on re-run)
   useEffect(() => {
-    if (!introDone || showResults) return;
+    if (!introDone || (showResults && rerunKey === 0)) return;
     const REVEAL_INTERVAL = 600;
     const timers = [];
     VAT_STEPS.forEach((_, i) => {
@@ -9297,7 +9297,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
   // Phase 2: run spinner through steps once all are populated
   useEffect(() => {
-    if (!stepsPopulated || showResults) return;
+    if (!stepsPopulated || (showResults && rerunKey === 0)) return;
     setStepStatuses(VAT_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
     setStepSubtexts(VAT_STEPS.map(() => false));
     let cumulative = 0;
@@ -9336,7 +9336,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   // Canvas content ready after slide-in animation — suggestion box slides in shortly after
   useEffect(() => {
     if (!resultsVisible) return;
-    if (showResults) { setCanvasReady(true); setBoxesOpen(true); return; }
+    if (showResults && rerunKey === 0) { setCanvasReady(true); setBoxesOpen(true); return; }
     const t1 = setTimeout(() => setCanvasReady(true), 3200);
     const t2 = setTimeout(() => setBoxesOpen(true), 3800);
     return () => { clearTimeout(t1); clearTimeout(t2); };
