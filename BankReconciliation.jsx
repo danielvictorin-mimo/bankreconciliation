@@ -1396,6 +1396,17 @@ function AuditTrailSidebar({ onClose }) {
             </div>
           ))}
         </div>
+
+        {/* Footer */}
+        <div style={{ flexShrink: 0, borderTop: "1px solid #ECECEC", padding: "16px 24px" }}>
+          <button
+            onClick={handleClose}
+            style={{ width: "100%", height: 44, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
+            Cancel
+          </button>
+        </div>
       </div>
     </>
   );
