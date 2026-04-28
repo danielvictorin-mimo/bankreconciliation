@@ -101,7 +101,7 @@ function TrMatchBadge({ value = "0/0", noFeed = false }) {
 }
 
 // ── Inline tooltip ───────────────────────────────────────────────────────────
-function Tooltip({ text, children }) {
+function Tooltip({ text, children, placement = "top" }) {
   const [visible, setVisible] = React.useState(false);
   const [pos, setPos] = React.useState({ x: 0, y: 0 });
   const ref = React.useRef(null);
@@ -110,7 +110,7 @@ function Tooltip({ text, children }) {
       onMouseEnter={() => {
         if (ref.current) {
           const rect = ref.current.getBoundingClientRect();
-          setPos({ x: rect.left + rect.width / 2, y: rect.top });
+          setPos({ x: rect.left + rect.width / 2, y: placement === "bottom" ? rect.bottom : rect.top });
         }
         setVisible(true);
       }}
@@ -118,8 +118,10 @@ function Tooltip({ text, children }) {
       {children}
       {visible && (
         <div style={{
-          position: "fixed", top: pos.y - 8, left: pos.x,
-          transform: "translate(-50%, -100%)",
+          position: "fixed",
+          top: placement === "bottom" ? pos.y + 8 : pos.y - 8,
+          left: pos.x,
+          transform: placement === "bottom" ? "translate(-50%, 0)" : "translate(-50%, -100%)",
           background: "#2A2A2A", color: "#FFFFFF",
           fontSize: 14, fontWeight: 400, lineHeight: "20px",
           padding: "6px 8px", borderRadius: 8,
@@ -2043,6 +2045,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
   const msg   = accountStatus === "completed" ? "Ready to reconcile in Xero" : "Fully reconciled in Xero";
   const pct   = totalSuggestions > 0 ? Math.min(100, Math.round((resolvedCount / totalSuggestions) * 100)) : 0;
   const [collapsedCats, setCollapsedCats] = useState({});
+  const [boxCollapsed, setBoxCollapsed] = useState(false);
   const toggleCat = (key) => setCollapsedCats(prev => ({ ...prev, [key]: !prev[key] }));
   const scrollTo = (id) => {
     const el = document.getElementById(id);
@@ -2050,12 +2053,16 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   return (
-    <div style={{ background: "#FFFFFF", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif", border: "1px solid #ECECEC", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: "#FFFFFF", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif", border: "1px solid #ECECEC", flex: boxCollapsed ? "0 0 auto" : 1, display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px" }}>
+      <div onClick={() => setBoxCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
         <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>Suggestions</span>
+        <div style={{ flexShrink: 0, transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", transform: boxCollapsed ? "rotate(0deg)" : "rotate(180deg)" }}>
+          <_MM_Chevron color="#8C8C8B" size={16} />
+        </div>
       </div>
       {/* Progress / clean state */}
+      <div style={{ overflow: "hidden", maxHeight: boxCollapsed ? 0 : 1200, opacity: boxCollapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease", flex: boxCollapsed ? "none" : 1, display: "flex", flexDirection: "column" }}>
       <div style={{ borderTop: "1px solid #F0F0F0", padding: "20px" }}>
         {allJustResolved ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2163,6 +2170,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -3925,7 +3933,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         position: "absolute",
         top: 16, bottom: 16,
         left: chatWidth + 32,
-        right: boxesOpen ? 382 : 16,
+        right: boxesOpen ? 432 : 16,
         background: "#FFFFFF",
         borderRadius: 8,
         border: "1px solid #ECECEC",
@@ -4050,7 +4058,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             <div style={{
               position: "absolute",
               top: 16, bottom: 16, right: 16,
-              width: 350,
+              width: 400,
               zIndex: 3,
               display: "flex",
               flexDirection: "column",
@@ -8888,6 +8896,214 @@ const VAT_CAT_LABELS = {
   "pva":             "Postponed VAT (PVA)",
 };
 
+function VATReturnCard({ onReviewReport, showingReport = false }) {
+  const VAT_ITEMS = [
+    { box: 1, label: "VAT due on sales",            value: "£3,211.44", highlight: false },
+    { box: 4, label: "VAT reclaimed on purchases",  value: "£1,097.56", highlight: false },
+    { box: 5, label: "Net VAT due to HMRC",         value: "£2,113.88", highlight: true  },
+    { box: 6, label: "Total sales (excl. VAT)",     value: "£16,057",   highlight: false },
+    { box: 7, label: "Total purchases (excl. VAT)", value: "£5,488",    highlight: false },
+  ];
+  const [collapsed, setCollapsed] = useState(false);
+  const [downloadState, setDownloadState] = useState("idle"); // "idle" | "downloading" | "done"
+
+  const handleDownload = () => {
+    if (downloadState !== "idle") return;
+    setDownloadState("downloading");
+
+    const generatePdf = () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const W = doc.internal.pageSize.getWidth();
+      const margin = 40;
+      const tableW = W - margin * 2;
+      const boxColW = 40;
+      const valueColW = 140;
+      const labelColW = tableW - boxColW - valueColW;
+
+      const green     = [5, 161, 5];
+      const lightGreen= [240, 251, 240];
+      const darkGreen = [8, 77, 8];
+      const borderC   = [120, 120, 120];
+      const grey      = [84, 84, 83];
+
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Seabrook Foods Ltd", margin, 48);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(26);
+      doc.setTextColor(0, 0, 0);
+      doc.text("VAT Return", margin, 74);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(...grey);
+      doc.text("01 Apr 2026 \u2014 30 Apr 2026", margin, 94);
+
+      const rows = [
+        { box: 1, label: "VAT due on sales and other outputs",                                                                                                                        value: "\u00a33,211.44", highlight: false },
+        { box: 2, label: "VAT due on intra-community acquisitions of goods made in Northern Ireland from EU Member States",                                                            value: "\u00a30.00",     highlight: false },
+        { box: 3, label: "Total VAT due (the sum of boxes 1 and 2)",                                                                                                                  value: "\u00a33,211.44", highlight: false },
+        { box: 4, label: "VAT reclaimed on purchases and other inputs (including acquisitions from the EU)",                                                                           value: "\u00a31,097.56", highlight: false },
+        { box: 5, label: "Net VAT to be paid to Customs or reclaimed by you (difference between boxes 3 and 4)",                                                                      value: "\u00a32,113.88", highlight: true  },
+        { box: 6, label: "Total value of sales and all other outputs excluding any VAT",                                                                                               value: "\u00a316,057",   highlight: false },
+        { box: 7, label: "Total value of purchases and all other inputs excluding any VAT",                                                                                            value: "\u00a35,488",    highlight: false },
+        { box: 8, label: "Total value of intra-community dispatches of goods and related costs, excluding any VAT, from Northern Ireland to EU Member States",                         value: "\u00a30",        highlight: false },
+        { box: 9, label: "Total value of intra-community acquisitions of goods and related costs, excluding any VAT, made in Northern Ireland from EU Member States",                  value: "\u00a30",        highlight: false },
+      ];
+
+      let y = 116;
+      const padV = 14;
+      const fontSize = 11;
+      const lineH = 15;
+
+      rows.forEach(({ box, label, value, highlight }, i) => {
+        doc.setFontSize(fontSize);
+        const lines = doc.splitTextToSize(label, labelColW - 20);
+        const rowH = Math.max(44, lines.length * lineH + padV * 2);
+
+        // Row background (highlighted)
+        if (highlight) {
+          doc.setFillColor(...lightGreen);
+          doc.rect(margin, y, tableW, rowH, "F");
+        } else {
+          doc.setFillColor(255, 255, 255);
+          doc.rect(margin, y, tableW, rowH, "F");
+        }
+
+        // Label (left column)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...(highlight ? darkGreen : grey));
+        doc.text(lines, margin + 16, y + padV + lineH - 3);
+
+        // Vertical divider before box col
+        doc.setDrawColor(...borderC);
+        doc.line(margin + labelColW, y, margin + labelColW, y + rowH);
+
+        // Green box number cell
+        doc.setFillColor(...green);
+        doc.rect(margin + labelColW, y, boxColW, rowH, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.text(String(box), margin + labelColW + boxColW / 2, y + rowH / 2 + 4, { align: "center" });
+
+        // Vertical divider after box col
+        doc.setDrawColor(...borderC);
+        doc.line(margin + labelColW + boxColW, y, margin + labelColW + boxColW, y + rowH);
+
+        // Value (right column)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...(highlight ? darkGreen : [8, 8, 8]));
+        doc.text(value, margin + tableW - 16, y + rowH / 2 + 4, { align: "right" });
+
+        // Row bottom border
+        if (i < rows.length - 1) {
+          doc.setDrawColor(...borderC);
+          doc.line(margin, y + rowH, margin + tableW, y + rowH);
+        }
+
+        y += rowH;
+      });
+
+      // Outer table border
+      doc.setDrawColor(...borderC);
+      doc.rect(margin, 116, tableW, y - 116);
+
+      // Footer
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(180, 180, 180);
+      doc.text(`Generated by Mimo  \u2022  ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`, margin, y + 22);
+
+      doc.save("vat-return-april-2026.pdf");
+      setDownloadState("done");
+      setTimeout(() => setDownloadState("idle"), 4000);
+    };
+
+    // Always wait at least 1.2s so the spinner is visible
+    const run = () => setTimeout(generatePdf, 1200);
+
+    if (window.jspdf) {
+      run();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      script.onload = run;
+      script.onerror = () => setDownloadState("idle");
+      document.head.appendChild(script);
+    }
+  };
+
+  return (
+    <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, flexShrink: 0, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Header with chevron */}
+      <div onClick={() => setCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
+        <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>VAT return April 2026</span>
+        <div style={{ flexShrink: 0, transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", transform: collapsed ? "rotate(0deg)" : "rotate(180deg)" }}>
+          <_MM_Chevron color="#8C8C8B" size={16} />
+        </div>
+      </div>
+      {/* Collapsible content */}
+      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 600, opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
+        <div style={{ borderTop: "1px solid #F0F0F0" }}>
+          <div style={{ margin: "14px 20px", border: "1px solid #ECECEC", borderRadius: 6, overflow: "hidden" }}>
+            {VAT_ITEMS.map(({ box, label, value, highlight }, i, arr) => (
+              <div key={box} style={{ display: "flex", alignItems: "center", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F5F5F5" : "#FFFFFF" }}>
+                <div style={{ width: 28, display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "stretch", background: "#F5F5F5", flexShrink: 0, borderRight: "1px solid #ECECEC" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#8C8C8B" }}>{box}</span>
+                </div>
+                <span style={{ flex: 1, fontSize: 14, color: "#545453", padding: "9px 10px", lineHeight: "24px" }}>{label}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "9px 10px", whiteSpace: "nowrap" }}>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 20px 18px" }}>
+          <button
+            onClick={() => onReviewReport?.()}
+            style={{ width: "100%", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
+            {showingReport ? "Close review" : "Review full report"}
+          </button>
+          <button
+            onClick={handleDownload}
+            style={{
+              width: "100%", height: 40, borderRadius: 8, fontFamily: "'Inter', sans-serif",
+              border: downloadState === "idle" ? "1px solid #E9E9EB" : "none",
+              background: downloadState === "idle" ? "#FFFFFF" : "#F5F5F5",
+              cursor: downloadState !== "idle" ? "default" : "pointer",
+              fontSize: 14, fontWeight: 500, color: "#080908",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              transition: "background 0.2s, border 0.2s",
+            }}
+            onMouseEnter={e => { if (downloadState === "idle") { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; } }}
+            onMouseLeave={e => { if (downloadState === "idle") { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; } }}>
+            {downloadState === "downloading" ? (
+              <svg width="16" height="16" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3" strokeLinecap="round"/>
+              </svg>
+            ) : downloadState === "done" ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M2 8l4 4 8-8" stroke="#05A105" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Downloaded
+              </>
+            ) : "Download"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
   const [stepStatuses, setStepStatuses] = useState(showResults ? VAT_STEPS.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts] = useState(showResults ? VAT_STEPS.map(() => true) : []);
@@ -8897,6 +9113,8 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const [resultsVisible, setResultsVisible]   = useState(showResults);
   const [canvasReady, setCanvasReady]         = useState(showResults);
   const [boxesOpen, setBoxesOpen]             = useState(false);
+  const [showVATReport, setShowVATReport]     = useState(false);
+  const [vatReportLoading, setVatReportLoading] = useState(false);
   const [chatWidth, setChatWidth]             = useState(400);
   const [isDragging, setIsDragging]           = useState(false);
   const [isAtBottom, setIsAtBottom]           = useState(true);
@@ -9061,25 +9279,33 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
         {/* Suggestions toggle — same expanding button as bank rec */}
         {resultsVisible && canvasReady && (
+          <Tooltip text={boxesOpen ? "Collapse sidebar" : "Expand sidebar"} placement="bottom">
           <button
             onClick={() => setBoxesOpen(o => !o)}
             style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 8, cursor: "pointer", fontFamily: "inherit", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", height: 48, minWidth: 48, padding: boxesOpen ? 0 : "0 12px 0 0", overflow: "hidden", justifyContent: "center", flexShrink: 0, transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
             onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
           >
-            <div style={{ maxWidth: boxesOpen ? 0 : 180, opacity: boxesOpen ? 0 : 1, overflow: "hidden", transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, padding 0.35s cubic-bezier(0.16,1,0.3,1)", display: "flex", flexDirection: "column", gap: 4, paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10 }}>
+            <div style={{ maxWidth: boxesOpen ? 0 : 260, opacity: boxesOpen ? 0 : 1, overflow: "hidden", transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, padding 0.35s cubic-bezier(0.16,1,0.3,1)", display: "flex", flexDirection: "column", gap: 4, paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Suggestions</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>VAT return & suggestions</span>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolvedCount}/{totalSuggestions}</span>
               </div>
               <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: "#05A105", borderRadius: 1, transition: "width 0.4s ease" }} />
               </div>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M15 21L15 3M16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21Z" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            {boxesOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M15 21L15 3M16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21Z" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </button>
+          </Tooltip>
         )}
 
         {/* Close X button — same circle style as bank rec */}
@@ -9252,9 +9478,64 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
         )}
 
         {/* Canvas — slides in from right, absolutely positioned */}
-        <div style={{ position: "absolute", top: 16, bottom: 16, left: chatWidth + 32, right: boxesOpen ? 382 : 16, background: "#FFFFFF", borderRadius: 8, border: "1px solid #ECECEC", overflow: "hidden", zIndex: 2, transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))", transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)", willChange: resultsVisible ? "auto" : "transform" }}>
+        <div style={{ position: "absolute", top: 16, bottom: 16, left: chatWidth + 32, right: boxesOpen ? 432 : 16, background: "#FFFFFF", borderRadius: 8, border: "1px solid #ECECEC", overflow: "hidden", zIndex: 2, transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))", transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1)", willChange: resultsVisible ? "auto" : "transform" }}>
           {canvasReady ? (
             <div style={{ animation: "resultsFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
+              {showVATReport ? (
+                /* ── Full VAT return table ── */
+                vatReportLoading ? (
+                  <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                      <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                    <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0 }}>Preparing VAT return report…</p>
+                  </div>
+                ) : (
+                <div style={{ padding: "48px 48px", maxWidth: 860, margin: "0 auto", animation: "resultsFadeIn 0.4s ease both" }}>
+                  {/* Back button */}
+                  <button onClick={() => setShowVATReport(false)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 36, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", marginBottom: 32 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Back to review
+                  </button>
+                  {/* Header */}
+                  <div style={{ marginBottom: 32, marginTop: 8 }}>
+                    <h1 style={{ fontSize: 28, fontWeight: 700, color: "#000000", margin: "0 0 8px", letterSpacing: "-0.5px" }}>VAT Return</h1>
+                    <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0 }}>01 Apr 2026 — 30 Apr 2026</p>
+                  </div>
+                  {/* 9 boxes */}
+                  <div style={{ border: "1px solid #ECECEC", borderRadius: 6, overflow: "hidden" }}>
+                    {[
+                      { box: 1, label: "VAT due on sales and other outputs",                                                                                                                              value: "£3,211.44", highlight: false },
+                      { box: 2, label: "VAT due on intra-community acquisitions of goods made in Northern Ireland from EU Member States",                                                                 value: "£0.00",     highlight: false },
+                      { box: 3, label: "Total VAT due (the sum of boxes 1 and 2)",                                                                                                                       value: "£3,211.44", highlight: false },
+                      { box: 4, label: "VAT reclaimed on purchases and other inputs (including acquisitions from the EU)",                                                                                value: "£1,097.56", highlight: false },
+                      { box: 5, label: "Net VAT to be paid to Customs or reclaimed by you (difference between boxes 3 and 4)",                                                                           value: "£2,113.88", highlight: true  },
+                      { box: 6, label: "Total value of sales and all other outputs excluding any VAT",                                                                                                    value: "£16,057",   highlight: false },
+                      { box: 7, label: "Total value of purchases and all other inputs excluding any VAT",                                                                                                 value: "£5,488",    highlight: false },
+                      { box: 8, label: "Total value of intra-community dispatches of goods and related costs, excluding any VAT, from Northern Ireland to EU Member States",                              value: "£0",        highlight: false },
+                      { box: 9, label: "Total value of intra-community acquisitions of goods and related costs, excluding any VAT, made in Northern Ireland from EU Member States",                       value: "£0",        highlight: false },
+                    ].map(({ box, label, value, highlight }, i, arr) => (
+                      <div key={box} style={{ display: "flex", alignItems: "stretch", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F0FBF0" : "#FFFFFF" }}>
+                        <div style={{ flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" }}>
+                          <p style={{ fontSize: 14, color: highlight ? "#084D08" : "#545453", margin: 0, lineHeight: "20px" }}>{label}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", borderLeft: "1px solid #ECECEC", flexShrink: 0 }}>
+                          <div style={{ width: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#05A105", alignSelf: "stretch" }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>{box}</span>
+                          </div>
+                          <div style={{ width: 140, padding: "16px 20px", textAlign: "right" }}>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: highlight ? "#084D08" : "#080908" }}>{value}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            ) : (
               <div style={{ padding: "48px 48px 48px", maxWidth: 800, margin: "0 auto" }}>
 
                 {/* Results heading */}
@@ -9352,13 +9633,24 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                   ))}
                 </div>
               </div>
-            </div>
+            )}
+          </div>
           ) : resultsVisible ? <CanvasLoader /> : null}
         </div>
 
         {/* Suggestions sidebar */}
         {canvasReady && (
-          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 350, zIndex: 3, display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 400, zIndex: 3, display: "flex", flexDirection: "column", gap: 12, fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+
+            {/* VAT return report card */}
+            <VATReturnCard
+              showingReport={showVATReport}
+              onReviewReport={() => {
+                if (showVATReport) { setShowVATReport(false); }
+                else { setShowVATReport(true); setVatReportLoading(true); setTimeout(() => setVatReportLoading(false), 1800); }
+              }}
+            />
+
             <SuggestionsBox
               isCleanReconcile={false}
               allJustResolved={allDone}
