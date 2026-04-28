@@ -9029,7 +9029,7 @@ const VAT_CAT_LABELS = {
   "pva":             "Postponed VAT (PVA)",
 };
 
-function VATReturnCard({ onReviewReport, showingReport = false }) {
+function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = new Set(), ignoredCards = new Set() }) {
   const VAT_ITEMS = [
     { box: 1, label: "VAT due on sales",            value: "£3,211.44", highlight: false },
     { box: 4, label: "VAT reclaimed on purchases",  value: "£1,097.56", highlight: false },
@@ -9039,6 +9039,30 @@ function VATReturnCard({ onReviewReport, showingReport = false }) {
   ];
   const [collapsed, setCollapsed] = useState(false);
   const [downloadState, setDownloadState] = useState("idle"); // "idle" | "downloading" | "done"
+  const [flashActive, setFlashActive] = useState(false);
+  const prevActionCount = useRef(0);
+
+  const actionCount = resolvedCards.size + ignoredCards.size;
+  useEffect(() => {
+    if (actionCount <= prevActionCount.current) { prevActionCount.current = actionCount; return; }
+    prevActionCount.current = actionCount;
+    // Remove then re-add animation to force restart
+    setFlashActive(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setFlashActive(true);
+      setTimeout(() => setFlashActive(false), 1600);
+    }));
+  }, [actionCount]);
+
+  // Dynamically compute box 4 and 5 based on resolved suggestions
+  const CARD_ADJUSTMENTS = { 0: 210.00, 1: 480.00, 2: 90.00, 3: -340.00, 4: 125.00 };
+  const box1Base = 3211.44;
+  const box4Base = 1097.56;
+  let box4Adj = 0;
+  resolvedCards.forEach(idx => { box4Adj += CARD_ADJUSTMENTS[idx] || 0; });
+  const box4Val = box4Base + box4Adj;
+  const box5Val = box1Base - box4Val;
+  const fmt = (n) => `£${Math.abs(n).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleDownload = () => {
     if (downloadState !== "idle") return;
@@ -9175,6 +9199,7 @@ function VATReturnCard({ onReviewReport, showingReport = false }) {
 
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, flexShrink: 0, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      <style>{`@keyframes vatRowFlash { 0%{background:transparent} 25%{background:#eaf2e2} 75%{background:#eaf2e2} 100%{background:transparent} }`}</style>
       {/* Header with chevron */}
       <div onClick={() => setCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
         <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>VAT return April 2026</span>
@@ -9186,15 +9211,19 @@ function VATReturnCard({ onReviewReport, showingReport = false }) {
       <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 600, opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
         <div style={{ borderTop: "1px solid #F0F0F0" }}>
           <div style={{ margin: "14px 20px", border: "1px solid #ECECEC", borderRadius: 6, overflow: "hidden" }}>
-            {VAT_ITEMS.map(({ box, label, value, highlight }, i, arr) => (
-              <div key={box} style={{ display: "flex", alignItems: "center", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F5F5F5" : "#FFFFFF" }}>
+            {VAT_ITEMS.map(({ box, label, value, highlight }, i, arr) => {
+              const dynamicValue = box === 4 ? fmt(box4Val) : box === 5 ? fmt(box5Val) : value;
+              const shouldFlash = flashActive && (box === 4 || box === 5);
+              return (
+              <div key={box} style={{ display: "flex", alignItems: "center", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F5F5F5" : "#FFFFFF", animation: shouldFlash ? "vatRowFlash 1.6s ease forwards" : "none" }}>
                 <div style={{ width: 28, display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "stretch", background: "#F5F5F5", flexShrink: 0, borderRight: "1px solid #ECECEC" }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#8C8C8B" }}>{box}</span>
                 </div>
                 <span style={{ flex: 1, fontSize: 14, color: "#545453", padding: "9px 10px", lineHeight: "24px" }}>{label}</span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "9px 10px", whiteSpace: "nowrap" }}>{value}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "9px 10px", whiteSpace: "nowrap" }}>{dynamicValue}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "row", gap: 8, padding: "0 20px 18px" }}>
@@ -9860,6 +9889,8 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
             {/* VAT return report card */}
             <VATReturnCard
               showingReport={showVATReport}
+              resolvedCards={resolvedCards}
+              ignoredCards={ignoredCards}
               onReviewReport={() => {
                 if (showVATReport) { setShowVATReport(false); }
                 else { setShowVATReport(true); setVatReportLoading(true); setTimeout(() => setVatReportLoading(false), 1800); }
