@@ -8764,7 +8764,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
           {/* Client context card */}
           <div style={{ border: "1px solid #ECECEC", borderRadius: 8, background: "#FFFFFF", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Badge */}
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F1F8F0", borderRadius: 6, padding: "4px 10px", alignSelf: "flex-start", fontSize: 14, fontWeight: 500, color: "#05A105" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F1F8F0", borderRadius: 6, padding: "0 10px", height: 32, alignSelf: "flex-start", fontSize: 14, fontWeight: 500, color: "#05A105" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -10266,7 +10266,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                     desc: "Prepare VAT return report",
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 12.5V6.8C20 5.11984 20 4.27976 19.673 3.63803C19.3854 3.07354 18.9265 2.6146 18.362 2.32698C17.7202 2 16.8802 2 15.2 2H8.8C7.11984 2 6.27976 2 5.63803 2.32698C5.07354 2.6146 4.6146 3.07354 4.32698 3.63803C4 4.27976 4 5.11984 4 6.8V17.2C4 18.8802 4 19.7202 4.32698 20.362C4.6146 20.9265 5.07354 21.3854 5.63803 21.673C6.27976 22 7.1198 22 8.79986 22H12.5M14 11H8M10 15H8M16 7H8M15 19L18 22M18 22L21 19M18 22V16" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
                     onClick: () => onStartVatReturn?.(),
-                    badge: null,
+                    badge: { label: "In review for April", color: "#D5A750", bg: "#FDF8EE" },
                   },
                 ].map(({ label, desc, icon, onClick, badge }, i) => (
                     <div
@@ -10281,7 +10281,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                       </span>
                       <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
-                        {badge && <span style={{ fontSize: 11, fontWeight: 600, color: "#4C71DF", background: "#EEF2FB", borderRadius: 4, padding: "3px 6px" }}>{badge}</span>}
+                        {badge && <span style={{ fontSize: 11, fontWeight: 600, color: typeof badge === "object" ? badge.color : "#4C71DF", background: typeof badge === "object" ? badge.bg : "#EEF2FB", borderRadius: 4, padding: "3px 6px", whiteSpace: "nowrap" }}>{typeof badge === "object" ? badge.label : badge}</span>}
                       </div>
                     </div>
                 ))}
