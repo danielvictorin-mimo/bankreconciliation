@@ -3677,7 +3677,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Account picker — pinned at the bottom */}
       {!clientUpload && isPicker && line2Done && !accountSelected && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <AccountPicker
               accounts={accounts}
@@ -3691,7 +3691,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Upload card — pinned at the bottom */}
       {!clientUpload && line3Done && !uploadedFiles && !reuploadPhase && !replaceStatementMode && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={handleFileSelected} onOpenAllDocs={() => setAllDocsOpen(true)} />
           </div>
@@ -3700,7 +3700,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Re-upload card — pinned at the bottom */}
       {reuploadPhase && !uploadedFiles && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={file => { handleFileSelected(file); setReuploadPhase(false); }} onOpenAllDocs={() => setAllDocsOpen(true)} />
           </div>
@@ -3709,7 +3709,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Replace statement upload — pinned at the bottom */}
       {replaceStatementMode && replaceRespDone && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard
               title="New statement"
@@ -3732,7 +3732,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
 
       {/* Ready to start card — pinned at the bottom */}
       {line5Done && !startClicked && feedProceedChoice !== "convert" && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{
               background: "#FFFFFF",
@@ -3789,7 +3789,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           || (line4Done && !line5Done)
           || (startClicked && !resultsVisible);
         return isStreaming ? (
-          <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
+          <div style={{ padding: "28px 24px 20px", flexShrink: 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               <div style={{
                 borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF",
@@ -7473,7 +7473,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Direct flow: upload card */}
       {isDirectFlow && directLine2Done && !uploadedFile && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
           </div>
@@ -7482,7 +7482,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Direct flow: ready to start card (first upload) */}
       {isDirectFlow && prepDone && line6Done && !readyChoice && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
               {["Start reconciliation", "Add another document"].map(opt => (
@@ -7498,7 +7498,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Direct flow: add-more round 0 upload */}
       {isDirectFlow && readyChoice === "Add another document" && addMoreRound === 0 && !addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
           </div>
@@ -7507,7 +7507,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Direct flow: add-more choice (after first extra doc) */}
       {isDirectFlow && readyChoice === "Add another document" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
               {["Start reconciliation", "Add another document"].map(opt => (
@@ -7523,7 +7523,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Direct flow: waiting for next upload */}
       {isDirectFlow && addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
           </div>
@@ -7532,7 +7532,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct: type picker */}
       {!isDirectFlow && line2Done && !typeSelected && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               title="What would you like to reconcile?"
@@ -7545,7 +7545,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct: BS account search card */}
       {!isDirectFlow && typeSelected && selectedType === "Choose account from balance sheet" && line3bDone && !pickedBSAccount && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)", height: 400, display: "flex", flexDirection: "column" }}>
               <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 12, flexShrink: 0 }}>Select an account</p>
@@ -7579,7 +7579,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
         const isPreviouslyReconciled = pickedRecData && (pickedRecData.status === "reconciled" || pickedRecData.status === "reviewing");
         if (isPreviouslyReconciled && !pickedAccountAction) {
           return (
-            <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+            <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
               <div style={{ maxWidth: 680, margin: "0 auto" }}>
                 <BSOptionPicker
                   options={["View reconciliation results", "Restart reconciliation"]}
@@ -7608,7 +7608,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct BS account: upload card */}
       {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && !uploadedFile && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={handleFileSelected} title="Upload file" />
           </div>
@@ -7617,7 +7617,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct BS account: start choice */}
       {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && prepDone && line6Done && !readyChoice && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               options={["Start reconciliation", "Add another document"]}
@@ -7629,7 +7629,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct BS account add-more: round 0 upload */}
       {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && readyChoice === "Add another document" && addMoreRound === 0 && !addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
           </div>
@@ -7638,7 +7638,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct BS account add-more: choice after first extra doc */}
       {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && readyChoice === "Add another document" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               options={["Start reconciliation", "Add another document"]}
@@ -7650,7 +7650,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Non-direct BS account add-more: waiting upload */}
       {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload file" />
           </div>
@@ -7659,7 +7659,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll: account choice */}
       {!isDirectFlow && typeSelected && selectedType === "Payroll" && line3Done && !accountChoiceSelected && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               title="How would you like to continue?"
@@ -7672,7 +7672,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll: upload card */}
       {!isDirectFlow && !pickedBSAccount && line5Done && !uploadedFile && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={handleFileSelected} title="Upload payroll report" />
           </div>
@@ -7681,7 +7681,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll: ready to start */}
       {!isDirectFlow && !pickedBSAccount && line6Done && !readyChoice && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               options={["Start reconciliation", "Add another payroll report"]}
@@ -7693,7 +7693,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll add-more: round 0 upload */}
       {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && addMoreRound === 0 && !addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
           </div>
@@ -7702,7 +7702,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll add-more: choice after first extra report */}
       {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && addMorePrepDone && !addMoreWaitingUpload && !startAfterMore && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               options={["Start reconciliation", "Add another payroll report"]}
@@ -7714,7 +7714,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Payroll add-more: waiting upload */}
       {!isDirectFlow && !pickedBSAccount && addMoreWaitingUpload && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { handleAddMoreFiles([file]); setAddMoreWaitingUpload(false); setAddMoreRound(prev => prev + 1); }} title="Upload payroll report" />
           </div>
@@ -7723,7 +7723,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Restart: choice card */}
       {restartMode === "choosing" && !restartChoice && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <BSOptionPicker
               options={["Reconcile against the same file", "Reconcile against another file"]}
@@ -7739,7 +7739,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Restart new-file: initial upload */}
       {restartMode === "new_file" && restartUploadedFiles.length === 0 && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => { setRestartUploadedFiles([{ ...file, label: "Reconciliation document" }]); }} title="Upload file" />
           </div>
@@ -7748,7 +7748,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Restart new-file: start or add choice (round 0) */}
       {restartMode === "new_file" && restartPrepDone && !restartReadyChoice && !restartStartAfterMore && restartAddMoreRound === 0 && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
               {["Start reconciliation", "Add another document"].map(opt => (
@@ -7764,7 +7764,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Restart new-file add-more: upload for next file */}
       {restartMode === "new_file" && restartAddMoreRound > 0 && !restartReadyChoice && !restartStartAfterMore && !restartAddMorePrepDone && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard onFileSelected={(file) => {
               const label = restartUploadedFiles.length < 3 ? ["Reconciliation document", "Supporting document", "Additional document"][restartUploadedFiles.length] : "Document " + (restartUploadedFiles.length + 1);
@@ -7776,7 +7776,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
 
       {/* Restart new-file add-more: choice after extra doc */}
       {restartMode === "new_file" && restartAddMoreRound > 0 && !restartReadyChoice && !restartStartAfterMore && restartAddMorePrepDone && (
-        <div style={{ padding: "0 24px 24px", flexShrink: 0 }}>
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "20px 20px 12px", maxWidth: 480, boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
               {["Start reconciliation", "Add another document"].map(opt => (
