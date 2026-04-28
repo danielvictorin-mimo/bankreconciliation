@@ -4291,7 +4291,7 @@ function StatsRow({ items = [], columns }) {
 }
 
 // ── DataTable component (from Tables.jsx) ─────────────────────────────────────
-function DataTable({ title, columns = [], rows = [], footerLabel, onRowClick }) {
+function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onRowClick }) {
   const [hovered, setHovered] = useState(null);
   const gridTemplate = columns.map(c => c.width || "1fr").join(" ");
   return (
@@ -4306,7 +4306,7 @@ function DataTable({ title, columns = [], rows = [], footerLabel, onRowClick }) 
       </div>
       {rows.map((row, ri) => (
         <div key={ri} onClick={() => onRowClick?.(row, ri)} onMouseEnter={() => setHovered(ri)} onMouseLeave={() => setHovered(null)}
-          style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: ri < rows.length - 1 ? "1px solid #E9E9EB" : "none", background: hovered === ri ? "#FAFAFA" : "#FFFFFF", transition: "background 0.1s", cursor: onRowClick ? "pointer" : "default" }}>
+          style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid #E9E9EB", background: hovered === ri ? "#FAFAFA" : "#FFFFFF", transition: "background 0.1s", cursor: onRowClick ? "pointer" : "default" }}>
           {columns.map((col, ci) => (
             <div key={col.key} style={{ display: "flex", alignItems: "center", justifyContent: col.align === "right" ? "flex-end" : "flex-start", fontSize: 14, color: "#080908", padding: "14px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none" }}>
               {col.render ? col.render(row[col.key], row, ri) : row[col.key]}
@@ -4314,6 +4314,15 @@ function DataTable({ title, columns = [], rows = [], footerLabel, onRowClick }) 
           ))}
         </div>
       ))}
+      {footerRow && (
+        <div style={{ display: "grid", gridTemplateColumns: gridTemplate, background: "#FAFAFA" }}>
+          {columns.map((col, ci) => (
+            <div key={col.key} style={{ display: "flex", alignItems: "center", justifyContent: col.align === "right" ? "flex-end" : "flex-start", fontSize: 14, fontWeight: 600, color: "#080908", padding: "14px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none" }}>
+              {footerRow[col.key] ?? ""}
+            </div>
+          ))}
+        </div>
+      )}
       {footerLabel && <div style={{ padding: "12px 16px", fontSize: 14, color: "#8C8C8B", borderTop: "1px solid #E9E9EB" }}>{footerLabel}</div>}
     </div>
   );
@@ -9070,7 +9079,7 @@ function VATReturnCard({ onReviewReport, showingReport = false }) {
             style={{ width: "100%", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
-            {showingReport ? "Close review" : "Review full report"}
+            {showingReport ? "Close report" : "View full report"}
           </button>
           <button
             onClick={handleDownload}
@@ -9086,7 +9095,7 @@ function VATReturnCard({ onReviewReport, showingReport = false }) {
             onMouseEnter={e => { if (downloadState === "idle") { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; } }}
             onMouseLeave={e => { if (downloadState === "idle") { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; } }}>
             {downloadState === "downloading" ? (
-              <svg width="16" height="16" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
                 <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3" strokeLinecap="round"/>
               </svg>
             ) : downloadState === "done" ? (
@@ -9502,6 +9511,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                   </button>
                   {/* Header */}
                   <div style={{ marginBottom: 32, marginTop: 8 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "#000000", margin: "0 0 6px" }}>Seabrook Foods Ltd</p>
                     <h1 style={{ fontSize: 28, fontWeight: 700, color: "#000000", margin: "0 0 8px", letterSpacing: "-0.5px" }}>VAT Return</h1>
                     <p style={{ fontSize: 14, color: "#8C8C8B", margin: 0 }}>01 Apr 2026 — 30 Apr 2026</p>
                   </div>
@@ -9541,55 +9551,39 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 {/* Results heading */}
                 <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
 
-                {/* VAT summary table */}
-                <div style={{ marginBottom: 12 }}>
-                  <DataTable
-                    columns={[
-                      { key: "description", label: "Summary", width: "1fr" },
-                      { key: "value",       label: "Value",   width: "160px" },
-                    ]}
-                    rows={[
-                      { description: "Period",       value: selectedPeriod },
-                      { description: "Transactions", value: "184" },
-                      { description: "Output VAT",   value: "£3,211.44" },
-                      { description: "Input VAT",    value: "£1,097.56" },
-                      { description: "Net VAT due",  value: "£2,113.88" },
-                      { description: "Adjustment",   value: "–£9.64" },
-                    ]}
-                  />
-                </div>
-
                 {/* Results table */}
                 <div style={{ marginBottom: 12 }}>
                   <DataTable
                     columns={[
                       { key: "description", label: "Suggestion description", width: "1fr" },
-                      { key: "issues", label: "Suggestions found", width: "160px" },
+                      { key: "issues",      label: "Suggestions found",      width: "160px" },
+                      { key: "total",       label: "Total",                  width: "140px" },
                     ]}
                     rows={[
-                      { description: "Wrong VAT code",      issues: 2 },
-                      { description: "Missing VAT number",  issues: 1 },
-                      { description: "Duplicates",          issues: 1 },
-                      { description: "Non-reclaimable VAT", issues: 1 },
-                      { description: "Late VAT claim",      issues: 1 },
+                      { description: "Wrong VAT code",      issues: 2, total: "£480.00" },
+                      { description: "Missing VAT number",  issues: 1, total: "£210.00" },
+                      { description: "Duplicates",          issues: 1, total: "£90.00"  },
+                      { description: "Non-reclaimable VAT", issues: 1, total: "£340.00" },
+                      { description: "Late VAT claim",      issues: 1, total: "£125.00" },
                     ]}
+                    footerRow={{ description: "Total", issues: 6, total: "£1,245.00" }}
                   />
                 </div>
 
                 {/* Analysis & key findings accordion */}
-                <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
-                  <button onClick={() => setAnalysisOpen(o => !o)}
-                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
+                <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", marginBottom: 28 }}>
+                  <div onClick={() => setAnalysisOpen(o => !o)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
-                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)", flexShrink: 0, marginLeft: 12 }}>
                       <ChevronUpIcon />
                     </div>
-                  </button>
-                  {analysisOpen && (
-                    <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
+                  </div>
+                  <div style={{ overflow: "hidden", maxHeight: analysisOpen ? 300 : 0, opacity: analysisOpen ? 1 : 0, transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease" }}>
+                    <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "16px 0 0" }}>
                       The VAT and miscoding review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
-                    </div>
-                  )}
+                    </p>
+                  </div>
                 </div>
 
                 <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />
