@@ -1320,7 +1320,13 @@ function ChevronUpIcon() {
 // ── Audit Trail Sidebar ───────────────────────────────────────────────────────
 function AuditTrailSidebar({ onClose }) {
   const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 340);
+  };
 
   const AUDIT_DATA = [
     {
@@ -1351,25 +1357,22 @@ function AuditTrailSidebar({ onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, opacity: visible ? 1 : 0, transition: "opacity 0.32s ease" }} />
+      <div onClick={handleClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, opacity: visible && !closing ? 1 : 0, transition: "opacity 0.32s ease" }} />
 
       {/* Sidebar */}
       <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0, width: 480,
+        position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
         background: "#FFFFFF", zIndex: 201,
         boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
-        transform: visible ? "translateX(0)" : "translateX(100%)",
+        transform: visible && !closing ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.32s cubic-bezier(0.4,0,0.2,1)",
         display: "flex", flexDirection: "column",
         fontFamily: "'Inter', sans-serif",
       }}>
         {/* Header */}
         <div style={{ padding: "28px 24px 20px", borderBottom: "1px solid #ECECEC", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: 12, fontWeight: 500, color: "#8C8C8B", margin: "0 0 4px", letterSpacing: "0.05em", textTransform: "uppercase" }}>VAT and miscoding review</p>
-            <h2 style={{ fontSize: 20, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Audit trail</h2>
-          </div>
-          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Audit trail</h2>
+          <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
             <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
@@ -9767,13 +9770,13 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       { key: "total",       label: "Total",                  width: "140px" },
                     ]}
                     rows={[
-                      { description: "Wrong VAT code",      issues: 2, total: "£480.00" },
+                      { description: "Wrong VAT code",      issues: 1, total: "£480.00" },
                       { description: "Missing VAT number",  issues: 1, total: "£210.00" },
                       { description: "Duplicates",          issues: 1, total: "£90.00"  },
                       { description: "Non-reclaimable VAT", issues: 1, total: "£340.00" },
                       { description: "Late VAT claim",      issues: 1, total: "£125.00" },
                     ]}
-                    footerRow={{ description: "Total", issues: 6, total: "£1,245.00" }}
+                    footerRow={{ description: "Total", issues: 5, total: "£1,245.00" }}
                   />
                 </div>
 
