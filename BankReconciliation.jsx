@@ -8614,7 +8614,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
               return (
               <div key={label} style={{ borderTop: "1px solid #ECECEC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 16, fontWeight: 500, color: "#1F2024" }}>{label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>{label}</span>
                   <span style={{ fontSize: 14, color: resolvedStatusColor }}>{status}</span>
                 </div>
                 <button
