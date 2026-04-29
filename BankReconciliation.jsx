@@ -2182,7 +2182,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
       <div onClick={() => setBoxCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
         <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>Suggestions</span>
         <div style={{ flexShrink: 0, transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", transform: boxCollapsed ? "rotate(0deg)" : "rotate(180deg)" }}>
-          <_MM_Chevron color="#8C8C8B" size={16} />
+          <_MM_Chevron color="#000000" size={16} />
         </div>
       </div>
       {/* Progress / clean state */}
@@ -9039,6 +9039,7 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
   ];
   const [collapsed, setCollapsed] = useState(false);
   const [downloadState, setDownloadState] = useState("idle"); // "idle" | "downloading" | "done"
+  const [flashKey, setFlashKey] = useState(0);
   const [flashActive, setFlashActive] = useState(false);
   const prevActionCount = useRef(0);
 
@@ -9046,12 +9047,9 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
   useEffect(() => {
     if (actionCount <= prevActionCount.current) { prevActionCount.current = actionCount; return; }
     prevActionCount.current = actionCount;
-    // Remove then re-add animation to force restart
-    setFlashActive(false);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      setFlashActive(true);
-      setTimeout(() => setFlashActive(false), 1600);
-    }));
+    setFlashKey(k => k + 1);
+    setFlashActive(true);
+    setTimeout(() => setFlashActive(false), 1600);
   }, [actionCount]);
 
   // Dynamically compute box 4 and 5 based on resolved suggestions
@@ -9199,12 +9197,11 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
 
   return (
     <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, flexShrink: 0, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
-      <style>{`@keyframes vatRowFlash { 0%{background:transparent} 25%{background:#eaf2e2} 75%{background:#eaf2e2} 100%{background:transparent} }`}</style>
       {/* Header with chevron */}
       <div onClick={() => setCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
         <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>VAT return April 2026</span>
         <div style={{ flexShrink: 0, transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", transform: collapsed ? "rotate(0deg)" : "rotate(180deg)" }}>
-          <_MM_Chevron color="#8C8C8B" size={16} />
+          <_MM_Chevron color="#000000" size={16} />
         </div>
       </div>
       {/* Collapsible content */}
@@ -9215,12 +9212,15 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
               const dynamicValue = box === 4 ? fmt(box4Val) : box === 5 ? fmt(box5Val) : value;
               const shouldFlash = flashActive && (box === 4 || box === 5);
               return (
-              <div key={box} style={{ display: "flex", alignItems: "center", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F5F5F5" : "#FFFFFF", animation: shouldFlash ? "vatRowFlash 1.6s ease forwards" : "none" }}>
-                <div style={{ width: 28, display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "stretch", background: "#F5F5F5", flexShrink: 0, borderRight: "1px solid #ECECEC" }}>
+              <div key={`static-${box}`} style={{ position: "relative", display: "flex", alignItems: "center", borderBottom: i < arr.length - 1 ? "1px solid #ECECEC" : "none", background: highlight ? "#F5F5F5" : "#FFFFFF" }}>
+                {shouldFlash && (
+                  <div key={`overlay-${flashKey}-${box}`} style={{ position: "absolute", inset: 0, background: "#eaf2e2", animation: "vatOverlayFlash 1.6s ease forwards", pointerEvents: "none", zIndex: 0 }} />
+                )}
+                <div style={{ position: "relative", zIndex: 1, width: 28, display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "stretch", background: "#F5F5F5", flexShrink: 0, borderRight: "1px solid #ECECEC" }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#8C8C8B" }}>{box}</span>
                 </div>
-                <span style={{ flex: 1, fontSize: 14, color: "#545453", padding: "9px 10px", lineHeight: "24px" }}>{label}</span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "9px 10px", whiteSpace: "nowrap" }}>{dynamicValue}</span>
+                <span style={{ position: "relative", zIndex: 1, flex: 1, fontSize: 14, color: "#545453", padding: "9px 10px", lineHeight: "24px" }}>{label}</span>
+                <span style={{ position: "relative", zIndex: 1, fontSize: 14, fontWeight: 500, color: "#080908", padding: "9px 10px", whiteSpace: "nowrap" }}>{dynamicValue}</span>
               </div>
               );
             })}
@@ -9376,7 +9376,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     if (document.getElementById("_spin_kf")) return;
     const s = document.createElement("style");
     s.id = "_spin_kf";
-    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes stepPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }";
+    s.textContent = "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes stepPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } } @keyframes vatOverlayFlash { 0%{opacity:0} 25%{opacity:1} 75%{opacity:1} 100%{opacity:0} }";
     document.head.appendChild(s);
   }, []);
 
@@ -9436,6 +9436,16 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     // Trigger phase 1 to restart after canvas slides out
     setTimeout(() => setRerunKey(k => k + 1), 400);
   };
+
+  // Dynamic VAT values based on resolved suggestions
+  const VAT_CARD_ADJ = { 0: 210.00, 1: 480.00, 2: 90.00, 3: -340.00, 4: 125.00 };
+  const vatBox1 = 3211.44;
+  const vatBox4Base = 1097.56;
+  let vatBox4Adj = 0;
+  resolvedCards.forEach(idx => { vatBox4Adj += VAT_CARD_ADJ[idx] || 0; });
+  const vatBox4 = vatBox4Base + vatBox4Adj;
+  const vatBox5 = vatBox1 - vatBox4;
+  const vatFmt = (n) => `£${Math.abs(n).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const catOrder = ["uncertain", "wrong-code", "reverse-charge", "non-reclaimable", "pva"];
   const groupedCards = catOrder.reduce((acc, key) => {
@@ -9771,8 +9781,8 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       { box: 1, label: "VAT due on sales and other outputs",                                                                                                                              value: "£3,211.44", highlight: false },
                       { box: 2, label: "VAT due on intra-community acquisitions of goods made in Northern Ireland from EU Member States",                                                                 value: "£0.00",     highlight: false },
                       { box: 3, label: "Total VAT due (the sum of boxes 1 and 2)",                                                                                                                       value: "£3,211.44", highlight: false },
-                      { box: 4, label: "VAT reclaimed on purchases and other inputs (including acquisitions from the EU)",                                                                                value: "£1,097.56", highlight: false },
-                      { box: 5, label: "Net VAT to be paid to Customs or reclaimed by you (difference between boxes 3 and 4)",                                                                           value: "£2,113.88", highlight: true  },
+                      { box: 4, label: "VAT reclaimed on purchases and other inputs (including acquisitions from the EU)",                                                                                value: vatFmt(vatBox4), highlight: false },
+                      { box: 5, label: "Net VAT to be paid to Customs or reclaimed by you (difference between boxes 3 and 4)",                                                                           value: vatFmt(vatBox5), highlight: true  },
                       { box: 6, label: "Total value of sales and all other outputs excluding any VAT",                                                                                                    value: "£16,057",   highlight: false },
                       { box: 7, label: "Total value of purchases and all other inputs excluding any VAT",                                                                                                 value: "£5,488",    highlight: false },
                       { box: 8, label: "Total value of intra-community dispatches of goods and related costs, excluding any VAT, from Northern Ireland to EU Member States",                              value: "£0",        highlight: false },
@@ -10296,7 +10306,7 @@ function MimoAssistant({ onStartReconciliation, onStartVAT, onStartBS, onStartPa
                     label: "Prepare VAT return report",
                     desc: "Prepare VAT return report",
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 12.5V6.8C20 5.11984 20 4.27976 19.673 3.63803C19.3854 3.07354 18.9265 2.6146 18.362 2.32698C17.7202 2 16.8802 2 15.2 2H8.8C7.11984 2 6.27976 2 5.63803 2.32698C5.07354 2.6146 4.6146 3.07354 4.32698 3.63803C4 4.27976 4 5.11984 4 6.8V17.2C4 18.8802 4 19.7202 4.32698 20.362C4.6146 20.9265 5.07354 21.3854 5.63803 21.673C6.27976 22 7.1198 22 8.79986 22H12.5M14 11H8M10 15H8M16 7H8M15 19L18 22M18 22L21 19M18 22V16" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                    onClick: () => onStartVatReturn?.(),
+                    onClick: () => {},
                     badge: { label: "In review for April", color: "#D5A750", bg: "#FDF8EE" },
                   },
                 ].map(({ label, desc, icon, onClick, badge }, i) => (
