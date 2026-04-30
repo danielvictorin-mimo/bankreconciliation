@@ -3053,13 +3053,14 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [allDocsOpen, spendMoneySidebar, batchDraftSidebar, canvasReady, resolvedCards, ignoredCards, totalSuggestions, effectiveAccountName]);
 
-  // Delay canvas content until panel has slid in
+  // Delay canvas content until panel has slid in; auto-open sidebar
   useEffect(() => {
     if (!resultsVisible) return;
-    if (showResults) { setCanvasReady(true); return; }
+    if (showResults) { setCanvasReady(true); setBoxesOpen(true); return; }
     setCanvasReady(false);
-    const t = setTimeout(() => setCanvasReady(true), 3200);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setCanvasReady(true), 3200);
+    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [resultsVisible]);
 
   useEffect(() => {
@@ -8532,7 +8533,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {} }) {
+function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, onRunAccrual, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {} }) {
   const [pageW, setPageW] = useState(window.innerWidth);
   const containerRef = useRef(null);
   useEffect(() => {
@@ -8730,6 +8731,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
               { label: "Director's loan account",      onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Fixed assets",                 onRun: null, status: "Not started", btnLabel: "Run" },
               { label: "Balance sheet reconciliation", onRun: null, status: bsRecStatus, btnLabel: "Select account", dataflowIcon: true },
+              { label: "Accrued adjustment",           onRun: onRunAccrual, status: "Not started", btnLabel: "Run" },
             ].map(({ label, onRun, status, statusColor, btnLabel, dataflowIcon }) => {
               const resolvedStatusColor = statusColor !== undefined ? statusColor
                 : status === "Not started" ? "#8C8C8B"
@@ -9199,7 +9201,7 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
     <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, flexShrink: 0, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
       {/* Header with chevron */}
       <div onClick={() => setCollapsed(c => !c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", cursor: "pointer" }}>
-        <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>VAT return April 2026</span>
+        <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>VAT Return April 2026</span>
         <div style={{ flexShrink: 0, transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", transform: collapsed ? "rotate(0deg)" : "rotate(180deg)" }}>
           <_MM_Chevron color="#000000" size={16} />
         </div>
@@ -9207,6 +9209,11 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
       {/* Collapsible content */}
       <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 600, opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
         <div style={{ borderTop: "1px solid #F0F0F0" }}>
+          {/* HMRC deadline card */}
+          <div style={{ margin: "14px 20px 0", border: "1px solid #ECECEC", borderRadius: 8, padding: 16, background: "#FFFFFF" }}>
+            <p style={{ fontSize: 14, fontWeight: 400, color: "#7C7C7C", margin: "0 0 2px", lineHeight: "22px" }}>Submit HMRC deadline</p>
+            <p style={{ fontSize: 20, fontWeight: 500, color: "#2A2A2A", margin: 0, lineHeight: "28px", letterSpacing: "0.2px" }}>7 June 2026</p>
+          </div>
           <div style={{ margin: "14px 20px", border: "1px solid #ECECEC", borderRadius: 6, overflow: "hidden" }}>
             {VAT_ITEMS.map(({ box, label, value, highlight }, i, arr) => {
               const dynamicValue = box === 4 ? fmt(box4Val) : box === 5 ? fmt(box5Val) : value;
@@ -11075,6 +11082,439 @@ function VATReturnFlow({ onClose, selectedPeriod = "April 2026" }) {
   );
 }
 
+// ── Accrual Flow ─────────────────────────────────────────────────────────────
+const ACCRUAL_STEPS = [
+  { title: "Reading GL transactions",               subtext: null,                                            duration: 800  },
+  { title: "Identifying unrecorded expenses",       subtext: "Scanned 147 transactions for April 2026.",     duration: 1200 },
+  { title: "Matching purchase orders to invoices",  subtext: "3 invoices pending receipt confirmation.",      duration: 1100 },
+  { title: "Calculating accrual amounts",           subtext: "Total accruals identified: \u00a312,840.00",   duration: 900  },
+  { title: "Generating adjustment entries",         subtext: null,                                            duration: 700  },
+];
+
+const ACCRUAL_CARDS = [
+  {
+    idx: 0, key: "salary",
+    title: "Salary accrual",
+    contact: "Staff payroll (24\u201330 Apr)",
+    description: "Staff salaries for 24\u201330 April 2026 have not yet been posted. Based on the monthly payroll of \u00a336,400, the weekly accrual is \u00a38,400. This should be recognised in April to match the period in which the work was performed.",
+    tableRow: { "Debit account": "Salaries Expense", "Credit account": "Accrued Liabilities", "Amount": "\u00a38,400.00", "Reference": "ACR-001", "Date": "30 Apr 2026" },
+    primaryLabel: "Post to GL",
+    secondaryLabel: "Skip",
+  },
+  {
+    idx: 1, key: "software",
+    title: "Software subscription accrual",
+    contact: "Xero, Slack, Notion",
+    description: "Three SaaS subscriptions covering April were billed in May. The invoices have been received but not yet recorded in April\u2019s books. Total: \u00a3840.00 (Xero \u00a3420, Slack \u00a3240, Notion \u00a3180).",
+    tableRow: { "Debit account": "Software & Subscriptions", "Credit account": "Accrued Liabilities", "Amount": "\u00a3840.00", "Reference": "ACR-002", "Date": "30 Apr 2026" },
+    primaryLabel: "Post to GL",
+    secondaryLabel: "Skip",
+  },
+  {
+    idx: 2, key: "rent",
+    title: "Office rent accrual",
+    contact: "Monthly rent (Apr)",
+    description: "Monthly office rent of \u00a32,800 is due on 1 May for the April period. The expense has been incurred in April but the payment has not yet been processed or recorded in the GL.",
+    tableRow: { "Debit account": "Rent Expense", "Credit account": "Accrued Rent", "Amount": "\u00a32,800.00", "Reference": "ACR-003", "Date": "30 Apr 2026" },
+    primaryLabel: "Post to GL",
+    secondaryLabel: "Skip",
+  },
+  {
+    idx: 3, key: "interest",
+    title: "Bank loan interest accrual",
+    contact: "Business loan (Apr)",
+    description: "Interest accrued on the business loan for April at 4.8% p.a. on an outstanding balance of \u00a3200,000. The quarterly payment is due in June \u2014 April\u2019s portion (\u00a3800) must be recognised now.",
+    tableRow: { "Debit account": "Interest Expense", "Credit account": "Accrued Interest Payable", "Amount": "\u00a3800.00", "Reference": "ACR-004", "Date": "30 Apr 2026" },
+    primaryLabel: "Post to GL",
+    secondaryLabel: "Skip",
+  },
+];
+
+const ACCRUAL_NAV_CATS = [
+  { key: "salary",   label: "Salary accrual",            baseIdx: 0, items: [{ contact: "Staff payroll (24\u201330 Apr)" }] },
+  { key: "software", label: "Software subscription",     baseIdx: 1, items: [{ contact: "Xero, Slack, Notion" }] },
+  { key: "rent",     label: "Office rent",               baseIdx: 2, items: [{ contact: "Monthly rent (Apr)" }] },
+  { key: "interest", label: "Bank loan interest",        baseIdx: 3, items: [{ contact: "Business loan (Apr)" }] },
+];
+
+function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
+  const [stepStatuses, setStepStatuses]     = useState([]);
+  const [stepSubtexts, setStepSubtexts]     = useState([]);
+  const [visibleSteps, setVisibleSteps]     = useState(0);
+  const [stepsPopulated, setStepsPopulated] = useState(false);
+  const [stepsCollapsed, setStepsCollapsed] = useState(false);
+  const [resultsVisible, setResultsVisible] = useState(false);
+  const [canvasReady, setCanvasReady]       = useState(false);
+  const [boxesOpen, setBoxesOpen]           = useState(false);
+  const [chatWidth, setChatWidth]           = useState(400);
+  const [isDragging, setIsDragging]         = useState(false);
+  const [isAtBottom, setIsAtBottom]         = useState(true);
+  const [inputValue, setInputValue]         = useState("");
+  const [resolvedCards, setResolvedCards]   = useState(new Set());
+  const [ignoredCards, setIgnoredCards]     = useState(new Set());
+  const [analysisOpen, setAnalysisOpen]     = useState(false);
+  const [toast, setToast]                   = useState(null);
+  const chatScrollRef = useRef(null);
+  const chatEndRef    = useRef(null);
+
+  const stepsComplete  = stepStatuses.length > 0 && stepStatuses.every(s => s === "done");
+  const resolvedCount  = resolvedCards.size + ignoredCards.size;
+  const allDone        = resolvedCount >= ACCRUAL_CARDS.length;
+  const totalSuggestions = ACCRUAL_CARDS.length;
+
+  const line1Segments = [
+    { text: "I\u2019ve analysed your transactions for ", bold: false },
+    { text: selectedPeriod, bold: true },
+    { text: " and identified expenses that have been incurred but not yet recorded. Let me run through the checks.", bold: false },
+  ];
+  const line1Full = line1Segments.map(s => s.text).join("");
+  const { done: line1Done } = useTypewriter(line1Full, 18, false);
+
+  useEffect(() => {
+    if (!line1Done) return;
+    const REVEAL = 550;
+    ACCRUAL_STEPS.forEach((_, i) => setTimeout(() => setVisibleSteps(v => Math.max(v, i + 1)), i * REVEAL));
+    setTimeout(() => setStepsPopulated(true), (ACCRUAL_STEPS.length - 1) * REVEAL + 400);
+  }, [line1Done]);
+
+  useEffect(() => {
+    if (!stepsPopulated) return;
+    setStepStatuses(ACCRUAL_STEPS.map((_, i) => i === 0 ? "active" : "pending"));
+    setStepSubtexts(ACCRUAL_STEPS.map(() => false));
+    let cum = 0;
+    ACCRUAL_STEPS.forEach((step, i) => {
+      cum += step.duration;
+      if (step.subtext) setTimeout(() => setStepSubtexts(prev => { const n=[...prev]; n[i]=true; return n; }), cum - 350);
+      setTimeout(() => setStepStatuses(prev => { const n=[...prev]; n[i]="done"; if (i+1<ACCRUAL_STEPS.length) n[i+1]="active"; return n; }), cum);
+    });
+  }, [stepsPopulated]);
+
+  useEffect(() => {
+    if (!stepsComplete) return;
+    setTimeout(() => setStepsCollapsed(true), 500);
+    setTimeout(() => setResultsVisible(true), 700);
+  }, [stepsComplete]);
+
+  useEffect(() => {
+    if (!resultsVisible) return;
+    const t1 = setTimeout(() => setCanvasReady(true), 3200);
+    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [resultsVisible]);
+
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [line1Done, stepsComplete, canvasReady]);
+
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const onScroll = () => setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const handleDragStart = e => {
+    e.preventDefault(); setIsDragging(true);
+    const startX = e.clientX, startW = chatWidth;
+    const onMove = ev => setChatWidth(Math.max(280, Math.min(700, startW + (ev.clientX - startX))));
+    const onUp = () => { setIsDragging(false); document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); document.body.style.cursor = ""; document.body.style.userSelect = ""; };
+    document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);
+  };
+
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Inter', sans-serif", background: "#FBFBFB" }}>
+      <style>{`@keyframes acrFadeIn{from{opacity:0}to{opacity:1}} @keyframes acrStepReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}} @keyframes acrStepPop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
+
+      {/* Top bar */}
+      <div style={{ height: 96, background: "#FFFFFF", borderBottom: "1px solid #ECECEC", display: "flex", alignItems: "center", padding: "0 24px", flexShrink: 0, gap: 16, zIndex: 10, position: "relative" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908", letterSpacing: "-1px" }}>Accrued adjustment</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", fontSize: 14, fontWeight: 500, color: "#080908" }}>
+          {selectedPeriod}
+        </div>
+        <div style={{ flex: 1 }} />
+        {/* Sidebar toggle */}
+        {canvasReady && (
+          <button onClick={() => setBoxesOpen(o => !o)}
+            style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 8, cursor: "pointer", fontFamily: "inherit", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", height: 48, minWidth: 48, padding: boxesOpen ? 0 : "0 12px 0 0", overflow: "hidden", justifyContent: "center", flexShrink: 0, transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+            <div style={{ maxWidth: boxesOpen ? 0 : 200, opacity: boxesOpen ? 0 : 1, overflow: "hidden", transition: "max-width 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s", display: "flex", flexDirection: "column", gap: 4, paddingLeft: boxesOpen ? 0 : 12, paddingRight: boxesOpen ? 0 : 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", whiteSpace: "nowrap" }}>Suggestions</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#080908", whiteSpace: "nowrap" }}>{resolvedCount}/{totalSuggestions}</span>
+              </div>
+              <div style={{ height: 2, background: "#E9E9EB", borderRadius: 1, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.round((resolvedCount / totalSuggestions) * 100)}%`, background: "#05A105", borderRadius: 1, transition: "width 0.4s ease" }} />
+              </div>
+            </div>
+            {boxesOpen
+              ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M15 21L15 3M16.2 21H7.8C6.12 21 5.28 21 4.64 20.673C4.07 20.385 3.61 19.927 3.33 19.362C3 18.72 3 17.88 3 16.2V7.8C3 6.12 3 5.28 3.33 4.638C3.61 4.074 4.07 3.615 4.64 3.327C5.28 3 6.12 3 7.8 3H16.2C17.88 3 18.72 3 19.362 3.327C19.927 3.615 20.385 4.074 20.673 4.638C21 5.28 21 6.12 21 7.8V16.2C21 17.88 21 18.72 20.673 19.362C20.385 19.927 19.927 20.385 19.362 20.673C18.72 21 17.88 21 16.2 21Z" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            }
+          </button>
+        )}
+        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", padding: 16 }}>
+
+        {/* Left chat panel */}
+        <div style={{ display: "flex", flexDirection: "column", width: resultsVisible ? chatWidth : "100%", flexShrink: 0, transition: isDragging ? "none" : "width 0.72s cubic-bezier(0.16,1,0.3,1)", overflow: "hidden", willChange: "width", position: "relative", zIndex: 1 }}>
+
+          {resultsVisible && (
+            <button onClick={() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" })}
+              style={{ position: "absolute", bottom: 218, left: "50%", transform: "translateX(-50%)", zIndex: 10, width: 32, height: 32, borderRadius: "50%", background: "#FFFFFF", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)", opacity: isAtBottom ? 0 : 1, pointerEvents: isAtBottom ? "none" : "auto", transition: "opacity 0.35s ease" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M12 19L19 12M12 19L5 12" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          )}
+
+          <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
+            <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", scrollBehavior: "smooth" }}>
+              {resultsVisible && <div style={{ position: "sticky", top: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
+              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 100px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
+
+                <WorkflowCard label={`Accrued adjustment \u2014 ${selectedPeriod}`} />
+                <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
+
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%", marginBottom: 20 }}>
+                  <p style={{ margin: 0 }}><StreamingMessage segments={line1Segments} speed={18} instant={false} /></p>
+                </div>
+
+                {/* Steps */}
+                {stepsPopulated && stepStatuses.length > 0 && (
+                  <div style={{ animation: "acrFadeIn 0.3s ease both" }}>
+                    <button onClick={() => setStepsCollapsed(c => !c)}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: stepsCollapsed ? 0 : 20, cursor: "pointer", background: "none", border: "none", padding: 0, width: "100%", textAlign: "left" }}>
+                      <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Accrual analysis</span>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform 0.2s ease", transform: stepsCollapsed ? "rotate(180deg)" : "rotate(0deg)" }}><path d="M3 8.5L7 4.5L11 8.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <span style={{ fontSize: 13, color: "#8C8C8B" }}>{stepsComplete ? "Completed" : "In progress"}</span>
+                      </div>
+                    </button>
+                    {!stepsCollapsed && ACCRUAL_STEPS.map((step, i) => {
+                      if (i >= visibleSteps) return null;
+                      const status = stepStatuses[i] || "pending";
+                      const isLast = i === ACCRUAL_STEPS.length - 1;
+                      return (
+                        <div key={i} style={{ display: "flex", gap: 16, animation: "acrStepReveal 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 2, overflow: "visible" }}>
+                            <div style={{ width: 20, height: 20, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible" }}>
+                              {status === "done" && <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "acrStepPop 0.35s cubic-bezier(0.34,1.4,0.64,1) both" }}><circle cx="10" cy="10" r="10" fill="#05A105"/><path d="M5.5 10.5L8.5 13.5L14.5 7" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                              {status === "active" && <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite" }}><path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+                              {status === "pending" && <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9.25" stroke="#E9E9EB" strokeWidth="1.5"/></svg>}
+                            </div>
+                            {!isLast && i + 1 < visibleSteps && <div style={{ width: 1, flexGrow: 1, minHeight: 20, background: "#E9E9EB", margin: "4px 0" }} />}
+                          </div>
+                          <div style={{ paddingBottom: isLast ? 0 : 20 }}>
+                            <div style={{ fontSize: 14, lineHeight: "24px", color: status === "pending" ? "#BCBCBC" : "#080908", transition: "color 0.3s ease" }}>{step.title}</div>
+                            {(stepSubtexts[i] || status === "done") && step.subtext && (
+                              <div style={{ fontSize: 13, color: "#8C8C8B", marginTop: 2, lineHeight: "18px", animation: "acrFadeIn 0.3s ease" }}>{step.subtext}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {canvasReady && (
+                  <div style={{ animation: "acrFadeIn 0.4s ease 0.2s both", marginTop: 20, fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    <p style={{ margin: 0 }}>
+                      <StreamingMessage segments={[
+                        { text: "I\u2019ve identified ", bold: false },
+                        { text: "4 accrual adjustments", bold: true },
+                        { text: " totalling ", bold: false },
+                        { text: "\u00a312,840.00", bold: true },
+                        { text: ". Review each entry and post them to your GL \u2014 or skip any that don\u2019t apply.", bold: false },
+                      ]} speed={18} instant={false} />
+                    </p>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+            </div>
+          </div>
+
+          {/* Chat textarea */}
+          {canvasReady && (
+            <div style={{ padding: "60px 12px 16px", flexShrink: 0, background: "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)", marginTop: -60 }}>
+              <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
+                  <textarea value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Ask for changes or information..." rows={3}
+                    style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#080908", lineHeight: "22px", background: "transparent", fontFamily: "'Inter', sans-serif", display: "block" }} />
+                  <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
+                    <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, color: "#8C8C8B", padding: 0 }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15.5 8.5L8.5 15.5C7.12 16.88 4.88 16.88 3.5 15.5C2.12 14.12 2.12 11.88 3.5 10.5L10.5 3.5C11.33 2.67 12.67 2.67 13.5 3.5C14.33 4.33 14.33 5.67 13.5 6.5L6.5 13.5C6.08 13.92 5.42 13.92 5 13.5C4.58 13.08 4.58 12.42 5 12L11.5 5.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <div style={{ flex: 1 }} />
+                    <button style={{ width: 36, height: 36, marginLeft: 6, border: "1px solid #E9E9EB", borderRadius: 10, background: inputValue.trim() ? "#05A105" : "#FAFAFA", cursor: inputValue.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", padding: 0 }}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.99984 15.8346V4.16797M9.99984 4.16797L4.1665 10.0013M9.99984 4.16797L15.8332 10.0013" stroke={inputValue.trim() ? "#FFFFFF" : "#8C8C8B"} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Drag handle */}
+        {resultsVisible && (
+          <div onMouseDown={handleDragStart} style={{ position: "absolute", top: 0, bottom: 0, left: chatWidth + 16, width: 16, cursor: "col-resize", zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 4, height: 40, borderRadius: 2, background: isDragging ? "#CFCFD1" : "transparent", transition: "background 0.15s" }} />
+          </div>
+        )}
+
+        {/* Canvas */}
+        <div style={{ position: "absolute", top: 16, bottom: 16, left: chatWidth + 32, right: boxesOpen ? 432 : 16, background: "#FFFFFF", borderRadius: 8, border: "1px solid #ECECEC", overflow: "hidden", zIndex: 2, transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))", transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16,1,0.3,1), right 0.35s cubic-bezier(0.16,1,0.3,1)", willChange: resultsVisible ? "auto" : "transform" }}>
+          {canvasReady ? (
+            <div style={{ animation: "acrFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
+              <div style={{ padding: "48px 48px 48px", maxWidth: 800, margin: "0 auto" }}>
+
+                {/* Results heading */}
+                <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
+
+                {/* Summary table */}
+                <div style={{ marginBottom: 12 }}>
+                  <DataTable
+                    columns={[
+                      { key: "description", label: "Summary",  width: "1fr"   },
+                      { key: "value",       label: "Value",    width: "160px" },
+                    ]}
+                    rows={[
+                      { description: "Period",               value: selectedPeriod },
+                      { description: "Transactions scanned", value: "147"          },
+                      { description: "Accruals identified",  value: "4"            },
+                      { description: "Total accrual amount", value: "\u00a312,840.00" },
+                    ]}
+                  />
+                </div>
+
+                {/* Accrual breakdown table */}
+                <div style={{ marginBottom: 12 }}>
+                  <DataTable
+                    columns={[
+                      { key: "description", label: "Accrual type", width: "1fr"   },
+                      { key: "count",       label: "Entries",      width: "100px" },
+                      { key: "amount",      label: "Amount",       width: "130px" },
+                    ]}
+                    rows={[
+                      { description: "Salary accrual",           count: 1, amount: "\u00a38,400.00" },
+                      { description: "Software subscriptions",   count: 1, amount: "\u00a3840.00"   },
+                      { description: "Office rent",              count: 1, amount: "\u00a32,800.00" },
+                      { description: "Bank loan interest",       count: 1, amount: "\u00a3800.00"   },
+                    ]}
+                    footerRow={{ description: "Total", count: 4, amount: "\u00a312,840.00" }}
+                  />
+                </div>
+
+                {/* Analysis accordion */}
+                <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
+                  <div onClick={() => setAnalysisOpen(o => !o)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 67, padding: "0 20px", cursor: "pointer" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
+                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0, marginLeft: 12 }}>
+                      <ChevronUpIcon />
+                    </div>
+                  </div>
+                  <div style={{ overflow: "hidden", maxHeight: analysisOpen ? 300 : 0, opacity: analysisOpen ? 1 : 0, transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease" }}>
+                    <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "0 20px 16px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
+                      The accrual review identified 4 adjustment entries totalling \u00a312,840.00 for {selectedPeriod}. The largest item is the salary accrual (\u00a38,400) covering the final week of April where payroll has not yet been posted. Two subscription invoices arrived after period close and require backdating. Office rent (\u00a32,800) and bank interest (\u00a3800) are recurring monthly accruals. All entries are balanced with equal debits and credits.
+                    </p>
+                  </div>
+                </div>
+
+                <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />
+
+                {/* Suggestion cards */}
+                <h3 style={{ fontSize: 20, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {ACCRUAL_CARDS.map((card, localIdx) => {
+                    const isResolved = resolvedCards.has(card.idx);
+                    const isIgnored  = ignoredCards.has(card.idx);
+                    return (
+                      <div key={card.idx} id={`accrual-${card.key}`} style={{ scrollMarginTop: 64 }}>
+                        <RecommendationCard
+                          title={card.title}
+                          description={card.description}
+                          statusLabel={isResolved ? "Posted" : isIgnored ? "Skipped" : "Pending"}
+                          statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                          collapsed={isResolved || isIgnored}
+                          isIgnored={isIgnored}
+                          verticalTable={true}
+                          hideMore={true}
+                          tableRow={card.tableRow}
+                          primaryLabel={card.primaryLabel}
+                          secondaryLabel={card.secondaryLabel}
+                          onPrimaryAction={() => { setResolvedCards(prev => new Set([...prev, card.idx])); showToast("Entry posted to GL"); }}
+                          onIgnore={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); showToast("Entry skipped"); }}
+                          onSecondaryAction={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); showToast("Entry skipped"); }}
+                          onMore={() => {}}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+              </div>
+            </div>
+          ) : resultsVisible ? <CanvasLoader /> : null}
+        </div>
+
+        {/* Right sidebar — SuggestionsBox */}
+        {canvasReady && (
+          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 400, zIndex: 3, transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16,1,0.3,1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+            <SuggestionsBox
+              isCleanReconcile={false}
+              allJustResolved={allDone}
+              accountStatus={null}
+              resolvedCount={resolvedCount}
+              totalSuggestions={totalSuggestions}
+              matchedTotal={null}
+              navCategories={ACCRUAL_NAV_CATS.map(cat => ({
+                ...cat,
+                items: cat.items.map((item, ii) => ({ ...item })),
+              }))}
+              resolvedCards={resolvedCards}
+              ignoredCards={ignoredCards}
+              completedTitle="All accruals posted"
+              completedDescription="All accrual entries have been reviewed and posted to the general ledger for April 2026."
+              completedColor="#05A105"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", background: "#05A105", color: "#FFFFFF", padding: "12px 20px", borderRadius: 10, fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 10, zIndex: 300, animation: "toastIn 0.35s ease", fontFamily: "'Inter', sans-serif" }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><circle cx="9" cy="9" r="9" fill="rgba(255,255,255,0.25)"/><path d="M6 9l2 2 4-4" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
@@ -11115,6 +11555,7 @@ export default function BankReconciliation() {
   }); // { [accountName]: { fileName, date } }
   const [rowComments, setRowComments] = useState({}); // { [accountCode]: [{user, timestamp, text}] }
   const [vatReviewActive, setVatReviewActive] = useState(false);
+  const [accrualActive, setAccrualActive]     = useState(false);
   const [vatReturnActive, setVatReturnActive] = useState(false);
   const [vatReviewCompleted, setVatReviewCompleted] = useState(false);
   const [vatResolvedCards, setVatResolvedCards] = useState(new Set());
@@ -11265,7 +11706,7 @@ export default function BankReconciliation() {
 
   const ACCOUNT_OUTCOMES = {
     "Lloyds Bank - Business":       { status: "suggestions", count: 8 },
-    "HSBC - Business Transactions": { status: "suggestions", count: 1 },
+    "HSBC - Business Transactions": { status: "suggestions", count: 58 },
     "Barclays - Operations":        { status: "suggestions", count: 5 },
     "American Express OP GBP":      { status: "suggestions", count: 4 },
     "Mastercard Business":          { status: "suggestions", count: 3 },
@@ -11333,6 +11774,10 @@ export default function BankReconciliation() {
     return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved)} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
   }
 
+  if (accrualActive) {
+    return <AccrualFlow selectedPeriod={selectedPeriod} onClose={() => setAccrualActive(false)} />;
+  }
+
   if (vatReviewActive) {
     return <VATReviewFlow selectedPeriod={selectedPeriod} onClose={() => { setVatReviewActive(false); setVatReviewCompleted(true); }} resolvedCards={vatResolvedCards} setResolvedCards={setVatResolvedCards} ignoredCards={vatIgnoredCards} setIgnoredCards={setVatIgnoredCards} showResults={vatReviewCompleted} />;
   }
@@ -11382,7 +11827,7 @@ export default function BankReconciliation() {
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         <div ref={contentRef} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {activeNav === "Home" ? (
-          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
+          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} onRunAccrual={() => setAccrualActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
         ) : (
@@ -11498,7 +11943,7 @@ export default function BankReconciliation() {
             const getOutcome = (name) => {
               if (name === "Lloyds Bank - Operations GBP") return { status: "reconciled", count: null };
               if (name === "Lloyds Bank - Business")        return { status: "suggestions", count: 8 };
-              if (name === "HSBC - Business Transactions")  return { status: "suggestions", count: 1 };
+              if (name === "HSBC - Business Transactions")  return { status: "suggestions", count: 58 };
               return { status: "suggestions", count: 3 };
             };
             const { status, count } = getOutcome(accountName);
