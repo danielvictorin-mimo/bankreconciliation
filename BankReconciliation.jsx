@@ -46,7 +46,8 @@ function ProgressRing({ progress = 0, size = 40, strokeWidth = 3 }) {
     <svg width={size} height={size} style={{ transform: "rotate(-90deg)", flexShrink: 0 }}>
       <circle cx={c} cy={c} r={r} fill="none" stroke="#EAF2E2" strokeWidth={strokeWidth} />
       <circle cx={c} cy={c} r={r} fill="none" stroke="#05A105" strokeWidth={strokeWidth}
-        strokeDasharray={`${circ} ${circ}`} strokeDashoffset={offset} strokeLinecap="butt" />
+        strokeDasharray={`${circ} ${circ}`} strokeDashoffset={offset} strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
     </svg>
   );
 }
@@ -4323,6 +4324,7 @@ function TopBar({
   syncLabel = "Sync with Xero",
   onPeriodChange,
   onSyncClick,
+  syncing = false,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const ref = useRef(null);
@@ -4360,10 +4362,16 @@ function TopBar({
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 14, color: "#8C8C8B" }}>{syncStatus}</span>
-        <button onClick={onSyncClick} style={{ padding: "0 12px", height: 36, border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}>
-          {syncLabel}
+        <button onClick={syncing ? undefined : onSyncClick}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "0 12px", height: 36, border: "1px solid #E9E9EB", borderRadius: 6, background: syncing ? "#FAFAFA" : "#FFFFFF", cursor: syncing ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: "#080908", transition: "background 0.15s" }}
+          onMouseEnter={e => { if (!syncing) { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; } }}
+          onMouseLeave={e => { if (!syncing) { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; } }}>
+          {syncing && (
+            <svg width="14" height="14" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+              <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3" strokeLinecap="round"/>
+            </svg>
+          )}
+          {syncing ? "Syncing with Xero" : syncLabel}
         </button>
       </div>
     </div>
@@ -11749,9 +11757,13 @@ export default function BankReconciliation() {
     "American Express OP GBP":      "amex-op-gbp-apr2026.pdf",
     "Mastercard Business":          "mastercard-business-apr2026.pdf",
   };
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("Last synced 32 minutes ago");
   const SYNC_DATES = ["3 Mar", "4 Mar", "4 Mar", "5 Mar", "6 Mar", "7 Mar"];
 
   const handleSyncAll = () => {
+    if (syncing) return;
+    setSyncing(true);
     const allAccounts = bankAccounts.map(a => a.name);
     allAccounts.forEach((name, i) => {
       setTimeout(() => {
@@ -11765,6 +11777,9 @@ export default function BankReconciliation() {
         }, 3000);
       }, i * 400);
     });
+    // Stop spinner and update status after all accounts finish
+    const lastDelay = (allAccounts.length - 1) * 400 + 3200;
+    setTimeout(() => { setSyncing(false); setSyncStatus("Last synced just now"); }, lastDelay);
   };
 
   const handleRunReconciliation = (accountName) => {
@@ -11860,7 +11875,7 @@ export default function BankReconciliation() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
           {/* Top context bar (from TopBar.jsx) */}
-          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} />
+          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
 
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
           <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
