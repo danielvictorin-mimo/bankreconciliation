@@ -11546,7 +11546,7 @@ export default function BankReconciliation() {
   const [allResolvedOnOpen, setAllResolvedOnOpen] = useState(false); // true when opening from a fully reconciled account
   const [isCleanReconcileOnOpen, setIsCleanReconcileOnOpen] = useState(false); // true when account has "reconciled" status (no suggestions)
   const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations", "Mastercard Business"])); // tracks completed reconciliations
-  const [reconciledDates, setReconciledDates] = useState({ "Barclays - Operations": "14 Apr", "Mastercard Business": "14 Apr" }); // { [accountName]: "13 Apr" }
+  const [reconciledDates, setReconciledDates] = useState({ "Barclays - Operations": "5 Mar", "Mastercard Business": "7 Mar" }); // { [accountName]: "13 Apr" }
   const [reconciledStatuses, setReconciledStatuses] = useState({ "Barclays - Operations": "suggestions", "Mastercard Business": "suggestions" }); // { [accountName]: "reconciled"|"suggestions"|"completed" }
   const [reconciledCounts, setReconciledCounts] = useState({ "Barclays - Operations": 5, "Mastercard Business": 3 }); // { [accountName]: number | null }
   const [bankStatements, setBankStatements] = useState({
@@ -11698,7 +11698,7 @@ export default function BankReconciliation() {
     { name: "Lloyds Bank - Operations GBP",   feedBalance: "£127,000.00", glBalance: "£100,000.00", glSub: "£0,00", trMatching: "361/380" },
     { name: "HSBC - Business Transactions",   feedBalance: "£93,000.00",  glBalance: "£93,000.00",  glSub: "£0,00", trMatching: "189/195" },
     { name: "Barclays - Operations",          feedBalance: "£374,000.00", glBalance: "£380,000.00", glSub: "£0,00", trMatching: "409/420" },
-    { name: "American Express OP GBP",        feedBalance: null,          glBalance: "£100,000.00", glSub: "£0,00", trMatching: "98/105", noFeedBalance: true },
+    { name: "American Express OP GBP",        feedBalance: "£87,420.00",  glBalance: "£87,420.00",  glSub: "£0,00", trMatching: "98/105" },
     { name: "Mastercard Business",            feedBalance: "£155,000.00", glBalance: "£155,000.00", glSub: "£0,00", trMatching: "53/56"   },
   ];
 
@@ -11741,6 +11741,32 @@ export default function BankReconciliation() {
     setShowResultsMode(false);
   };
 
+  const SYNC_FILE_NAMES = {
+    "Lloyds Bank - Business":       "lloyds-business-apr2026.pdf",
+    "Lloyds Bank - Operations GBP": "lloyds-operations-apr2026.pdf",
+    "HSBC - Business Transactions": "hsbc-business-apr2026.pdf",
+    "Barclays - Operations":        "barclays-operations-apr2026.pdf",
+    "American Express OP GBP":      "amex-op-gbp-apr2026.pdf",
+    "Mastercard Business":          "mastercard-business-apr2026.pdf",
+  };
+  const SYNC_DATES = ["3 Mar", "4 Mar", "4 Mar", "5 Mar", "6 Mar", "7 Mar"];
+
+  const handleSyncAll = () => {
+    const allAccounts = bankAccounts.map(a => a.name);
+    allAccounts.forEach((name, i) => {
+      setTimeout(() => {
+        const dateStr = SYNC_DATES[i] || "6 May";
+        const timeStr = ["09:14", "10:32", "11:05", "13:48", "14:22", "15:37"][i] || "12:00";
+        setBankStatements(prev => ({ ...prev, [name]: { fileName: SYNC_FILE_NAMES[name] || "bank-statement.pdf", date: dateStr, time: timeStr } }));
+        setExternalReconcilingAccounts(prev => new Set([...prev, name]));
+        setTimeout(() => {
+          setExternalReconcilingAccounts(prev => { const next = new Set(prev); next.delete(name); return next; });
+          handleAutoReconcile(name, 'reconciled', null, dateStr);
+        }, 3000);
+      }, i * 400);
+    });
+  };
+
   const handleRunReconciliation = (accountName) => {
     setReconciling(accountName);
     setShowResultsMode(false);
@@ -11748,9 +11774,9 @@ export default function BankReconciliation() {
     setIsCleanReconcileOnOpen(accountName === "Lloyds Bank - Operations GBP");
   };
 
-  const handleAutoReconcile = (accountName, status = "reconciled", count = null) => {
+  const handleAutoReconcile = (accountName, status = "reconciled", count = null, dateLabel = null) => {
     setReconciledAccounts(prev => new Set([...prev, accountName]));
-    setReconciledDates(prev => ({ ...prev, [accountName]: getDateLabel() }));
+    setReconciledDates(prev => ({ ...prev, [accountName]: dateLabel || getDateLabel() }));
     setReconciledStatuses(prev => ({ ...prev, [accountName]: status }));
     setReconciledCounts(prev => ({ ...prev, [accountName]: count }));
   };
@@ -11834,7 +11860,7 @@ export default function BankReconciliation() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
           {/* Top context bar (from TopBar.jsx) */}
-          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} />
+          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} />
 
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
           <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
