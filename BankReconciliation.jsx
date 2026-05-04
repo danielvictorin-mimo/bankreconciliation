@@ -4324,6 +4324,7 @@ function TopBar({
   syncLabel = "Sync with Xero",
   onPeriodChange,
   onSyncClick,
+  onBrowserChatClick,
   syncing = false,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -4373,6 +4374,348 @@ function TopBar({
           )}
           {syncing ? "Syncing with Xero" : syncLabel}
         </button>
+        <button onClick={onBrowserChatClick}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "0 12px", height: 36, border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}>
+          {/* Mimo M icon */}
+          <svg width="14" height="14" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+            <path d="M4.59 0.316406H0V19.8237H4.59V0.316406Z" fill="#080908"/>
+            <path d="M0 0L3.55 3.55L10.91 10.91L7.36 14.47L0 7.11V0Z" fill="#080908"/>
+            <path d="M5 10.74H0.54V19.82H5V10.74Z" fill="#080908"/>
+          </svg>
+          Mimo browser chat
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Mimo Browser Chat sidebar ─────────────────────────────────────────────────
+function MimoBrowserChat({ onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput]       = useState("");
+  const [typing, setTyping]     = useState(false);
+  const messagesEndRef = useRef(null);
+  const textareaRef    = useRef(null);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
+
+  const REPLIES = [
+    "I can see you\u2019re reviewing the Shell transaction on 3 Jun for \u00a33,869.12 \u2014 this looks like a fuel expense. Shall I code it to \u2018Motor Expenses\u2019 in Xero?",
+    "The City Council payment of \u00a31,402.08 is likely Council Tax. I can suggest account code 830 \u2014 want me to pre-fill the form?",
+    "You have 99 unmatched items in your reconcile queue. I can batch-code recurring Shell and utility payments automatically. Want me to set up a bank rule?",
+    "The Consulting Co. payment (\u00a32,473.22) doesn\u2019t match any outstanding invoice. Should I raise a new bill, or search for an existing match?",
+    "I noticed several Shell transactions this month. Would you like me to create a bank rule so future Shell payments auto-code to Motor Expenses?",
+  ];
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    setMessages(prev => [...prev, { role: "user", text }]);
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      setMessages(prev => [...prev, { role: "assistant", text: REPLIES[Math.floor(Math.random() * REPLIES.length)] }]);
+    }, 1000 + Math.random() * 800);
+  };
+
+  /* ── Xero input style ── */
+  const xi = { height: 32, border: "1px solid #b4b4b4", borderRadius: 3, padding: "0 8px", fontSize: 13, color: "#333", outline: "none", fontFamily: "sans-serif", boxSizing: "border-box", background: "#fff" };
+
+  function XeroRow({ date, payee, desc, spent, received }) {
+    return (
+      <div style={{ background: "#fff" }}>
+        {/* Options row */}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 2px", borderTop: "1px solid #e5e5e5" }}>
+          <button style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", fontSize: 12, color: "#555", cursor: "pointer" }}>
+            Options <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#555" strokeWidth="1.2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        <div style={{ display: "flex", minHeight: 110 }}>
+          {/* Left: statement line */}
+          <div style={{ width: "48%", padding: "4px 16px 14px", flexShrink: 0, borderRight: "1px solid #e5e5e5" }}>
+            <div style={{ fontSize: 13, color: "#666", marginBottom: 2 }}>{date}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a", marginBottom: 1 }}>{payee}</div>
+            <div style={{ fontSize: 13, color: "#555", marginBottom: 4 }}>{desc}</div>
+            <div style={{ color: "#0073c4", fontSize: 12, cursor: "pointer", marginBottom: 10 }}>More details</div>
+            <div style={{ display: "flex" }}>
+              <div style={{ flex: 1, borderRight: "1px solid #e5e5e5", paddingRight: 8 }}>
+                <div style={{ fontSize: 11, color: "#999", textAlign: "right", marginBottom: 2 }}>Spent</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a", textAlign: "right" }}>{spent || ""}</div>
+              </div>
+              <div style={{ flex: 1, paddingLeft: 8 }}>
+                <div style={{ fontSize: 11, color: "#999", textAlign: "right", marginBottom: 2 }}>Received</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a", textAlign: "right" }}>{received || ""}</div>
+              </div>
+            </div>
+          </div>
+          {/* Right: match/create form */}
+          <div style={{ flex: 1 }}>
+            {/* Tabs */}
+            <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #e5e5e5", padding: "0 12px" }}>
+              {[["Match",false],["Create",true],["Transfer",false],["Discuss",false]].map(([t,active]) => (
+                <button key={t} style={{ padding: "10px 12px", fontSize: 13, fontWeight: active?600:400, color: active?"#0073c4":"#555", background: "none", border: "none", borderBottom: active?"2px solid #0073c4":"2px solid transparent", cursor:"pointer", marginBottom:-1 }}>{t}</button>
+              ))}
+              <div style={{ flex: 1 }} />
+              <button style={{ fontSize: 13, color: "#0073c4", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>Find &amp; Match</button>
+            </div>
+            <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 13, color: "#666", width: 32, flexShrink: 0 }}>Who</span>
+                <input placeholder="Name of the contact..." style={{ ...xi, flex: 1 }} />
+                <span style={{ fontSize: 13, color: "#666", width: 36, flexShrink: 0, textAlign: "right" }}>What</span>
+                <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+                  <input placeholder="Choose the account..." style={{ ...xi, width: "100%", paddingRight: 24 }} />
+                  <svg width="10" height="10" style={{ position: "absolute", right: 8 }} viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#888" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 13, color: "#666", width: 32, flexShrink: 0 }}>Why</span>
+                <input placeholder="Enter a description..." style={{ ...xi, flex: 1 }} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {["Alex Test cat","Department","Tax Rate"].map(lbl => (
+                  <button key={lbl} style={{ display: "flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", fontSize: 12, color: "#444", cursor: "pointer" }}>
+                    {lbl} <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#666" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  </button>
+                ))}
+                <button style={{ height: 28, padding: "0 10px", background: "none", border: "none", fontSize: 12, color: "#0073c4", cursor: "pointer" }}>Add details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", fontFamily: "sans-serif" }}>
+
+      {/* ── Xero replica ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+
+        {/* Xero nav bar */}
+        <div style={{ height: 64, background: "#0078c8", display: "flex", alignItems: "center", padding: "0 14px", flexShrink: 0, gap: 2 }}>
+          {/* Xero logo */}
+          <div style={{ display: "flex", alignItems: "center", marginRight: 10, cursor: "pointer" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" aria-label="Xero" fill="white" height="18" viewBox="0 0 692.86 187.21" width="56"><path clipRule="evenodd" d="M487.17,0c-17.37,0-35.88,13.48-45.35,42.84v-25.19c0-9.73-7.91-17.64-17.64-17.64s-17.64,7.91-17.64,17.64v151.92c0,9.73,7.91,17.64,17.64,17.64s17.64-7.91,17.64-17.64v-71.36c0-34.32,19.38-54.68,49.14-61.35,9.51-2.13,15.42-9.31,15.42-18.74,0-10.67-7.9-18.12-19.21-18.12Z" fillRule="evenodd" fill="#FFFFFF"/><path d="M599.26,0c-51.61,0-93.6,41.99-93.6,93.6s41.99,93.6,93.6,93.6,93.6-41.99,93.6-93.6S650.87,0,599.26,0ZM599.26,151.94c-32.17,0-58.33-26.17-58.33-58.33s26.17-58.33,58.33-58.33,58.33,26.17,58.33,58.33-26.17,58.33-58.33,58.33Z" fill="#FFFFFF"/><path d="M599.26,70.29c-12.86,0-23.31,10.46-23.31,23.31s10.46,23.31,23.31,23.31,23.31-10.46,23.31-23.31-10.46-23.31-23.31-23.31Z" fill="#FFFFFF"/><path d="M285.87,0c-51.63,0-93.64,41.99-93.64,93.6s40.77,93.6,97.15,93.6c27.52,0,50.24-8.37,69.46-25.58,2.08-2.08,5.61-6.58,5.61-13,0-9.73-7.24-17.14-16.84-17.14-4.95,0-7.77,1.46-10.9,3.95-14.03,11.13-29.12,16.99-46.59,16.99-29.79,0-54.14-17.53-60.8-43.95h129.37c11.93-.05,20.58-9.66,20.58-22.9,0-32.01-31.39-85.57-93.39-85.57ZM229.27,78.68c6.26-25.84,28.62-44.27,56.61-44.27s50.14,16.48,56.55,44.27h-113.16Z" fill="#FFFFFF"/><path d="M187.2,17.42c0-9.64-7.82-17.42-17.42-17.42-4.65,0-9.03,1.81-12.32,5.1l-63.86,63.86L29.74,5.1C26.45,1.81,22.08,0,17.42,0,7.82,0,0,7.78,0,17.42c0,4.65,1.81,9.03,5.1,12.32l63.86,63.86L5.1,157.46c-3.29,3.29-5.1,7.67-5.1,12.32,0,9.64,7.79,17.42,17.42,17.42,4.65,0,9.03-1.81,12.32-5.1l63.86-63.86,63.86,63.86c3.29,3.29,7.67,5.1,12.32,5.1,9.63,0,17.42-7.79,17.42-17.42,0-4.65-1.81-9.03-5.1-12.32l-63.86-63.86,63.86-63.86c3.29-3.29,5.1-7.67,5.1-12.32Z" fill="#FFFFFF"/></svg>
+          </div>
+          {/* Org */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 3, cursor: "pointer", marginRight: 6 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <span style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>Mimo Test 1 (UK-2024-11)</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </div>
+          {/* Nav */}
+          {["Home","Sales","Purchases","Reporting","Accounting","Tax","Contacts","Projects"].map(item => (
+            <button key={item} style={{ padding: "0 11px", height: 48, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="rgba(255,255,255,0.85)"}>{item}</button>
+          ))}
+          <div style={{ flex: 1 }} />
+          {/* Icons */}
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v16M4 12h16" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="white" strokeWidth="1.8"/><path d="M16.5 16.5l4 4" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.5 7H21l-5.9 4.4 2.2 7L12 17l-5.3 3.4 2.2-7L3 9h6.5L12 2z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+          </button>
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>?</button>
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3C9.5 3 7.5 5 7.5 7.5v1C5.5 9.5 4 11 4 13c0 1 0.5 2 1.2 2.7L4.5 18h15l-0.7-2.3C19.5 15 20 14 20 13c0-2-1.5-3.5-3.5-4v-1C16.5 5 14.5 3 12 3z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/><path d="M10 18c0 1.1 0.9 2 2 2s2-0.9 2-2" stroke="white" strokeWidth="1.5"/></svg>
+          </button>
+          <button style={{ width: 36, height: 36, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              {[0,1,2].map(r=>[0,1,2].map(c=><circle key={`${r}${c}`} cx={4+c*8} cy={4+r*8} r="1.5" fill="white"/>))}
+            </svg>
+          </button>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#2c5282", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 4, cursor: "pointer", flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>DV</span>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+
+          {/* Heading section */}
+          <div style={{ padding: "16px 24px 0" }}>
+            <div style={{ fontSize: 13, color: "#0073c4", marginBottom: 6, cursor: "pointer" }}>Bank Accounts</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.3px" }}>No bank feed</span>
+              <span style={{ fontSize: 22, fontWeight: 400, color: "#1a1a1a" }}>12312312</span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 4 5-4" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              <div style={{ flex: 1 }} />
+              <button style={{ padding: "0 14px", height: 32, border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", fontSize: 13, color: "#333", cursor: "pointer" }}>Reconciliation Report</button>
+              <div style={{ display: "flex", alignItems: "center", height: 32, border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", padding: "0 12px", gap: 8, fontSize: 13, color: "#333", cursor: "pointer" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#888" strokeWidth="1.2"/><path d="M4.5 7l2 2 3-3" stroke="#888" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                Auto-reconcile
+                <span style={{ background: "#666", color: "#fff", fontSize: 11, padding: "1px 6px", borderRadius: 10, fontWeight: 500 }}>OFF</span>
+              </div>
+              <button style={{ padding: "0 14px", height: 32, border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", fontSize: 13, color: "#333", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                Manage Account <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#555" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            {/* Balances */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 32, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: "#1a1a1a" }}>(100,321.31)</div>
+                <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Statement Balance</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: "#1a1a1a" }}>4,056.54</div>
+                <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Balance in Xero &nbsp;&ndash;&nbsp; <span style={{ color: "#0073c4", cursor: "pointer" }}>Different balances?</span></div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: "#0073c4", marginBottom: 14, cursor: "pointer" }}>What's this?</div>
+          </div>
+
+          {/* Background section from here down */}
+          <div style={{ background: "#ecf2f6" }}>
+
+          {/* Blue banner */}
+          <div style={{ background: "#ebf5fd", border: "1px solid #b8ddf5", margin: "0 0 0", padding: "10px 24px", display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: 13, color: "#1a1a1a", flex: 1 }}>0 statement lines imported in the last 30 days</span>
+            <button style={{ fontSize: 13, color: "#0073c4", background: "none", border: "none", cursor: "pointer", marginRight: 16, fontWeight: 500 }}>View all Reconciled</button>
+            <button style={{ padding: "6px 16px", background: "#0073c4", border: "none", borderRadius: 3, fontSize: 13, color: "#fff", cursor: "pointer", fontWeight: 500 }}>Turn auto-reconcile on</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", alignItems: "center", borderBottom: "2px solid #e5e5e5", padding: "0 24px", background: "#fff" }}>
+            {[["Reconcile (99)",true],["Cash coding",false],["Bank statements",false],["Account transactions",false]].map(([label,active]) => (
+              <button key={label} style={{ padding: "12px 14px", fontSize: 13, color: active?"#0073c4":"#555", fontWeight: active?600:400, background: "none", border: "none", borderBottom: active?"2px solid #0073c4":"2px solid transparent", cursor:"pointer", marginBottom:-2, whiteSpace:"nowrap" }}>{label}</button>
+            ))}
+            <div style={{ flex: 1 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#333" }}>
+              Compact view
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: "#0073c4", position: "relative", cursor: "pointer", flexShrink: 0 }}>
+                <div style={{ position: "absolute", right: 3, top: 3, width: 16, height: 16, borderRadius: "50%", background: "#fff" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div style={{ padding: "10px 24px", display: "flex", gap: 8, borderBottom: "1px solid #e5e5e5", background: "#fff" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #b4b4b4", borderRadius: 3, padding: "0 10px", height: 36, gap: 8, background: "#fff" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#888" strokeWidth="1.6"/><path d="M16.5 16.5l4 4" stroke="#888" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              <span style={{ fontSize: 13, color: "#aaa" }}>Search for Payee, Amount, Reference, Description, Cheque No., or Analysis Code</span>
+            </div>
+            <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", height: 36, border: "1px solid #b4b4b4", borderRadius: 3, background: "#fff", fontSize: 13, color: "#555", cursor: "pointer" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10M10 18h4" stroke="#555" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              Filter
+            </button>
+          </div>
+
+          {/* Column headers */}
+          <div style={{ display: "flex", background: "#fafafa", borderBottom: "1px solid #e5e5e5" }}>
+            <div style={{ width: "48%", padding: "8px 16px", borderRight: "1px solid #e5e5e5", flexShrink: 0 }}>
+              <div style={{ fontSize: 12, color: "#0073c4", fontWeight: 600, marginBottom: 1 }}>What's this?</div>
+              <div style={{ fontSize: 12, color: "#888" }}>Review your bank statement lines...</div>
+            </div>
+            <div style={{ flex: 1, padding: "8px 16px" }}>
+              <div style={{ fontSize: 12, color: "#888" }}>...then match with your transactions in Xero</div>
+            </div>
+          </div>
+
+          {/* Transactions */}
+          <XeroRow date="3 Jun 2025"  payee="Shell"          desc="Fuel - Shell"                   spent="3,869.12" />
+          <XeroRow date="5 Jun 2025"  payee="City Council"   desc="Council Tax - City Council"      spent="1,402.08" />
+          <XeroRow date="5 Jun 2025"  payee="Consulting Co." desc="Invoice Paid from Consulting..."  received="2,473.22" />
+          <XeroRow date="5 Jun 2025"  payee="Shell"          desc="Fuel - Shell"                   spent="3,542.64" />
+          </div>{/* end #ecf2f6 bg */}
+          </div>{/* end maxWidth 1200 */}
+        </div>
+      </div>
+
+      {/* ── Mimo chat sidebar ── */}
+      <div style={{ width: 340, display: "flex", flexDirection: "column", borderLeft: "2px solid #333", background: "#FFFFFF", flexShrink: 0 }}>
+        {/* Title bar */}
+        <div style={{ height: 48, background: "#1F2024", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 21 21" fill="none"><path d="M4.59 0.316406H0V19.8237H4.59V0.316406Z" fill="white"/><path d="M0 0L3.55 3.55L10.91 10.91L7.36 14.47L0 7.11V0Z" fill="white"/><path d="M5 10.74H0.54V19.82H5V10.74Z" fill="white"/></svg>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "'Inter', sans-serif" }}>Mimo agent</span>
+          </div>
+          <div style={{ display: "flex", gap: 2 }}>
+            <button style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#8C8C8B", display: "flex" }}
+              onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="#8C8C8B"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <button style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#8C8C8B", display: "flex" }}
+              onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="#8C8C8B"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/></svg>
+            </button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#8C8C8B", display: "flex" }}
+              onMouseEnter={e => e.currentTarget.style.color="#fff"} onMouseLeave={e => e.currentTarget.style.color="#8C8C8B"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Sonnet badge */}
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid #F0F0F0", display: "flex", alignItems: "center", gap: 6, fontFamily: "'Inter', sans-serif" }}>
+          <span style={{ fontSize: 12, color: "#545453", fontWeight: 500 }}>Sonnet 4.6</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="#545453" strokeWidth="1.2" strokeLinecap="round"/></svg>
+        </div>
+
+        {/* Chat area */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 14px", display: "flex", flexDirection: "column", gap: 16, fontFamily: "'Inter', sans-serif" }}>
+          {messages.length === 0 && !typing && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, paddingBottom: 40 }}>
+              <p style={{ fontSize: 15, fontWeight: 500, color: "#080908", margin: 0, textAlign: "center" }}>How can I help you today?</p>
+              <p style={{ fontSize: 13, color: "#8C8C8B", margin: 0, textAlign: "center", lineHeight: "19px" }}>I can see your Xero reconcile queue and help you code transactions, find matches, and resolve exceptions.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 8 }}>
+                {["Help me code the Shell transactions","Why are my balances different?","Set up a bank rule for recurring payments"].map(p => (
+                  <button key={p} onClick={() => { setInput(p); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                    style={{ textAlign: "left", padding: "9px 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, color: "#080908", lineHeight: "18px", fontFamily: "'Inter', sans-serif" }}
+                    onMouseEnter={e => { e.currentTarget.style.background="#FAFAFA"; e.currentTarget.style.borderColor="#CFCFD1"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="#FFFFFF"; e.currentTarget.style.borderColor="#E9E9EB"; }}>{p}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: msg.role==="user"?"flex-end":"flex-start" }}>
+              {msg.role==="assistant" && (
+                <div style={{ width:26,height:26,borderRadius:"50%",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginRight:8,marginTop:2 }}>
+                  <svg width="12" height="12" viewBox="0 0 21 21" fill="none"><path d="M4.59 0H0V19.5H4.59V0Z" fill="#080908"/><path d="M0 0L3.55 3.55L10.91 10.91L7.36 14.47L0 7.11V0Z" fill="#080908"/><path d="M5 10.74H0.54V19.5H5V10.74Z" fill="#080908"/></svg>
+                </div>
+              )}
+              <div style={{ maxWidth:"84%",padding:"9px 12px",borderRadius:msg.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px",background:msg.role==="user"?"#080908":"#F5F5F5",fontSize:13,color:msg.role==="user"?"#FFFFFF":"#080908",lineHeight:"19px" }}>{msg.text}</div>
+            </div>
+          ))}
+          {typing && (
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:26,height:26,borderRadius:"50%",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                <svg width="12" height="12" viewBox="0 0 21 21" fill="none"><path d="M4.59 0H0V19.5H4.59V0Z" fill="#080908"/><path d="M0 0L3.55 3.55L10.91 10.91L7.36 14.47L0 7.11V0Z" fill="#080908"/><path d="M5 10.74H0.54V19.5H5V10.74Z" fill="#080908"/></svg>
+              </div>
+              <div style={{ display:"flex",gap:4,padding:"9px 12px",background:"#F5F5F5",borderRadius:"12px 12px 12px 3px" }}>
+                {[0,1,2].map(j=><div key={j} style={{ width:6,height:6,borderRadius:"50%",background:"#BCBCBC",animation:`pulse 1.2s ease ${j*0.2}s infinite` }}/>)}
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div style={{ padding:"10px 12px 14px",borderTop:"1px solid #F0F0F0",flexShrink:0,fontFamily:"'Inter',sans-serif" }}>
+          <div style={{ border:"1px solid #E9E9EB",borderRadius:10,background:"#FFFFFF",boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+            <textarea ref={textareaRef} value={input} onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} }}
+              placeholder="Ask anything about your Xero transactions..."
+              rows={3}
+              style={{ width:"100%",border:"none",outline:"none",resize:"none",fontSize:13,color:"#080908",lineHeight:"21px",background:"transparent",fontFamily:"'Inter',sans-serif",padding:"11px 12px 4px",display:"block",boxSizing:"border-box" }} />
+            <div style={{ display:"flex",alignItems:"center",padding:"4px 8px 8px",gap:6 }}>
+              <span style={{ fontSize:12,color:"#8C8C8B",flex:1 }}>Xero context active</span>
+              <button onClick={handleSend} style={{ width:30,height:30,border:"none",borderRadius:8,background:input.trim()?"#080908":"#E9E9EB",cursor:input.trim()?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",transition:"background 0.15s",padding:0 }}>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 15.83V4.17M10 4.17L4.17 10M10 4.17L15.83 10" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -8370,7 +8713,7 @@ function ReconAccordionItem({ item, bsReconciledData, onRunAccountReconciliation
   );
 }
 
-function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll, selectedPeriod, onPeriodChange, hideTabs = false, pageTitle = "Review" }) {
+function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliation, onRunAccountReconciliation, bsReconciledData, activeTab, onTabChange, savedScrollTop, onSaveScroll, selectedPeriod, onPeriodChange, hideTabs = false, pageTitle = "Review", onBrowserChatClick }) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareValue, setCompareValue] = useState("Last month");
   const compareOptions = ["Last month", "Last quarter", "Last year", "Same month last year"];
@@ -8386,7 +8729,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
+      <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} onBrowserChatClick={onBrowserChatClick} />
       <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -8541,7 +8884,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
 
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, onRunAccrual, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {} }) {
+function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, reconciledCounts = {}, totalAccounts = 6, selectedPeriod = "April 2026", onPeriodChange, onNavigate, onSetBsTab, onRunBankRec, onRunVatReview, onRunAccrual, vatReviewCompleted = false, vatResolvedCount = 0, bsReconciledData = {}, onBrowserChatClick }) {
   const [pageW, setPageW] = useState(window.innerWidth);
   const containerRef = useRef(null);
   useEffect(() => {
@@ -8637,7 +8980,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
-      <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} />
+      <TopBar period={selectedPeriod} onPeriodChange={onPeriodChange} onBrowserChatClick={onBrowserChatClick} />
 
       {/* Page header */}
       <div style={{ padding: isMedium ? "24px 24px 24px" : "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
@@ -9834,14 +10177,20 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       { key: "issues",      label: "Suggestions found",      width: "160px" },
                       { key: "total",       label: "Total",                  width: "140px" },
                     ]}
-                    rows={[
-                      { description: "Wrong VAT code",      issues: 1, total: "£480.00" },
-                      { description: "Missing VAT number",  issues: 1, total: "£210.00" },
-                      { description: "Duplicates",          issues: 1, total: "£90.00"  },
-                      { description: "Non-reclaimable VAT", issues: 1, total: "£340.00" },
-                      { description: "Late VAT claim",      issues: 1, total: "£125.00" },
-                    ]}
-                    footerRow={{ description: "Total", issues: 5, total: "£1,245.00" }}
+                    rows={catOrder.map(key => {
+                      const cards = VAT_CARDS.filter(c => c.cat === key);
+                      const total = cards.reduce((sum, c) => sum + Math.abs(VAT_CARD_ADJ[c.idx] || 0), 0);
+                      return {
+                        description: VAT_CAT_LABELS[key] || key,
+                        issues: cards.length,
+                        total: `£${total.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                      };
+                    })}
+                    footerRow={{
+                      description: "Total",
+                      issues: VAT_CARDS.length,
+                      total: `£${catOrder.reduce((sum, key) => sum + VAT_CARDS.filter(c => c.cat === key).reduce((s, c) => s + Math.abs(VAT_CARD_ADJ[c.idx] || 0), 0), 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    }}
                   />
                 </div>
 
@@ -11759,6 +12108,7 @@ export default function BankReconciliation() {
   };
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState("Last synced 32 minutes ago");
+  const [browserChatOpen, setBrowserChatOpen] = useState(false);
   const SYNC_DATES = ["3 Mar", "4 Mar", "4 Mar", "5 Mar", "6 Mar", "7 Mar"];
 
   const handleSyncAll = () => {
@@ -11868,14 +12218,14 @@ export default function BankReconciliation() {
         {/* ── RIGHT: CONTENT AREA ───────────────────────────────────────── */}
         <div ref={contentRef} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {activeNav === "Home" ? (
-          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} onRunAccrual={() => setAccrualActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
+          <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} onRunAccrual={() => setAccrualActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} onBrowserChatClick={() => setBrowserChatOpen(true)} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
-          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
+          <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} onBrowserChatClick={() => setBrowserChatOpen(true)} />
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
           {/* Top context bar (from TopBar.jsx) */}
-          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
+          <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} onBrowserChatClick={() => setBrowserChatOpen(true)} />
 
           {/* Page header (uses PrimaryButton from Buttons.jsx) */}
           <div style={{ padding: "32px 48px 32px", flexShrink: 0, background: "#FFFFFF" }}>
@@ -12035,6 +12385,9 @@ export default function BankReconciliation() {
           {bsReconciledAlert.code} – {bsReconciledAlert.account} reconciled
         </div>
       )}
+
+      {/* Mimo browser chat sidebar — rendered at root level so position:fixed works */}
+      {browserChatOpen && <MimoBrowserChat onClose={() => setBrowserChatOpen(false)} />}
     </>
   );
 }
