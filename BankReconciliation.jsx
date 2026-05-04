@@ -9821,7 +9821,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 </div>
               )
             ) : (
-              <div style={{ padding: "48px 48px 48px", maxWidth: 800, margin: "0 auto" }}>
+              <div style={{ padding: "48px 48px 48px", maxWidth: 896, margin: "0 auto" }}>
 
                 {/* Results heading */}
                 <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
@@ -11402,7 +11402,7 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
         <div style={{ position: "absolute", top: 16, bottom: 16, left: chatWidth + 32, right: boxesOpen ? 432 : 16, background: "#FFFFFF", borderRadius: 8, border: "1px solid #ECECEC", overflow: "hidden", zIndex: 2, transform: resultsVisible ? "none" : "translateX(calc(100% + 32px))", transition: isDragging ? "none" : "transform 0.72s cubic-bezier(0.16,1,0.3,1), right 0.35s cubic-bezier(0.16,1,0.3,1)", willChange: resultsVisible ? "auto" : "transform" }}>
           {canvasReady ? (
             <div style={{ animation: "acrFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
-              <div style={{ padding: "48px 48px 48px", maxWidth: 800, margin: "0 auto" }}>
+              <div style={{ padding: "48px 48px 48px", maxWidth: 896, margin: "0 auto" }}>
 
                 {/* Results heading */}
                 <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
