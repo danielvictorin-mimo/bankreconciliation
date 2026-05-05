@@ -709,7 +709,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                     onTipHide={() => setCardTip(null)}
                   />
                 ) : (
-                  <SecondaryButton icon={<PlayCircleIcon color="#080908" />} onClick={() => onRunReconciliation?.(row.name)}>
+                  <SecondaryButton iconLeft={<PlayCircleIcon color="#080908" />} onClick={() => onRunReconciliation?.(row.name)}>
                     Run reconciliation
                   </SecondaryButton>
                 )}
@@ -936,7 +936,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
             disabled={selected.size === 0}
             style={{
               width: "100%", height: 40, border: "none", borderRadius: 8,
-              fontSize: 14, fontWeight: 500,
+              fontSize: 14, fontWeight: 500, fontFamily: "'Inter', sans-serif",
               background: selected.size === 0 ? "#E9E9EB" : "#05A105",
               color: selected.size === 0 ? "#BCBCBC" : "#FFFFFF",
               cursor: selected.size === 0 ? "default" : "pointer",
@@ -945,7 +945,7 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
             onMouseEnter={e => { if (selected.size > 0) e.currentTarget.style.background = "#058F05"; }}
             onMouseLeave={e => { if (selected.size > 0) e.currentTarget.style.background = "#05A105"; }}
           >
-            {selected.size > 0 ? `Reconcile from ${selected.size} bank statement${selected.size > 1 ? "s" : ""}` : "Add documents"}
+            {selected.size > 0 ? `Add ${selected.size} ${selected.size === 1 ? "file" : "files"}` : "Add files"}
           </button>
         </div>
       </div>
@@ -954,11 +954,14 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
 }
 
 // ── Upload card ───────────────────────────────────────────────────────────────
-function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Add bank statement", bare = false, noDash = false, suggestedFiles = [] }) {
+function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Add bank statement", bare = false, noDash = false, suggestedFiles = [], preselectedFiles = null }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
   const [selectedFileName, setSelectedFileName] = useState(null); // file staged but not yet confirmed
   const [checkedFiles, setCheckedFiles] = useState(new Set()); // indices of checked suggested files
+  const [sidebarFiles, setSidebarFiles] = useState(null); // files from All Documents sidebar
+  const [localAllDocsOpen, setLocalAllDocsOpen] = useState(false);
+  useEffect(() => { if (preselectedFiles && preselectedFiles.length > 0) { setSidebarFiles(preselectedFiles); setSelectedFileName("__sidebar__"); } }, [preselectedFiles]);
   const fileInputRef = useRef(null);
 
   const handleFile = (file) => {
@@ -981,6 +984,11 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
   };
 
   const handleConfirm = () => {
+    if (sidebarFiles && sidebarFiles.length > 0) {
+      const files = sidebarFiles.map(f => ({ name: f.name, type: f.name.endsWith(".csv") ? "text/csv" : "application/pdf" }));
+      if (files.length === 1) { onFileSelected?.(files[0]); } else { onFilesSelected ? onFilesSelected(files) : onFileSelected?.(files[0]); }
+      return;
+    }
     if (checkedFiles.size > 0 && suggestedFiles.length > 0) {
       const files = [...checkedFiles].map(i => suggestedFiles[i]).map(f => ({ name: f.name, type: f.name.endsWith(".csv") ? "text/csv" : "application/pdf" }));
       if (files.length === 1) { onFileSelected?.(files[0]); }
@@ -988,7 +996,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
       return;
     }
     const name = selectedFileName || fileName;
-    if (!name) return;
+    if (!name || name === "__sidebar__") return;
     onFileSelected?.({ name, type: name.endsWith(".csv") ? "text/csv" : name.endsWith(".pdf") ? "application/pdf" : "application/octet-stream" });
   };
 
@@ -1007,11 +1015,19 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {/* File chips */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {checkedFiles.size > 0 ? [...checkedFiles].map(i => {
+          {sidebarFiles ? sidebarFiles.map((f, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 10px", height: 34, boxSizing: "border-box", alignSelf: "flex-start", maxWidth: "100%" }}>
+              <FileIcon file={f} width={20} height={20} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+              <button onClick={() => { const next = sidebarFiles.filter((_, j) => j !== i); if (next.length === 0) { setSidebarFiles(null); setSelectedFileName(null); } else setSidebarFiles(next); }} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "#8C8C8B", flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          )) : checkedFiles.size > 0 ? [...checkedFiles].map(i => {
             const f = suggestedFiles[i];
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5F5", border: "1px solid #E9E9EB", borderRadius: 8, padding: "6px 10px", alignSelf: "flex-start", maxWidth: "100%" }}>
-                <FileIcon file={f} width={14} height={17} />
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 10px", height: 34, boxSizing: "border-box", alignSelf: "flex-start", maxWidth: "100%" }}>
+                <FileIcon file={f} width={20} height={20} />
                 <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
                 <button onClick={() => { const next = new Set(checkedFiles); next.delete(i); setCheckedFiles(next); if (next.size === 0) setSelectedFileName(null); }} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "#8C8C8B", flexShrink: 0 }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -1019,7 +1035,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
               </div>
             );
           }) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5F5", border: "1px solid #E9E9EB", borderRadius: 8, padding: "6px 10px", alignSelf: "flex-start", maxWidth: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 10px", height: 34, boxSizing: "border-box", alignSelf: "flex-start", maxWidth: "100%" }}>
               {fileChipIcon}
               <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedFileName}</span>
               <button onClick={() => setSelectedFileName(null)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "#8C8C8B", flexShrink: 0 }}>
@@ -1029,20 +1045,33 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
           )}
         </div>
         {/* Footer row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button onClick={() => { setSelectedFileName(null); fileInputRef.current?.click(); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#545453", padding: 0, fontFamily: "inherit" }}>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.5 12.5l-3-3-3 3M10 9.5V16M5 6.5a4 4 0 0 1 3.83-4A4.5 4.5 0 0 1 17.5 6.5c0 .17-.01.34-.03.5H17a3 3 0 0 1 0 6H6a4 4 0 0 1-1-7.87" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <SecondaryButton onClick={() => fileInputRef.current?.click()} style={{ height: 36, padding: "0 12px", fontSize: 14 }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#545453" strokeWidth="1.5" strokeLinecap="round"/></svg>
             Upload file
-          </button>
-          <button onClick={() => onOpenAllDocs?.()} style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#545453", padding: 0, fontFamily: "inherit" }}>All documents</button>
+          </SecondaryButton>
+          <SecondaryButton onClick={() => setLocalAllDocsOpen(true)} style={{ height: 36, padding: "0 12px", fontSize: 14 }}>
+            All documents
+          </SecondaryButton>
           <div style={{ flex: 1 }} />
-          <button onClick={handleConfirm} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 20px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "inherit" }}
+          <button onClick={handleConfirm} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 20px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "'Inter', sans-serif" }}
             onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
             onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
             Continue
           </button>
         </div>
-        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={e => { if (e.target.files[0]) setSelectedFileName(e.target.files[0].name); }} />
+        {localAllDocsOpen && <AllDocumentsSidebar onClose={() => setLocalAllDocsOpen(false)} onSelect={docs => { setSidebarFiles(prev => { const existing = prev || []; const newFiles = docs.map(d => ({ name: d.name, type: "text/csv" })).filter(f => !existing.some(e => e.name === f.name)); const result = [...existing, ...newFiles]; return result; }); setSelectedFileName("__sidebar__"); setLocalAllDocsOpen(false); }} />}
+        <input ref={fileInputRef} type="file" multiple style={{ display: "none" }} onChange={e => {
+          if (!e.target.files || e.target.files.length === 0) return;
+          const newFiles = Array.from(e.target.files).map(f => ({ name: f.name, type: f.type }));
+          setSidebarFiles(prev => {
+            const existing = prev || [];
+            const toAdd = newFiles.filter(f => !existing.some(e => e.name === f.name));
+            return [...existing, ...toAdd];
+          });
+          setSelectedFileName('__sidebar__');
+          e.target.value = '';
+        }} />
       </div>
     );
     if (bare) return selectedView;
@@ -1163,31 +1192,31 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
       {suggestedFiles && suggestedFiles.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <p style={{ fontSize: 14, color: "#080908", fontWeight: 500, margin: "0 0 10px 0" }}>Previously uploaded</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {suggestedFiles.map((f, i) => {
               const checked = checkedFiles.has(i);
               return (
                 <div key={i}
                   onClick={() => { const next = new Set(checkedFiles); checked ? next.delete(i) : next.add(i); setCheckedFiles(next); }}
                   style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "none", boxShadow: checked ? "inset 0 0 0 2px #05A105" : "inset 0 0 0 1px #E9E9EB", borderRadius: 8, padding: 16, cursor: "pointer", transition: "box-shadow 0.15s", boxSizing: "border-box" }}
-                  onMouseEnter={e => { if (!checked) e.currentTarget.style.boxShadow = "inset 0 0 0 1px #CFCFD1"; }}
-                  onMouseLeave={e => { if (!checked) e.currentTarget.style.boxShadow = "inset 0 0 0 1px #E9E9EB"; }}
+                  onMouseEnter={e => { if (!checked) { e.currentTarget.style.boxShadow = "inset 0 0 0 1px #CFCFD1"; const cb = e.currentTarget.querySelector(".file-checkbox"); if (cb) cb.style.border = "1px solid #05A105"; } }}
+                  onMouseLeave={e => { if (!checked) { e.currentTarget.style.boxShadow = "inset 0 0 0 1px #E9E9EB"; const cb = e.currentTarget.querySelector(".file-checkbox"); if (cb) cb.style.border = "1px solid #DBDBDB"; } }}
                 >
-                  <FileIcon file={f} width={28} height={28} />
+                  <FileIcon file={f} width={24} height={24} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</p>
-                    {f.date && <p style={{ fontSize: 12, color: "#8C8C8B", margin: "2px 0 0" }}>{f.date}</p>}
+                    {f.date && <p style={{ fontSize: 14, color: "#7C7C7C", margin: "2px 0 0" }}>{f.date}</p>}
                   </div>
                   {/* Checkbox — right aligned */}
-                  <div style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${checked ? "#05A105" : "#DBDBDB"}`, background: checked ? "#05A105" : "#FFFFFF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
-                    {checked && <svg width="18" height="18" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  <div className="file-checkbox" style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${checked ? "#05A105" : "#DBDBDB"}`, background: checked ? "#05A105" : "#FFFFFF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                    {checked && <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
                 </div>
               );
             })}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-            <PrimaryButton onClick={() => { if (checkedFiles.size > 0) setSelectedFileName(suggestedFiles[[...checkedFiles][0]]?.name || "selected"); }} disabled={checkedFiles.size === 0} style={{ height: 40, padding: "0 20px" }}>
+            <PrimaryButton onClick={() => { if (checkedFiles.size > 0) { const files = [...checkedFiles].map(i => suggestedFiles[i]).filter(Boolean); setSidebarFiles(files); setSelectedFileName('__sidebar__'); } }} disabled={checkedFiles.size === 0} style={{ height: 40, padding: "0 20px" }}>
               {checkedFiles.size > 0 ? `Add ${checkedFiles.size} ${checkedFiles.size === 1 ? "file" : "files"}` : "Add file"}
             </PrimaryButton>
           </div>
@@ -3176,6 +3205,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [chatWidth, setChatWidth]             = useState(400);
   const [isDragging, setIsDragging]           = useState(false);
   const [allDocsOpen, setAllDocsOpen]             = useState(false);
+  const [preselectedDocs, setPreselectedDocs]     = useState(null);
   const [spendMoneySidebar, setSpendMoneySidebar] = useState(null);
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
@@ -3403,13 +3433,17 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [thinkingDone, setThinkingDone] = useState(showResults);
   // workflowStep: 0="Running workflow...", 1="Thinking..." (non-picker only)
   const [workflowStep, setWorkflowStep] = useState(showResults ? 2 : 0);
+  const [slowThinkingMsg, setSlowThinkingMsg] = useState(false);
+  const isSlowAccount = accountName === "Lloyds Bank - Operations GBP";
   useEffect(() => {
     if (showResults) return;
     if (!isPicker) {
       // 3-step sequence for specific account flow
+      const thinkDuration = isSlowAccount ? 20000 : 2400;
       const t1 = setTimeout(() => setWorkflowStep(1), 1200);
-      const t2 = setTimeout(() => { setWorkflowStep(2); setThinkingDone(true); }, 2400);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+      const t2 = setTimeout(() => { setWorkflowStep(2); setThinkingDone(true); }, thinkDuration);
+      const t3 = isSlowAccount ? setTimeout(() => setSlowThinkingMsg(true), 5000) : null;
+      return () => { clearTimeout(t1); clearTimeout(t2); if (t3) clearTimeout(t3); };
     } else {
       const t = setTimeout(() => setThinkingDone(true), 3000);
       return () => clearTimeout(t);
@@ -3558,6 +3592,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes slideInFromRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        @keyframes slideUpFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes thinkingShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes stepPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
         @keyframes stepReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -3772,7 +3807,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 </div>
               )}
               {/* Logo row — only visible while on the initial greeting, hidden once user has acted */}
-              {!thinkingDone && !accountSelected && <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
+              {!thinkingDone && !accountSelected && <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
                 <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
                   <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
                   <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
@@ -3784,15 +3819,27 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                   backgroundSize: "200% auto",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
-                  animation: "thinkingShimmer 3.5s linear infinite",
+                  animation: "thinkingShimmer 3.5s linear infinite, slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both",
                 }}>{!isPicker && workflowStep === 0 ? "Running workflow..." : "Thinking..."}</span>
               </div>}
+              {slowThinkingMsg && !thinkingDone && !accountSelected && (
+                <div style={{ marginTop: 8, paddingLeft: 4, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+                  <span style={{
+                    fontSize: 13, display: "inline-block",
+                    background: "linear-gradient(90deg, #BCBCBC 0%, #BCBCBC 20%, #6E6E6E 50%, #BCBCBC 80%, #BCBCBC 100%)",
+                    backgroundSize: "200% auto",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    animation: "thinkingShimmer 4s linear infinite",
+                  }}>This is taking a bit longer — working on matching transactions against your GL records in Xero...</span>
+                </div>
+              )}
             </>
           )}
 
           {/* User reply bubble — appears after account is selected and line1 is done */}
           {!clientUpload && accountSelected && line1Done && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
               <div style={{
                 maxWidth: 400,
                 background: "#EAF2E2",
@@ -4139,7 +4186,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard
                 onFileSelected={handleFileSelected}
+                onFilesSelected={handleFileSelected}
                 onOpenAllDocs={() => setAllDocsOpen(true)}
+                preselectedFiles={preselectedDocs}
                 suggestedFiles={effectiveAccountName ? (() => {
                   const baseName = {
                     "Lloyds Bank - Business":       "lloyds-bank",
@@ -4151,8 +4200,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                   }[effectiveAccountName];
                   if (!baseName) return [];
                   return [
-                    { name: `${baseName}-statement-apr2026.pdf`, date: "Uploaded 4 Apr at 15:32 · Sarah Thompson" },
-                    { name: `${baseName}-statement-mar2026.pdf`, date: "Uploaded 3 Mar at 09:14 · Sarah Thompson" },
+                    { name: `${baseName}-statement-apr2026.csv`, date: "Uploaded 4 Apr at 15:32 · Client · Sarah Thompson" },
+                    { name: `${baseName}-statement-mar2026.csv`, date: "Uploaded 3 Mar at 09:14 · Client · Sarah Thompson" },
                   ];
                 })() : []}
               />
@@ -4534,7 +4583,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       {allDocsOpen && (
         <AllDocumentsSidebar
           onClose={() => setAllDocsOpen(false)}
-          onSelect={docs => { handleFileSelected(docs.map(d => ({ name: d.name }))); }}
+          onSelect={docs => { setPreselectedDocs(docs.map(d => ({ name: d.name, type: "text/csv" }))); setAllDocsOpen(false); }}
         />
       )}
 
@@ -4668,24 +4717,24 @@ function TopBar({
 }
 
 // ── Button components (from Buttons.jsx) ──────────────────────────────────────
-function PrimaryButton({ children, icon, onClick, disabled = false, style = {} }) {
+function PrimaryButton({ children, icon, iconLeft, onClick, disabled = false, style = {} }) {
   return (
-    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", background: disabled ? "#F5F5F5" : "#05A105", color: disabled ? "#9D9D9E" : "#FFFFFF", border: "none", borderRadius: 8, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, transition: "background 0.15s ease", ...style }}
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", background: disabled ? "#F5F5F5" : "#05A105", color: disabled ? "#9D9D9E" : "#FFFFFF", border: "none", borderRadius: 8, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, fontFamily: "'Inter', sans-serif", transition: "background 0.15s ease", ...style }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = "#058F05"; }}
       onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = "#05A105"; }}>
-      {children}{icon}
+      {iconLeft}{children}{icon}
     </button>
   );
 }
 
-function SecondaryButton({ children, icon, onClick, disabled = false, style = {}, onMouseEnter, onMouseLeave }) {
+function SecondaryButton({ children, icon, iconLeft, onClick, disabled = false, style = {}, onMouseEnter, onMouseLeave }) {
   const defaultEnter = e => { if (!disabled) { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; } };
   const defaultLeave = e => { if (!disabled) { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; } };
   return (
-    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 12px", background: disabled ? "#F5F5F5" : "#FFFFFF", color: disabled ? "#9D9D9E" : "#080908", border: `1px solid ${disabled ? "#F5F5F5" : "#E9E9EB"}`, borderRadius: 6, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.15s ease", ...style }}
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 12px", background: disabled ? "#F5F5F5" : "#FFFFFF", color: disabled ? "#9D9D9E" : "#080908", border: `1px solid ${disabled ? "#F5F5F5" : "#E9E9EB"}`, borderRadius: 6, cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap", transition: "all 0.15s ease", ...style }}
       onMouseEnter={onMouseEnter || defaultEnter}
       onMouseLeave={onMouseLeave || defaultLeave}>
-      {children}{icon}
+      {iconLeft}{children}{icon}
     </button>
   );
 }
@@ -5594,8 +5643,8 @@ function ReconciliationCell({ code, account, bsReconciledData, onViewResults, on
       onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
     >
-      Run reconciliation
       <PlayCircleIcon color="#080908" />
+      Run reconciliation
     </button>
   );
 }
@@ -8779,7 +8828,7 @@ function BalanceSheetReviewPage({ rowComments, onAddComment, onRunBSReconciliati
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h2 style={{ fontSize: 22, fontWeight: 500, color: "#080908", letterSpacing: "-0.5px", margin: 0 }}>Reconciliation</h2>
-              <PrimaryButton icon={<PlayCircleIcon color="white" />} style={{ height: 44, boxSizing: "border-box", padding: "10px 16px" }} onClick={onRunBSReconciliation}>
+              <PrimaryButton iconLeft={<PlayCircleIcon color="white" />} style={{ height: 44, boxSizing: "border-box", padding: "10px 16px" }} onClick={onRunBSReconciliation}>
                 Run reconciliation
               </PrimaryButton>
             </div>
@@ -12203,7 +12252,7 @@ export default function BankReconciliation() {
           <div style={{ maxWidth: 1440, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h1 style={{ fontSize: 36, fontWeight: 500, color: "#080908", lineHeight: "44px", letterSpacing: "-1px" }}>Bank reconciliation</h1>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <PrimaryButton icon={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
+              <PrimaryButton iconLeft={<PlayCircleIcon color="white" />} onClick={() => { setReconciling("__picker__"); setShowResultsMode(false); }}>
                 Run reconciliation
               </PrimaryButton>
               <Tooltip text="Upload statements">
