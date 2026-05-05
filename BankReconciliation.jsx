@@ -2658,7 +2658,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                           isIgnored={isIgnored}
                           tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
                           primaryLabel={entry.primaryLabel}
-                          secondaryLabel="Mark as done"
+                          secondaryLabel={entry.cat === "missing" ? null : "Mark as done"}
                           external={entry.external}
                           fileAction={entry.fileAction}
                           onPrimaryAction={
@@ -2667,7 +2667,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                             entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
                             () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
                           }
-                          onSecondaryAction={() => { onResolveCard?.(entry.idx); onShowToast?.("Marked as done"); }}
+                          onSecondaryAction={entry.cat === "missing" ? undefined : () => { onResolveCard?.(entry.idx); onShowToast?.("Marked as done"); }}
                           onMore={undefined}
                           onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
                         />
@@ -2700,7 +2700,6 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
-              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={
@@ -2709,7 +2708,6 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(i); onShowToast?.("Reconciled in Xero successfully"); } :
                 undefined
               }
-              onSecondaryAction={() => { onResolveCard?.(i); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(i); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
