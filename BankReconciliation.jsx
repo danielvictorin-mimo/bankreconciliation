@@ -2752,7 +2752,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
             {grouped.map((group, gi) => (
               <div key={group.key}>
                 {gi > 0 && <div style={{ height: 32 }} />}
-                <h3 style={{ fontSize: 13, fontWeight: 500, color: "#000000", margin: "0 0 12px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 500, color: "#000000", margin: "0 0 12px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {group.items.map((entry, localIdx) => {
                     const isResolved = resolvedCards.has(entry.idx);
