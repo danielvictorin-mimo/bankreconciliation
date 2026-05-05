@@ -3437,12 +3437,14 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const isSlowAccount = accountName === "Lloyds Bank - Operations GBP";
   useEffect(() => {
     if (showResults) return;
-    if (!isPicker) {
+    const slow = accountName === "Lloyds Bank - Operations GBP";
+    const pickerFlow = accountName === "__picker__";
+    if (!pickerFlow) {
       // 3-step sequence for specific account flow
-      const thinkDuration = isSlowAccount ? 20000 : 2400;
+      const thinkDuration = slow ? 20000 : 2400;
       const t1 = setTimeout(() => setWorkflowStep(1), 1200);
       const t2 = setTimeout(() => { setWorkflowStep(2); setThinkingDone(true); }, thinkDuration);
-      const t3 = isSlowAccount ? setTimeout(() => setSlowThinkingMsg(true), 5000) : null;
+      const t3 = slow ? setTimeout(() => setSlowThinkingMsg(true), 5000) : null;
       return () => { clearTimeout(t1); clearTimeout(t2); if (t3) clearTimeout(t3); };
     } else {
       const t = setTimeout(() => setThinkingDone(true), 3000);
@@ -3493,9 +3495,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [line3ThinkingDone, setLine3ThinkingDone] = useState(showResults);
   useEffect(() => {
     if (!line3Trigger || showResults) return;
+    const slow = accountName === "Lloyds Bank - Operations GBP";
     setLine3ThinkingDone(false);
-    const t = setTimeout(() => setLine3ThinkingDone(true), 3000);
-    return () => clearTimeout(t);
+    setSlowThinkingMsg(false);
+    const t = setTimeout(() => setLine3ThinkingDone(true), slow ? 20000 : 3000);
+    const t2 = slow ? setTimeout(() => setSlowThinkingMsg(true), 5000) : null;
+    return () => { clearTimeout(t); if (t2) clearTimeout(t2); };
   }, [line3Trigger]);
   const { done: line3Done } = useTypewriter(line3ThinkingDone ? line3Full : "", 18, showResults);
 
@@ -3858,21 +3863,35 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {line3Trigger && (
             <>
               {!line3ThinkingDone && (
-                <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
-                  <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
-                    <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
-                    <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
-                    <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
-                  </svg>
-                  <span style={{
-                    fontSize: 14, display: "inline-block",
-                    background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
-                    backgroundSize: "200% auto",
-                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    animation: "thinkingShimmer 3.5s linear infinite",
-                  }}>Thinking...</span>
-                </div>
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) 0.5s both" }}>
+                    <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
+                      <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                      <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                      <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                    </svg>
+                    <span style={{
+                      fontSize: 14, display: "inline-block",
+                      background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
+                      backgroundSize: "200% auto",
+                      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      animation: "thinkingShimmer 3.5s linear infinite",
+                    }}>Thinking...</span>
+                  </div>
+                  {slowThinkingMsg && (
+                    <div style={{ marginTop: 8, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+                      <span style={{
+                        fontSize: 13, display: "inline-block",
+                        background: "linear-gradient(90deg, #7C7C7C 0%, #7C7C7C 20%, #C0C0C0 50%, #7C7C7C 80%, #7C7C7C 100%)",
+                        backgroundSize: "200% auto",
+                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        animation: "thinkingShimmer 4s linear infinite",
+                      }}>This is taking a bit longer — working on matching transactions against your GL records in Xero...</span>
+                    </div>
+                  )}
+                </>
               )}
               {line3ThinkingDone && (
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
@@ -12156,7 +12175,7 @@ export default function BankReconciliation() {
     setReconciling(accountName);
     setShowResultsMode(false);
     setAllResolvedOnOpen(false);
-    setIsCleanReconcileOnOpen(accountName === "Lloyds Bank - Operations GBP");
+    setIsCleanReconcileOnOpen(false);
   };
 
   const handleAutoReconcile = (accountName, status = "reconciled", count = null, dateLabel = null) => {
