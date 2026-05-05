@@ -954,15 +954,17 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
 }
 
 // ── Upload card ───────────────────────────────────────────────────────────────
-function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Upload bank statement", bare = false, noDash = false }) {
+function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "Add bank statement", bare = false, noDash = false, suggestedFiles = [] }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
+  const [selectedFileName, setSelectedFileName] = useState(null); // file staged but not yet confirmed
+  const [checkedFiles, setCheckedFiles] = useState(new Set()); // indices of checked suggested files
   const fileInputRef = useRef(null);
 
   const handleFile = (file) => {
     if (file) {
       setFileName(file.name);
-      onFileSelected?.(file);
+      setSelectedFileName(file.name);
     }
   };
 
@@ -970,12 +972,86 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
     if (onFilesSelected) {
-      setFileName(files.length === 1 ? files[0].name : files.length + " files");
+      const name = files.length === 1 ? files[0].name : files.length + " files";
+      setFileName(name); setSelectedFileName(name);
       onFilesSelected(files);
     } else {
       handleFile(files[0]);
     }
   };
+
+  const handleConfirm = () => {
+    if (checkedFiles.size > 0 && suggestedFiles.length > 0) {
+      const files = [...checkedFiles].map(i => suggestedFiles[i]).map(f => ({ name: f.name, type: f.name.endsWith(".csv") ? "text/csv" : "application/pdf" }));
+      if (files.length === 1) { onFileSelected?.(files[0]); }
+      else { onFilesSelected ? onFilesSelected(files) : onFileSelected?.(files[0]); }
+      return;
+    }
+    const name = selectedFileName || fileName;
+    if (!name) return;
+    onFileSelected?.({ name, type: name.endsWith(".csv") ? "text/csv" : name.endsWith(".pdf") ? "application/pdf" : "application/octet-stream" });
+  };
+
+  // Compact "file selected" view — matches screenshot
+  if (selectedFileName) {
+    const isCsv = selectedFileName?.endsWith(".csv");
+    const isPdf = selectedFileName?.endsWith(".pdf");
+    const fileChipIcon = isCsv ? (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="18" height="18" rx="3" fill="#EAF2E2"/><path d="M5 7h10M5 10h10M5 13h6" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round"/></svg>
+    ) : isPdf ? (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="18" height="18" rx="3" fill="#FDECEA"/><path d="M6 7h8M6 10h8M6 13h5" stroke="#E53935" strokeWidth="1.25" strokeLinecap="round"/></svg>
+    ) : (
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="18" height="18" rx="3" fill="#EEF2FF"/><path d="M6 7h8M6 10h8M6 13h5" stroke="#4C71DF" strokeWidth="1.25" strokeLinecap="round"/></svg>
+    );
+    const selectedView = (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* File chips */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {checkedFiles.size > 0 ? [...checkedFiles].map(i => {
+            const f = suggestedFiles[i];
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5F5", border: "1px solid #E9E9EB", borderRadius: 8, padding: "6px 10px", alignSelf: "flex-start", maxWidth: "100%" }}>
+                <FileIcon file={f} width={14} height={17} />
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                <button onClick={() => { const next = new Set(checkedFiles); next.delete(i); setCheckedFiles(next); if (next.size === 0) setSelectedFileName(null); }} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "#8C8C8B", flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+            );
+          }) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5F5", border: "1px solid #E9E9EB", borderRadius: 8, padding: "6px 10px", alignSelf: "flex-start", maxWidth: "100%" }}>
+              {fileChipIcon}
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedFileName}</span>
+              <button onClick={() => setSelectedFileName(null)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "#8C8C8B", flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          )}
+        </div>
+        {/* Footer row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button onClick={() => { setSelectedFileName(null); fileInputRef.current?.click(); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#545453", padding: 0, fontFamily: "inherit" }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.5 12.5l-3-3-3 3M10 9.5V16M5 6.5a4 4 0 0 1 3.83-4A4.5 4.5 0 0 1 17.5 6.5c0 .17-.01.34-.03.5H17a3 3 0 0 1 0 6H6a4 4 0 0 1-1-7.87" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Upload file
+          </button>
+          <button onClick={() => onOpenAllDocs?.()} style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#545453", padding: 0, fontFamily: "inherit" }}>All documents</button>
+          <div style={{ flex: 1 }} />
+          <button onClick={handleConfirm} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 20px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "inherit" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+            onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+            Continue
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={e => { if (e.target.files[0]) setSelectedFileName(e.target.files[0].name); }} />
+      </div>
+    );
+    if (bare) return selectedView;
+    return (
+      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "24px", width: "100%", boxSizing: "border-box", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+        {selectedView}
+      </div>
+    );
+  }
 
   const inner = (
     <React.Fragment>
@@ -1082,6 +1158,41 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
           >All documents</button>
         </div>
       </div>
+
+      {/* Pre-populated suggested files with checkboxes */}
+      {suggestedFiles && suggestedFiles.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 14, color: "#080908", fontWeight: 500, margin: "0 0 10px 0" }}>Previously uploaded</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {suggestedFiles.map((f, i) => {
+              const checked = checkedFiles.has(i);
+              return (
+                <div key={i}
+                  onClick={() => { const next = new Set(checkedFiles); checked ? next.delete(i) : next.add(i); setCheckedFiles(next); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", border: "none", boxShadow: checked ? "inset 0 0 0 2px #05A105" : "inset 0 0 0 1px #E9E9EB", borderRadius: 8, padding: 16, cursor: "pointer", transition: "box-shadow 0.15s", boxSizing: "border-box" }}
+                  onMouseEnter={e => { if (!checked) e.currentTarget.style.boxShadow = "inset 0 0 0 1px #CFCFD1"; }}
+                  onMouseLeave={e => { if (!checked) e.currentTarget.style.boxShadow = "inset 0 0 0 1px #E9E9EB"; }}
+                >
+                  <FileIcon file={f} width={28} height={28} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</p>
+                    {f.date && <p style={{ fontSize: 12, color: "#8C8C8B", margin: "2px 0 0" }}>{f.date}</p>}
+                  </div>
+                  {/* Checkbox — right aligned */}
+                  <div style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${checked ? "#05A105" : "#DBDBDB"}`, background: checked ? "#05A105" : "#FFFFFF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                    {checked && <svg width="18" height="18" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+            <PrimaryButton onClick={() => { if (checkedFiles.size > 0) setSelectedFileName(suggestedFiles[[...checkedFiles][0]]?.name || "selected"); }} disabled={checkedFiles.size === 0} style={{ height: 40, padding: "0 20px" }}>
+              {checkedFiles.size > 0 ? `Add ${checkedFiles.size} ${checkedFiles.size === 1 ? "file" : "files"}` : "Add file"}
+            </PrimaryButton>
+          </div>
+        </div>
+      )}
     </React.Fragment>
   );
 
@@ -1090,7 +1201,7 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "U
   return (
     <div style={{
       background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8,
-      padding: "24px", width: "100%", maxWidth: 480, boxSizing: "border-box",
+      padding: "24px", width: "100%", boxSizing: "border-box",
       boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
     }}>
       <p style={{ fontSize: 16, fontWeight: 500, color: "#080908", marginBottom: 20 }}>{title}</p>
@@ -4027,7 +4138,25 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       {!clientUpload && line3Done && !uploadedFiles && !reuploadPhase && !replaceStatementMode && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            <UploadCard onFileSelected={handleFileSelected} onOpenAllDocs={() => setAllDocsOpen(true)} />
+            <UploadCard
+                onFileSelected={handleFileSelected}
+                onOpenAllDocs={() => setAllDocsOpen(true)}
+                suggestedFiles={effectiveAccountName ? (() => {
+                  const baseName = {
+                    "Lloyds Bank - Business":       "lloyds-bank",
+                    "Lloyds Bank - Operations GBP": "lloyds-operations",
+                    "HSBC - Business Transactions": "hsbc-business",
+                    "Barclays - Operations":        "barclays-operations",
+                    "American Express OP GBP":      "amex-op",
+                    "Mastercard Business":          "mastercard-business",
+                  }[effectiveAccountName];
+                  if (!baseName) return [];
+                  return [
+                    { name: `${baseName}-statement-apr2026.pdf`, date: "Uploaded 4 Apr at 15:32 · Sarah Thompson" },
+                    { name: `${baseName}-statement-mar2026.pdf`, date: "Uploaded 3 Mar at 09:14 · Sarah Thompson" },
+                  ];
+                })() : []}
+              />
           </div>
         </div>
       )}
