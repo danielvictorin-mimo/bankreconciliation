@@ -4291,24 +4291,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     <PlayCircleIcon color="#080908" size={18} />
                     Re-run
                   </button>
-                  <button
-                    onClick={handleReplaceStatement}
-                    style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      height: 40, padding: "0 16px",
-                      border: "1px solid #E9E9EB", borderRadius: 8,
-                      background: "#FFFFFF", cursor: "pointer",
-                      boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
-                      fontSize: 14, fontWeight: 500, color: "#080908",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "#FAFAFA"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 15V3M12 3L7 8M12 3L17 8M4 17V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V17" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    New statement
-                  </button>
+
                 </div>
               )}
               <div style={{
