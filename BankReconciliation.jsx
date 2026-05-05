@@ -2697,6 +2697,9 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         );
       })()}
 
+      {/* Suggestions heading — hidden for clean accounts */}
+      {!effectiveClean && <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "32px 0 16px" }}>Suggestions</h3>}
+
       {/* Results table (uses DataTable from Tables.jsx) */}
       <div style={{ marginBottom: 12 }}>
         <DataTable
@@ -2733,10 +2736,6 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         )}
       </div>
 
-
-      {/* Suggestions heading — hidden for clean accounts */}
-      {!effectiveClean && <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />}
-      {!effectiveClean && <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>Suggestions</h3>}
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
 
       {/* Per-account cards for HSBC etc — grouped by category */}
@@ -2753,7 +2752,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
             {grouped.map((group, gi) => (
               <div key={group.key}>
                 {gi > 0 && <div style={{ height: 32 }} />}
-                <h3 style={{ fontSize: 16, fontWeight: 500, color: "#080908", margin: "0 0 16px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
+                <h3 style={{ fontSize: 13, fontWeight: 500, color: "#000000", margin: "0 0 12px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {group.items.map((entry, localIdx) => {
                     const isResolved = resolvedCards.has(entry.idx);
