@@ -2304,45 +2304,71 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
 function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true, uploadedFileName = null }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const containerRef = useRef(null);
+  const [resyncOverride, setResyncOverride] = useState(null); // null = use defaults
+  const [resyncing, setResyncing] = useState(false);
+
+  const handleReSync = () => {
+    setResyncing(true);
+    setTimeout(() => {
+      // Resolve 1-3 random unresolved cards
+      const allCards = ACCOUNT_CARDS[accountName] || [];
+      const unresolved = allCards.filter(c => !resolvedCards.has(c.idx) && !ignoredCards.has(c.idx));
+      const toResolve = unresolved.slice(0, Math.min(2, unresolved.length));
+      toResolve.forEach(c => onResolveCard?.(c.idx));
+
+      // Update summary table values
+      const RESYNC_OVERRIDES = {
+        "Lloyds Bank - Business":        { feed: "£155,000.00", statement: "£155,000.00", gl: "£155,000.00", diff: "£0.00",      matched: "244/244" },
+        "Lloyds Bank - Operations GBP":  { feed: "£127,000.00", statement: "£127,000.00", gl: "£127,000.00", diff: "£0.00",      matched: "380/380" },
+        "HSBC - Business Transactions":  { feed: "£95,500.00",  statement: "£95,500.00",  gl: "£95,500.00",  diff: "£0.00",      matched: "195/195" },
+        "Barclays - Operations":         { feed: "£374,000.00", statement: "£374,000.00", gl: "£374,000.00", diff: "£0.00",      matched: "420/420" },
+        "American Express OP GBP":       { feed: "£87,420.00",  statement: "£87,420.00",  gl: "£87,420.00",  diff: "£0.00",      matched: "105/105" },
+        "Mastercard Business":           { feed: "£155,000.00", statement: "£155,000.00", gl: "£155,000.00", diff: "£0.00",      matched: "56/56"   },
+      };
+      setResyncOverride(RESYNC_OVERRIDES[accountName] || null);
+      setResyncing(false);
+      onShowToast?.("Re-sync complete");
+    }, 1400);
+  };
 
   const isHSBC = accountName === "HSBC - Business Transactions";
   // When the user resolved all suggestions themselves, keep the full view — only the box header changes
   const effectiveClean = isCleanReconcile && !allJustResolved;
 
   const resultRows = effectiveClean ? [
-    { description: "Missing entries",    issues: 0 },
-    { description: "Anomalies",          issues: 0 },
-    { description: "Duplicates",         issues: 0 },
-    { description: "Date differences",   issues: 0 },
-    { description: "Omitted",            issues: 0 },
-    { description: "General",            issues: 0 },
+    { description: "Missing entries",    issues: 0, total: "£0.00" },
+    { description: "Anomalies",          issues: 0, total: "£0.00" },
+    { description: "Duplicates",         issues: 0, total: "£0.00" },
+    { description: "Date differences",   issues: 0, total: "£0.00" },
+    { description: "Omitted",            issues: 0, total: "£0.00" },
+    { description: "General",            issues: 0, total: "£0.00" },
   ] : isHSBC ? [
-    { description: "Missing entries",    issues: 18 },
-    { description: "Anomalies",          issues: 12 },
-    { description: "Duplicates",         issues: 10 },
-    { description: "Date differences",   issues: 10 },
-    { description: "Omitted",            issues:  5 },
-    { description: "General",            issues:  3 },
+    { description: "Missing entries",    issues: 18, total: "£14,320.00" },
+    { description: "Anomalies",          issues: 12, total: "£8,640.00"  },
+    { description: "Duplicates",         issues: 10, total: "£3,980.00"  },
+    { description: "Date differences",   issues: 10, total: "£2,750.00"  },
+    { description: "Omitted",            issues:  5, total: "£1,420.00"  },
+    { description: "General",            issues:  3, total: "£890.00"    },
   ] : accountName === "Barclays - Operations" ? [
-    { description: "Missing entries",    issues: 2 },
-    { description: "Anomalies",          issues: 1 },
-    { description: "Omitted",            issues: 1 },
-    { description: "General",            issues: 1 },
+    { description: "Missing entries",    issues: 2, total: "£1,840.00" },
+    { description: "Anomalies",          issues: 1, total: "£620.00"   },
+    { description: "Omitted",            issues: 1, total: "£310.00"   },
+    { description: "General",            issues: 1, total: "£175.00"   },
   ] : accountName === "American Express OP GBP" ? [
-    { description: "Missing entries",    issues: 1 },
-    { description: "Date differences",   issues: 2 },
-    { description: "Duplicates",         issues: 1 },
+    { description: "Missing entries",    issues: 1, total: "£940.00"   },
+    { description: "Date differences",   issues: 2, total: "£560.00"   },
+    { description: "Duplicates",         issues: 1, total: "£280.00"   },
   ] : accountName === "Mastercard Business" ? [
-    { description: "Missing entries",    issues: 1 },
-    { description: "Anomalies",          issues: 1 },
-    { description: "Duplicates",         issues: 1 },
+    { description: "Missing entries",    issues: 1, total: "£720.00"   },
+    { description: "Anomalies",          issues: 1, total: "£430.00"   },
+    { description: "Duplicates",         issues: 1, total: "£215.00"   },
   ] : [
-    { description: "Missing entries",    issues: 3 },
-    { description: "Anomalies",          issues: 1 },
-    { description: "Duplicates",         issues: 1 },
-    { description: "Date differences",   issues: 1 },
-    { description: "Omitted",            issues: 1 },
-    { description: "General",            issues: 1 },
+    { description: "Missing entries",    issues: 3, total: "£2,160.00" },
+    { description: "Anomalies",          issues: 1, total: "£840.00"   },
+    { description: "Duplicates",         issues: 1, total: "£420.00"   },
+    { description: "Date differences",   issues: 1, total: "£310.00"   },
+    { description: "Omitted",            issues: 1, total: "£195.00"   },
+    { description: "General",            issues: 1, total: "£115.00"   },
   ];
 
     // Per-account suggestion cards — idx must align with navCats baseIdx in boxes section
@@ -2501,7 +2527,17 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
 
       {/* Heading */}
-      <h2 style={{ fontSize: 22, fontWeight: 600, color: "#080908", margin: "0 0 20px" }}>Results</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: "#080908", margin: 0 }}>Results</h2>
+        <SecondaryButton onClick={handleReSync} disabled={resyncing} style={{ height: 36, padding: "0 14px", fontSize: 14, borderRadius: 8, gap: resyncing ? 8 : 0 }}>
+          {resyncing && (
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, animation: "spin 0.75s linear infinite" }}>
+              <path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          )}
+          {resyncing ? "Syncing..." : "Re-sync"}
+        </SecondaryButton>
+      </div>
 
       {/* Matched box — shown at top for clean accounts */}
       {effectiveClean && (
@@ -2519,14 +2555,51 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         </div>
       )}
 
+      {/* Account summary table */}
+      {(() => {
+        const ACCOUNT_SUMMARY = {
+          "Lloyds Bank - Business":        { feed: "£155,000.00", statement: "£155,000.00", gl: "£143,000.00", diff: "£12,000.00", matched: "241/244" },
+          "Lloyds Bank - Operations GBP":  { feed: "£127,000.00", statement: "£127,000.00", gl: "£100,000.00", diff: "£27,000.00", matched: "361/380" },
+          "HSBC - Business Transactions":  { feed: "£93,000.00",  statement: "£95,500.00",  gl: "£93,000.00",  diff: "£2,500.00",  matched: "189/195" },
+          "Barclays - Operations":         { feed: "£374,000.00", statement: "£374,000.00", gl: "£380,000.00", diff: "£6,000.00",  matched: "409/420" },
+          "American Express OP GBP":       { feed: "£87,420.00",  statement: "£87,420.00",  gl: "£87,420.00",  diff: "£0.00",      matched: "98/105"  },
+          "Mastercard Business":           { feed: "£155,000.00", statement: "£152,500.00", gl: "£155,000.00", diff: "£2,500.00",  matched: "53/56"   },
+        };
+        const s = resyncOverride || ACCOUNT_SUMMARY[accountName] || { feed: "—", statement: "—", gl: "—", diff: "—", matched: "—" };
+        const rows = [
+          { label: "Feed balance",            value: s.feed      },
+          { label: "Bank statement balance",  value: s.statement },
+          { label: "GL balance",              value: s.gl        },
+          { label: "Difference",              value: s.diff      },
+          { label: "Transactions matched",    value: s.matched   },
+        ];
+        return (
+          <div style={{ marginBottom: 12 }}>
+            <DataTable
+              columns={[
+                { key: "label", label: "Description", width: "1fr" },
+                { key: "value", label: "Value",       width: "160px" },
+              ]}
+              rows={rows.map(r => ({ ...r, value: <span style={{ fontWeight: 400 }}>{r.value}</span> }))}
+            />
+          </div>
+        );
+      })()}
+
       {/* Results table (uses DataTable from Tables.jsx) */}
       <div style={{ marginBottom: 12 }}>
         <DataTable
           columns={[
-            { key: "description", label: "Description", width: "1fr" },
-            { key: "issues", label: "Suggestions found", width: "160px" },
+            { key: "description", label: "Suggestion description", width: "1fr" },
+            { key: "issues",      label: "Suggestions found",      width: "160px" },
+            { key: "total",       label: "Total",                  width: "140px" },
           ]}
           rows={resultRows}
+          footerRow={{
+            description: "Total",
+            issues: resultRows.reduce((s, r) => s + r.issues, 0),
+            total: "£" + resultRows.reduce((s, r) => s + parseFloat((r.total || "£0").replace(/[£,]/g, "")), 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          }}
         />
       </div>
 
@@ -2585,7 +2658,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                           isIgnored={isIgnored}
                           tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
                           primaryLabel={entry.primaryLabel}
-                          secondaryLabel={["date","duplicate","omitted","general"].includes(entry.cat) ? null : undefined}
+                          secondaryLabel="Mark as done"
                           external={entry.external}
                           fileAction={entry.fileAction}
                           onPrimaryAction={
@@ -2594,6 +2667,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                             entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
                             () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
                           }
+                          onSecondaryAction={() => { onResolveCard?.(entry.idx); onShowToast?.("Marked as done"); }}
                           onMore={undefined}
                           onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
                         />
@@ -2626,6 +2700,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
+              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={
@@ -2634,6 +2709,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(i); onShowToast?.("Reconciled in Xero successfully"); } :
                 undefined
               }
+              onSecondaryAction={() => { onResolveCard?.(i); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(i); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
@@ -2691,10 +2767,11 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                 ...(entry.extraRows || []),
               ]}
               primaryLabel={entry.primaryLabel}
-              secondaryLabel={null}
+              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onSecondaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
@@ -2720,10 +2797,11 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
-              secondaryLabel={null}
+              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Date difference acknowledged"); }}
+              onSecondaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
@@ -2749,10 +2827,11 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
-              secondaryLabel={null}
+              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onSecondaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
@@ -2778,10 +2857,11 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
               primaryLabel={entry.primaryLabel}
-              secondaryLabel={null}
+              secondaryLabel="Mark as done"
               external={entry.external}
               fileAction={entry.fileAction}
               onPrimaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Removed in Xero successfully"); }}
+              onSecondaryAction={() => { onResolveCard?.(cardIdx); onShowToast?.("Marked as done"); }}
               onIgnore={() => { onIgnoreCard?.(cardIdx); onShowToast?.("Suggestion ignored"); }}
             />
             </div>
@@ -3211,6 +3291,32 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     onUploadStatement?.(selectedAccount, { fileName: files[0].name, date: dateStr });
   };
 
+  // Thinking delay — show spinner for ~3s before first response types
+  const [thinkingDone, setThinkingDone] = useState(showResults);
+  // workflowStep: 0="Running workflow...", 1="Thinking..." (non-picker only)
+  const [workflowStep, setWorkflowStep] = useState(showResults ? 2 : 0);
+  useEffect(() => {
+    if (showResults) return;
+    if (!isPicker) {
+      // 3-step sequence for specific account flow
+      const t1 = setTimeout(() => setWorkflowStep(1), 1200);
+      const t2 = setTimeout(() => { setWorkflowStep(2); setThinkingDone(true); }, 2400);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    } else {
+      const t = setTimeout(() => setThinkingDone(true), 3000);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // Visual completion tracker — fires after thinkingDone + time for lines to type out
+  const [line2VisualDone, setLine2VisualDone] = useState(showResults);
+  useEffect(() => {
+    if (!thinkingDone || showResults) return;
+    // line1 ~38 chars + line2 ~48 chars at 18ms each ≈ 1550ms, add buffer
+    const t = setTimeout(() => setLine2VisualDone(true), 900);
+    return () => clearTimeout(t);
+  }, [thinkingDone]);
+
   // Two-line message — line 2 starts after line 1 finishes, user bubble after line 2
   const line1Segments = [
     { text: "Great, let's reconcile a ", bold: false },
@@ -3242,7 +3348,14 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   ];
   const line3Full = line3Segments.map(s => s.text).join("");
   const line3Trigger = isPicker ? accountSelected : (line1Done && accountSelected);
-  const { done: line3Done } = useTypewriter(line3Trigger ? line3Full : "", 18, showResults);
+  const [line3ThinkingDone, setLine3ThinkingDone] = useState(showResults);
+  useEffect(() => {
+    if (!line3Trigger || showResults) return;
+    setLine3ThinkingDone(false);
+    const t = setTimeout(() => setLine3ThinkingDone(true), 3000);
+    return () => clearTimeout(t);
+  }, [line3Trigger]);
+  const { done: line3Done } = useTypewriter(line3ThinkingDone ? line3Full : "", 18, showResults);
 
   // Convert-path AI response (after user picks "Convert my bank statement to CSV and download")
   const convertRespText = "Upload your PDF or image statement and I'll convert it to CSV for you before running the reconciliation.";
@@ -3337,8 +3450,27 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes textShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes slideInFromRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        @keyframes thinkingShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
         @keyframes stepPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
         @keyframes stepReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .mimo-loader { width:auto; height:20px; overflow:visible; }
+        .mimo-loader path { fill:#1F2024; transform-box:fill-box; transform-origin:center; }
+        .mimo-loader--spinning .m-right, .mimo-loader--spinning .m-left { animation:mimo-counter-a 2.2s infinite; }
+        .mimo-loader--spinning .m-diag { animation:mimo-counter-b 2.2s infinite; }
+        @keyframes mimo-counter-a {
+          0%   { transform:rotate(0deg);    animation-timing-function:linear; }
+          10%  { transform:rotate(0deg);    animation-timing-function:cubic-bezier(.65,0,.35,1); }
+          45%  { transform:rotate(360deg);  animation-timing-function:linear; }
+          55%  { transform:rotate(360deg);  animation-timing-function:cubic-bezier(.65,0,.35,1); }
+          90%, 100% { transform:rotate(0deg); }
+        }
+        @keyframes mimo-counter-b {
+          0%   { transform:rotate(0deg);    animation-timing-function:linear; }
+          10%  { transform:rotate(0deg);    animation-timing-function:cubic-bezier(.65,0,.35,1); }
+          45%  { transform:rotate(-360deg); animation-timing-function:linear; }
+          55%  { transform:rotate(-360deg); animation-timing-function:cubic-bezier(.65,0,.35,1); }
+          90%, 100% { transform:rotate(0deg); }
+        }
       `}</style>
 
       {/* Top bar */}
@@ -3521,15 +3653,32 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {!clientUpload && (
             <>
               <WorkflowCard />
-              <p style={{ fontSize: 14, color: "#8C8C8B", margin: "0 0 8px 0" }}>Running workflow</p>
-              <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
-                <p style={{ marginTop: 0 }}><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>
-                {isPicker && line1Done && (
-                  <p style={{ marginTop: 6 }}>
-                    <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
-                  </p>
-                )}
-              </div>
+              {thinkingDone && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
+                  {isPicker && <p style={{ marginTop: 0 }}><StreamingMessage segments={line1Segments} speed={18} instant={showResults} /></p>}
+                  {isPicker && line1Done && (
+                    <p style={{ marginTop: 6 }}>
+                      <StreamingMessage key="line2" segments={[{ text: line2Text, bold: false }]} speed={18} instant={showResults} />
+                    </p>
+                  )}
+                </div>
+              )}
+              {/* Logo row — only visible while on the initial greeting, hidden once user has acted */}
+              {!thinkingDone && !accountSelected && <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
+                <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
+                  <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                  <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                  <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                </svg>
+                <span style={{
+                  fontSize: 14, display: "inline-block",
+                  background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
+                  backgroundSize: "200% auto",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  animation: "thinkingShimmer 3.5s linear infinite",
+                }}>{!isPicker && workflowStep === 0 ? "Running workflow..." : "Thinking..."}</span>
+              </div>}
             </>
           )}
 
@@ -3550,11 +3699,32 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </div>
           )}
 
-          {/* AI line 3 — couldn't find statement */}
+          {/* AI line 3 — thinking + couldn't find statement */}
           {line3Trigger && (
-            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
-              <p><StreamingMessage key="line3" segments={line3Segments} speed={18} instant={showResults} /></p>
-            </div>
+            <>
+              {!line3ThinkingDone && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
+                  <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
+                    <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                    <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                    <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                  </svg>
+                  <span style={{
+                    fontSize: 14, display: "inline-block",
+                    background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
+                    backgroundSize: "200% auto",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    animation: "thinkingShimmer 3.5s linear infinite",
+                  }}>Thinking...</span>
+                </div>
+              )}
+              {line3ThinkingDone && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+                  <p><StreamingMessage key="line3" segments={line3Segments} speed={18} instant={showResults} /></p>
+                </div>
+              )}
+            </>
           )}
 
           {/* User bubble — file preview after upload */}
@@ -3809,12 +3979,40 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </>
           )}
 
+          {/* Mimo loader — shown inline while AI is preparing next response */}
+          {(() => {
+            const isStreaming = (isPicker && thinkingDone && !line2VisualDone)
+              || thinkingDone && (!line1Done
+              || (isPicker && line1Done && !line2Done))
+              || (line3ThinkingDone && !line3Done && (isPicker ? (line2Done && accountSelected) : line1Done))
+              || (uploadedFiles && !prepDone)
+              || (prepDone && !line4Done)
+              || (line4Done && !line5Done);
+            return isStreaming ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
+                <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
+                  <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                  <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                  <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                </svg>
+                <span style={{
+                  fontSize: 14, display: "inline-block",
+                  background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
+                  backgroundSize: "200% auto",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  animation: "thinkingShimmer 3.5s linear infinite",
+                }}>Writing...</span>
+              </div>
+            ) : null;
+          })()}
+
           <div ref={chatEndRef} />
         </div>
       </div>
 
       {/* Account picker — pinned at the bottom */}
-      {!clientUpload && isPicker && line2Done && !accountSelected && (
+      {!clientUpload && isPicker && thinkingDone && line2Done && line2VisualDone && !accountSelected && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <AccountPicker
@@ -3917,52 +4115,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         </div>
       )}
 
-      {/* Preparing next step — shown while AI is streaming a response */}
-      {(() => {
-        const isStreaming = !line1Done
-          || (isPicker && line1Done && !line2Done)
-          || (!line3Done && (isPicker ? (line2Done && accountSelected) : line1Done))
-          || (uploadedFiles && !prepDone)
-          || (prepDone && !line4Done)
-          || (line4Done && !line5Done)
-          || (startClicked && !resultsVisible);
-        return isStreaming ? (
-          <div style={{ padding: "28px 24px 20px", flexShrink: 0 }}>
-            <div style={{ maxWidth: 680, margin: "0 auto" }}>
-              <div style={{
-                borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF",
-                boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB",
-              }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <div style={{ fontSize: 14, lineHeight: "22px", flex: 1 }}>
-                    <span style={{
-                      background: "linear-gradient(90deg, #9D9D9E 0%, #9D9D9E 30%, #2A2A2A 50%, #9D9D9E 70%, #9D9D9E 100%)",
-                      backgroundSize: "200% auto",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      animation: "textShimmer 2s linear infinite",
-                      display: "inline-block",
-                    }}>
-                      Preparing next step...
-                    </span>
-                  </div>
-                  <button
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 10px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", flexShrink: 0, boxSizing: "border-box" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="#080908" strokeWidth="1.25" />
-                    </svg>
-                    Stop
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) ? null : (
-          /* Standalone textarea — visible when AI is not streaming and no action card is showing */
+      {/* Standalone textarea — visible when no action card is showing and not in thinking/loading phase */}
+      {thinkingDone && !((isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) || (uploadedFiles && !prepDone) || (prepDone && !line4Done) || (line4Done && !line5Done)) && (
           <div style={{ padding: resultsVisible ? "60px 12px 12px" : "0 12px 12px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               {/* Action buttons — shown when results are visible (sidebar mode), hidden while replace flow is open */}
@@ -4048,8 +4202,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               </div>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       </div> {/* end chat area wrapper */}
       </div> {/* end left chat panel */}
@@ -8647,7 +8800,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
       </div>
 
       {/* Scrollable content */}
-      <div ref={containerRef} style={{ flex: 1, overflowY: "auto", overflowX: "auto", padding: isMedium ? 24 : 48, paddingTop: 0, background: "#FFFFFF" }}>
+      <div ref={containerRef} style={{ flex: 1, overflowY: "auto", overflowX: "auto", paddingTop: 0, paddingBottom: isMedium ? 24 : 48, paddingLeft: isMedium ? 24 : 48, paddingRight: isMedium ? 24 : 48, background: "#FFFFFF" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
 
         {/* Two-column layout — wraps naturally when container is too narrow */}
@@ -11547,8 +11700,34 @@ export default function BankReconciliation() {
     }));
   };
   const [selectedPeriod, setSelectedPeriod] = useState("April 2026");
-  const [reconciling, setReconciling] = useState(null); // account name or null
-  const [showResultsMode, setShowResultsMode] = useState(false); // true when opening from suggestions button
+
+  // ── URL slug routing ─────────────────────────────────────────────────────────
+  const ACCOUNT_SLUGS = {
+    "lloyds-business":    "Lloyds Bank - Business",
+    "lloyds-operations":  "Lloyds Bank - Operations GBP",
+    "hsbc-business":      "HSBC - Business Transactions",
+    "barclays-operations":"Barclays - Operations",
+    "amex-op-gbp":        "American Express OP GBP",
+    "mastercard-business":"Mastercard Business",
+  };
+  const SLUG_FROM_ACCOUNT = Object.fromEntries(Object.entries(ACCOUNT_SLUGS).map(([s, a]) => [a, s]));
+
+  const getHashAccount = () => {
+    const hash = window.location.hash.replace("#rec/", "");
+    return ACCOUNT_SLUGS[hash] || null;
+  };
+
+  const [reconciling, setReconciling] = useState(() => getHashAccount()); // account name or null
+  const [showResultsMode, setShowResultsMode] = useState(() => !!getHashAccount()); // true when opening from suggestions button
+
+  // Keep URL in sync when reconciling changes
+  useEffect(() => {
+    if (reconciling && typeof reconciling === "string" && SLUG_FROM_ACCOUNT[reconciling]) {
+      window.location.hash = "rec/" + SLUG_FROM_ACCOUNT[reconciling];
+    } else if (!reconciling) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, [reconciling]);
   const [uploadStatementsSidebarOpen, setUploadStatementsSidebarOpen] = useState(false);
   const [uploadSidebarVisible, setUploadSidebarVisible] = useState(false);
 
