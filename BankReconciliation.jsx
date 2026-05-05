@@ -2666,6 +2666,25 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         </div>
       )}
 
+      {/* Analysis & key findings */}
+      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
+        <button onClick={() => setAnalysisOpen(o => !o)}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
+          <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+            <ChevronUpIcon />
+          </div>
+        </button>
+        {analysisOpen && (
+          <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
+            {effectiveClean
+              ? "The reconciliation completed successfully with no issues found. All 420 bank statement lines were matched to GL records in Xero. The account balance is confirmed with zero discrepancy."
+              : "The reconciliation found 8 items requiring attention across 6 categories. The most significant issues are 3 missing entries totalling £720.00. Balance is confirmed matching at £12,439.00 with 361 of 380 bank statement lines matched to GL records."
+            }
+          </div>
+        )}
+      </div>
+
       {/* Account summary table */}
       {(() => {
         const ACCOUNT_SUMMARY = {
@@ -2717,25 +2736,6 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
         />
       </div>
 
-      {/* Analysis & key findings */}
-      <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, marginBottom: 28, overflow: "hidden" }}>
-        <button onClick={() => setAnalysisOpen(o => !o)}
-          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", border: "none", background: "none", cursor: "pointer" }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
-          <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s", flexShrink: 0 }}>
-            <ChevronUpIcon />
-          </div>
-        </button>
-        {analysisOpen && (
-          <div style={{ padding: "0 16px 16px", fontSize: 14, color: "#4F4F4F", lineHeight: "22px", borderTop: "1px solid #EFF1F4", paddingTop: 14 }}>
-            {effectiveClean
-              ? "The reconciliation completed successfully with no issues found. All 420 bank statement lines were matched to GL records in Xero. The account balance is confirmed with zero discrepancy."
-              : "The reconciliation found 8 items requiring attention across 6 categories. The most significant issues are 3 missing entries totalling £720.00. Balance is confirmed matching at £12,439.00 with 361 of 380 bank statement lines matched to GL records."
-            }
-          </div>
-        )}
-      </div>
-
       {!effectiveClean && !ACCOUNT_CARDS[accountName] && <p style={{ fontSize: 14, color: "#000000", margin: "0 0 16px" }}>{missingEntries.length} Missing {missingEntries.length === 1 ? "entry" : "entries"}</p>}
 
       {/* Per-account cards for HSBC etc — grouped by category */}
@@ -2752,7 +2752,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
             {grouped.map((group, gi) => (
               <div key={group.key}>
                 {gi > 0 && <div style={{ height: 32 }} />}
-                <h3 style={{ fontSize: 14, fontWeight: 500, color: "#000000", margin: "0 0 12px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 500, color: "#000000", margin: "32px 0 12px" }}>{CAT_GROUP_LABELS[group.key] || group.key}</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {group.items.map((entry, localIdx) => {
                     const isResolved = resolvedCards.has(entry.idx);
