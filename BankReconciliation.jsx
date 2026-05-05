@@ -4113,8 +4113,35 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         </div>
       )}
 
+      {/* Reconciliation in progress box — shimmering label + Stop button */}
+      {startClicked && !resultsVisible && (
+        <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ fontSize: 14, lineHeight: "22px", flex: 1 }}>
+                  <span style={{ background: "linear-gradient(90deg, #9D9D9E 0%, #9D9D9E 30%, #2A2A2A 50%, #9D9D9E 70%, #9D9D9E 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "textShimmer 2s linear infinite", display: "inline-block" }}>
+                    Reconciliation in progress...
+                  </span>
+                </div>
+                <button
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 10px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", flexShrink: 0, boxSizing: "border-box" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="#080908" strokeWidth="1.25" />
+                  </svg>
+                  Stop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Standalone textarea — visible when no action card is showing and not in thinking/loading phase */}
-      {thinkingDone && !((isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) || (uploadedFiles && !prepDone) || (prepDone && !line4Done) || (line4Done && !line5Done)) && (
+      {thinkingDone && !((isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) || (uploadedFiles && !prepDone) || (prepDone && !line4Done) || (line4Done && !line5Done) || (startClicked && !resultsVisible) || (line3Trigger && !line3ThinkingDone) || (line3ThinkingDone && !line3Done)) && (
           <div style={{ padding: resultsVisible ? "60px 12px 12px" : "0 12px 12px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               {/* Action buttons — shown when results are visible (sidebar mode), hidden while replace flow is open */}
