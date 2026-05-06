@@ -3493,14 +3493,17 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const line3Full = line3Segments.map(s => s.text).join("");
   const line3Trigger = isPicker ? accountSelected : (line1Done && accountSelected);
   const [line3ThinkingDone, setLine3ThinkingDone] = useState(showResults);
+  const [thinkingSeconds, setThinkingSeconds] = useState(0);
   useEffect(() => {
     if (!line3Trigger || showResults) return;
     const slow = accountName === "Lloyds Bank - Operations GBP";
     setLine3ThinkingDone(false);
     setSlowThinkingMsg(false);
+    setThinkingSeconds(0);
     const t = setTimeout(() => setLine3ThinkingDone(true), slow ? 20000 : 3000);
     const t2 = slow ? setTimeout(() => setSlowThinkingMsg(true), 5000) : null;
-    return () => { clearTimeout(t); if (t2) clearTimeout(t2); };
+    const ticker = slow ? setInterval(() => setThinkingSeconds(s => s + 1), 1000) : null;
+    return () => { clearTimeout(t); if (t2) clearTimeout(t2); if (ticker) clearInterval(ticker); };
   }, [line3Trigger]);
   const { done: line3Done } = useTypewriter(line3ThinkingDone ? line3Full : "", 18, showResults);
 
@@ -3870,14 +3873,22 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                       <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
                       <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
                     </svg>
-                    <span style={{
-                      fontSize: 14, display: "inline-block",
-                      background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
-                      backgroundSize: "200% auto",
-                      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      animation: "thinkingShimmer 2.4s linear infinite",
-                    }}>Thinking...</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{
+                        fontSize: 14, display: "inline-block",
+                        background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)",
+                        backgroundSize: "200% auto",
+                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        animation: "thinkingShimmer 2.4s linear infinite",
+                      }}>Thinking...</span>
+                      {slowThinkingMsg && (
+                        <>
+                          <span style={{ fontSize: 14, color: "#BCBCBC" }}>·</span>
+                          <span style={{ fontSize: 14, color: "#BCBCBC", fontVariantNumeric: "tabular-nums" }}>{thinkingSeconds}s</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                   {slowThinkingMsg && (
                     <div style={{ marginTop: 20, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
