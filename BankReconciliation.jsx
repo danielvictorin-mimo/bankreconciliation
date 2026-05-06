@@ -709,7 +709,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                     onTipHide={() => setCardTip(null)}
                   />
                 ) : (
-                  <SecondaryButton iconLeft={<PlayCircleIcon color="#080908" />} onClick={() => onRunReconciliation?.(row.name)}>
+                  <SecondaryButton icon={<PlayCircleIcon color="#080908" />} onClick={() => onRunReconciliation?.(row.name)}>
                     Run reconciliation
                   </SecondaryButton>
                 )}
@@ -3824,7 +3824,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                   backgroundSize: "200% auto",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
-                  animation: "thinkingShimmer 3.5s linear infinite, slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both",
+                  animation: "thinkingShimmer 2.4s linear infinite, slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both",
                 }}>{!isPicker && workflowStep === 0 ? "Running workflow..." : "Thinking..."}</span>
               </div>}
               {slowThinkingMsg && !thinkingDone && !accountSelected && (
@@ -3835,7 +3835,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                     backgroundSize: "200% auto",
                     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
-                    animation: "thinkingShimmer 4s linear infinite",
+                    animation: "thinkingShimmer 2.8s linear infinite",
                   }}>This is taking a bit longer — working on matching transactions against your GL records in Xero...</span>
                 </div>
               )}
@@ -3876,18 +3876,18 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                       backgroundSize: "200% auto",
                       WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
-                      animation: "thinkingShimmer 3.5s linear infinite",
+                      animation: "thinkingShimmer 2.4s linear infinite",
                     }}>Thinking...</span>
                   </div>
                   {slowThinkingMsg && (
-                    <div style={{ marginTop: 8, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+                    <div style={{ marginTop: 20, animation: "slideUpFade 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
                       <span style={{
-                        fontSize: 13, display: "inline-block",
+                        fontSize: 14, display: "inline-block",
                         background: "linear-gradient(90deg, #7C7C7C 0%, #7C7C7C 20%, #C0C0C0 50%, #7C7C7C 80%, #7C7C7C 100%)",
                         backgroundSize: "200% auto",
                         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
-                        animation: "thinkingShimmer 4s linear infinite",
+                        animation: "thinkingShimmer 2.8s linear infinite",
                       }}>This is taking a bit longer — working on matching transactions against your GL records in Xero...</span>
                     </div>
                   )}
@@ -4175,7 +4175,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                   backgroundSize: "200% auto",
                   WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
-                  animation: "thinkingShimmer 3.5s linear infinite",
+                  animation: "thinkingShimmer 2.4s linear infinite",
                 }}>Writing...</span>
               </div>
             ) : null;
@@ -5662,8 +5662,8 @@ function ReconciliationCell({ code, account, bsReconciledData, onViewResults, on
       onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
     >
-      <PlayCircleIcon color="#080908" />
       Run reconciliation
+      <PlayCircleIcon color="#080908" />
     </button>
   );
 }
