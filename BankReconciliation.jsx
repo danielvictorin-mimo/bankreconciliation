@@ -11937,11 +11937,13 @@ export default function BankReconciliation() {
 
   // Keep URL in sync when reconciling changes
   useEffect(() => {
-    if (reconciling && typeof reconciling === "string" && SLUG_FROM_ACCOUNT[reconciling]) {
-      window.location.hash = "rec/" + SLUG_FROM_ACCOUNT[reconciling];
-    } else if (!reconciling) {
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
+    try {
+      if (reconciling && typeof reconciling === "string" && SLUG_FROM_ACCOUNT[reconciling]) {
+        window.location.hash = "rec/" + SLUG_FROM_ACCOUNT[reconciling];
+      } else if (!reconciling) {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    } catch (e) { /* srcdoc iframe — URL routing not available */ }
   }, [reconciling]);
   const [uploadStatementsSidebarOpen, setUploadStatementsSidebarOpen] = useState(false);
   const [uploadSidebarVisible, setUploadSidebarVisible] = useState(false);
@@ -12136,8 +12138,6 @@ export default function BankReconciliation() {
         const accountsWithCompletedState = new Set(["Lloyds Bank - Business", "HSBC - Business Transactions"]);
         const resolvedStatus = (accountsWithCompletedState.has(accountName) && allSuggestionsResolved)
           ? "completed"
-          : accountName === "Lloyds Bank - Operations GBP"
-          ? "reconciled"
           : "suggestions";
         const resolvedCount = (resolvedStatus === "completed" || resolvedStatus === "reconciled") ? null
           : remainingCount !== null ? remainingCount
