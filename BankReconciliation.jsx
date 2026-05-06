@@ -2503,12 +2503,12 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { description: "Anomalies",          issues: 1, total: "£430.00"   },
     { description: "Duplicates",         issues: 1, total: "£215.00"   },
   ] : [
-    { description: "Missing entries",    issues: 3, total: "£2,160.00" },
-    { description: "Anomalies",          issues: 1, total: "£840.00"   },
-    { description: "Duplicates",         issues: 1, total: "£420.00"   },
-    { description: "Date differences",   issues: 1, total: "£310.00"   },
-    { description: "Omitted",            issues: 1, total: "£195.00"   },
-    { description: "General",            issues: 1, total: "£115.00"   },
+    { description: "Missing entries",    issues: 3, total: "£6,000.00" },
+    { description: "Anomalies",          issues: 1, total: "£2,400.00" },
+    { description: "Duplicates",         issues: 1, total: "£1,200.00" },
+    { description: "Date differences",   issues: 1, total: "£1,080.00" },
+    { description: "Omitted",            issues: 1, total: "£810.00"   },
+    { description: "General",            issues: 1, total: "£510.00"   },
   ];
 
     // Per-account suggestion cards — idx must align with navCats baseIdx in boxes section
@@ -2603,28 +2603,28 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
 
   // Default (Lloyds Bank - Business) card lists
   const missingEntries = [
-    { state: "Open",   contact: "Yorkshire Tea Estates",     date: "17 Mar 2026", amount: "£240.00",   email: "12 Mar, 09:00", description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",     primaryLabel: "Create spend money", external: false, fileAction: null },
-    { state: "Review", contact: "Clifton & Harrow Supplies", date: "14 Mar 2026", amount: "£1,180.00", email: "13 Mar, 10:15", description: "A bank statement line for Clifton & Harrow Supplies (£1,180.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Review and publish", external: false, fileAction: "CliftonHarrow-invoice.pdf" },
-    { state: "Ready",  contact: "Meridian Office Solutions", date: "9 Mar 2026",  amount: "£530.00",   email: "8 Mar, 16:40",  description: "A bank statement line for Meridian Office Solutions (£530.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",  primaryLabel: "Reconcile in Xero", external: true,  fileAction: "Meridian-invoice.pdf" },
+    { state: "Open",   contact: "Yorkshire Tea Estates",     date: "17 Mar 2026", amount: "£1,800.00",   email: "12 Mar, 09:00", description: "A bank statement line for Yorkshire Tea Estates (£240.00) dated 17 Mar 2026 was found with no matching GL entry in Xero.",     primaryLabel: "Create spend money", external: false, fileAction: null },
+    { state: "Review", contact: "Clifton & Harrow Supplies", date: "14 Mar 2026", amount: "£3,200.00", email: "13 Mar, 10:15", description: "A bank statement line for Clifton & Harrow Supplies (£1,180.00) dated 14 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Review and publish", external: false, fileAction: "CliftonHarrow-invoice.pdf" },
+    { state: "Ready",  contact: "Meridian Office Solutions", date: "9 Mar 2026",  amount: "£1,000.00",   email: "8 Mar, 16:40",  description: "A bank statement line for Meridian Office Solutions (£530.00) dated 9 Mar 2026 was found with no matching GL entry in Xero.",  primaryLabel: "Reconcile in Xero", external: true,  fileAction: "Meridian-invoice.pdf" },
   ];
   const anomalies = [
-    { state: "Open", contact: "Bakery & Food Supplies", date: "12 Mar 2026", amount: "£4,850.00", email: "10 Mar, 11:30", description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    { state: "Open", contact: "Bakery & Food Supplies", date: "12 Mar 2026", amount: "£2,400.00", email: "10 Mar, 11:30", description: "A transaction of £4,850.00 from Bakery & Food Supplies is significantly above the account average of £240.00. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
   const duplicates = [
-    { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45", description: "Two identical transactions of £240.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null,
+    { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£1,200.00", email: "15 Mar, 08:45", description: "Two identical transactions of £1,200.00 from Yorkshire Tea Estates were recorded on 17 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null,
       extraRows: [
-        { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£240.00", email: "15 Mar, 08:45" },
+        { state: "Open", contact: "Yorkshire Tea Estates", date: "17 Mar 2026", amount: "£1,200.00", email: "15 Mar, 08:45" },
       ]
     },
   ];
   const dateDifferences = [
-    { state: "Open", contact: "Direct Expenses", date: "14 Mar 2026", amount: "£320.00", email: "13 Mar, 14:00", description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.", primaryLabel: "Acknowledge", external: false, fileAction: null },
+    { state: "Open", contact: "Direct Expenses", date: "14 Mar 2026", amount: "£1,080.00", email: "13 Mar, 14:00", description: "A bank statement entry dated 14 Mar 2026 is matched to a GL entry dated 17 Mar 2026 — a 3-day discrepancy. Please confirm if this date difference is intentional.", primaryLabel: "Acknowledge", external: false, fileAction: null },
   ];
   const omitted = [
-    { state: "Open", contact: "Internal Transfer", date: "28 Feb 2026", amount: "£12,000.00", email: "28 Feb, 09:00", description: "A bank statement line for an internal transfer of £12,000.00 on 28 Feb 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    { state: "Open", contact: "Internal Transfer", date: "28 Feb 2026", amount: "£810.00", email: "28 Feb, 09:00", description: "A bank statement line for an internal transfer of £12,000.00 on 28 Feb 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
   const general = [
-    { state: "Open", contact: "Unclassified", date: "22 Mar 2026", amount: "£85.00", email: "21 Mar, 17:20", description: "A transaction of £85.00 on 22 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+    { state: "Open", contact: "Unclassified", date: "22 Mar 2026", amount: "£510.00", email: "21 Mar, 17:20", description: "A transaction of £85.00 on 22 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
   ];
 
 
