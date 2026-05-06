@@ -3517,7 +3517,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     { text: "I have everything I need to reconcile ", bold: false },
     { text: selectedAccount,                          bold: true  },
     { text: " with account number ",                  bold: false },
-    { text: "1234 567 8910",                          bold: true  },
+    { text: "601613 31926819",                         bold: true  },
     { text: `. I've received `,                       bold: false },
     { text: `${fileCount} bank statements`,           bold: true  },
     { text: " and will reconcile across all of them.", bold: false },
@@ -3525,7 +3525,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     { text: "I have everything I need to reconcile ", bold: false },
     { text: selectedAccount,                          bold: true  },
     { text: " with account number ",                  bold: false },
-    { text: "1234 567 8910",                          bold: true  },
+    { text: "601613 31926819",                         bold: true  },
     { text: ".",                                      bold: false },
   ];
   const line4Full = line4Segments.map(s => s.text).join("");
@@ -3884,8 +3884,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                       }}>Thinking...</span>
                       {slowThinkingMsg && (
                         <>
-                          <span style={{ fontSize: 14, color: "#BCBCBC" }}>·</span>
-                          <span style={{ fontSize: 14, color: "#BCBCBC", fontVariantNumeric: "tabular-nums" }}>{thinkingSeconds}s</span>
+                          <span style={{ fontSize: 14, color: "#7C7C7C" }}>·</span>
+                          <span style={{ fontSize: 14, color: "#7C7C7C", fontVariantNumeric: "tabular-nums" }}>{thinkingSeconds}s</span>
                         </>
                       )}
                     </div>
