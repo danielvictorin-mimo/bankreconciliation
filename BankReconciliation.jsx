@@ -3166,7 +3166,7 @@ function WorkflowCard({ label = "Bank reconciliation" }) {
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
-function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026" }) {
+function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026", initialResolvedCards = null, initialIgnoredCards = null }) {
   const accounts = [
     "Lloyds Bank - Business", "Lloyds Bank - Operations GBP",
     "HSBC - Business Transactions", "Barclays - Operations",
@@ -3222,8 +3222,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   };
   const totalSuggestions = ACCOUNT_TOTAL_SUGGESTIONS[accountName] ?? 8;
   const allResolvedSet = allResolved ? new Set(Array.from({ length: totalSuggestions }, (_, i) => i)) : new Set();
-  const [resolvedCards, setResolvedCards] = useState(allResolvedSet);
-  const [ignoredCards, setIgnoredCards] = useState(new Set());
+  const [resolvedCards, setResolvedCards] = useState(initialResolvedCards ? new Set(initialResolvedCards) : allResolvedSet);
+  const [ignoredCards, setIgnoredCards] = useState(initialIgnoredCards ? new Set(initialIgnoredCards) : new Set());
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -3266,7 +3266,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       if (spendMoneySidebar)  { setSpendMoneySidebar(null); return; }
       if (batchDraftSidebar)  { setBatchDraftSidebar(null); return; }
       const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size);
-      onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining);
+      onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining, resolvedCards, ignoredCards);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -3739,7 +3739,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </button>
           );
         })()}
-        <button onClick={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining); }}
+        <button onClick={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(canvasReady, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining, resolvedCards, ignoredCards); }}
           style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}
         >
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
@@ -4467,7 +4467,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 accountName={effectiveAccountName}
                 isCleanReconcile={effectiveIsCleanReconcile || (!allResolved && (resolvedCards.size + ignoredCards.size) >= totalSuggestions)}
                 allJustResolved={!allResolved && (resolvedCards.size + ignoredCards.size) >= totalSuggestions}
-                onAccountsOverview={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(true, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining); }}
+                onAccountsOverview={() => { const remaining = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size); onClose(true, (resolvedCards.size + ignoredCards.size) >= totalSuggestions, effectiveAccountName, remaining, resolvedCards, ignoredCards); }}
                 matchedTotal={reconciledMatchedStr ? parseInt(reconciledMatchedStr.split("/")[1]) || null : null}
                 onOpenSpendMoney={(entry, cardIndex) => setSpendMoneySidebar({ ...entry, cardIndex })}
                 onOpenBatchDraft={(entry, cardIndex) => setBatchDraftSidebar({ ...entry, cardIndex })}
@@ -11943,6 +11943,8 @@ export default function BankReconciliation() {
   const [allResolvedOnOpen, setAllResolvedOnOpen] = useState(false); // true when opening from a fully reconciled account
   const [isCleanReconcileOnOpen, setIsCleanReconcileOnOpen] = useState(false); // true when account has "reconciled" status (no suggestions)
   const [reconciledAccounts, setReconciledAccounts] = useState(new Set(["Barclays - Operations", "Mastercard Business"])); // tracks completed reconciliations
+  const [accountResolvedCards, setAccountResolvedCards] = useState({}); // { [accountName]: Set<number> }
+  const [accountIgnoredCards, setAccountIgnoredCards] = useState({}); // { [accountName]: Set<number> }
   const [reconciledDates, setReconciledDates] = useState({ "Barclays - Operations": "5 Mar", "Mastercard Business": "7 Mar" }); // { [accountName]: "13 Apr" }
   const [reconciledStatuses, setReconciledStatuses] = useState({ "Barclays - Operations": "suggestions", "Mastercard Business": "suggestions" }); // { [accountName]: "reconciled"|"suggestions"|"completed" }
   const [reconciledCounts, setReconciledCounts] = useState({ "Barclays - Operations": 5, "Mastercard Business": 3 }); // { [accountName]: number | null }
@@ -12109,7 +12111,9 @@ export default function BankReconciliation() {
     "Mastercard Business":          { status: "suggestions", count: 3 },
   };
 
-  const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false, remainingCount = null) => {
+  const handleCloseReconciliation = (accountName, completed = false, allSuggestionsResolved = false, remainingCount = null, resolvedSet = null, ignoredSet = null) => {
+    if (resolvedSet) setAccountResolvedCards(prev => ({ ...prev, [accountName]: resolvedSet }));
+    if (ignoredSet) setAccountIgnoredCards(prev => ({ ...prev, [accountName]: ignoredSet }));
     if (completed) {
       setReconciledAccounts(prev => new Set([...prev, accountName]));
       setReconciledDates(prev => ({ ...prev, [accountName]: getDateLabel() }));
@@ -12130,9 +12134,11 @@ export default function BankReconciliation() {
         setReconciledStatuses(prev => ({ ...prev, [accountName]: resolvedStatus }));
         setReconciledCounts(prev => ({ ...prev, [accountName]: resolvedCount }));
       }
-    } else if (remainingCount !== null && reconciledAccounts.has(accountName)) {
-      // Already-reconciled account viewed in results mode — update count if user resolved/ignored some
-      setReconciledCounts(prev => ({ ...prev, [accountName]: remainingCount }));
+    } else {
+      // Update remaining count whenever user closes, even if not fully reconciled
+      if (remainingCount !== null) {
+        setReconciledCounts(prev => ({ ...prev, [accountName]: remainingCount }));
+      }
     }
     setReconciling(null);
     setShowResultsMode(false);
@@ -12201,7 +12207,9 @@ export default function BankReconciliation() {
   };
 
   if (reconciling) {
-    return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved)} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
+    return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount, remaining, resolvedSet, ignoredSet) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved, remaining, resolvedSet, ignoredSet)}
+      initialResolvedCards={accountResolvedCards[reconciling] ? [...accountResolvedCards[reconciling]] : null}
+      initialIgnoredCards={accountIgnoredCards[reconciling] ? [...accountIgnoredCards[reconciling]] : null} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
   }
 
   if (accrualActive) {
