@@ -292,9 +292,15 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
   const [accountSearch, setAccountSearch] = useState("");
   const [selectedAccounts, setSelectedAccounts] = useState(new Set());
   const accountDropRef = useRef(null);
+  const accountBtnRef = useRef(null);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   useEffect(() => {
     if (!accountDropOpen) return;
-    const handler = (e) => { if (accountDropRef.current && !accountDropRef.current.contains(e.target)) setAccountDropOpen(false); };
+    if (accountBtnRef.current) {
+      const r = accountBtnRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 6, left: r.left });
+    }
+    const handler = (e) => { if (accountDropRef.current && !accountDropRef.current.contains(e.target) && accountBtnRef.current && !accountBtnRef.current.contains(e.target)) setAccountDropOpen(false); };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [accountDropOpen]);
@@ -496,27 +502,37 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
       {/* Filter bar */}
       <div style={{ padding: "12px 16px", borderBottom: "1px solid #E9E9EB", display: "flex", alignItems: "center", gap: 8 }}>
         {/* Bank account dropdown */}
-        <div ref={accountDropRef} style={{ position: "relative" }}>
+        <div style={{ position: "relative" }}>
           <button
+            ref={accountBtnRef}
             onClick={() => setAccountDropOpen(o => !o)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: selectedAccounts.size > 0 ? "#EEF2FF" : "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: selectedAccounts.size > 0 ? "#4C71DF" : "#080908", fontFamily: "'Inter', sans-serif", transition: "background 0.15s" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif", transition: "background 0.15s" }}
             onMouseEnter={e => { if (!selectedAccounts.size) e.currentTarget.style.background = "#F5F5F5"; }}
             onMouseLeave={e => { if (!selectedAccounts.size) e.currentTarget.style.background = "#FFFFFF"; }}
           >
-            Bank account{selectedAccounts.size > 0 ? ` (${selectedAccounts.size})` : ""}
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Accounts</span>
+            {selectedAccounts.size > 0 && (() => {
+              const sel = [...selectedAccounts];
+              return (
+                <>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{sel[0]}</span>
+                  {sel.length > 1 && <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0 }}>+{sel.length - 1}</span>}
+                </>
+              );
+            })()}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: accountDropOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
-              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
           {accountDropOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 100, width: 320, paddingTop: 12 }}>
+            <div ref={accountDropRef} style={{ position: "fixed", top: dropPos.top, left: dropPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 9999, width: 320, paddingTop: 12 }}>
               {/* Search */}
               <div style={{ margin: "0 16px 10px", display: "flex", alignItems: "center", gap: 10, border: "1.5px solid #E9E9EB", borderRadius: 8, padding: "10px 14px" }}>
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
                   <path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <input value={accountSearch} onChange={e => setAccountSearch(e.target.value)} placeholder="Search bank accounts" style={{ border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif", width: "100%" }} />
+                <input value={accountSearch} onChange={e => setAccountSearch(e.target.value)} placeholder="Search accounts" style={{ border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif", width: "100%" }} />
               </div>
               {/* Select all */}
               <div onClick={() => { if (selectedAccounts.size === rows.length) setSelectedAccounts(new Set()); else setSelectedAccounts(new Set(rows.map(r => r.name))); }}
@@ -551,10 +567,11 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
         </div>
 
         {selectedAccounts.size > 0 && (
-          <button onClick={() => setSelectedAccounts(new Set())} style={{ fontSize: 13, color: "#8C8C8B", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", fontFamily: "'Inter', sans-serif" }}
-            onMouseEnter={e => e.currentTarget.style.color = "#080908"}
-            onMouseLeave={e => e.currentTarget.style.color = "#8C8C8B"}>
-            Clear
+          <button onClick={() => setSelectedAccounts(new Set())} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+            onMouseLeave={e => e.currentTarget.style.background = "none"}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Reset
           </button>
         )}
       </div>
