@@ -539,7 +539,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${selectedAccounts.size === rows.length ? "#4C71DF" : "#CFCFD1"}`, background: selectedAccounts.size === rows.length ? "#4C71DF" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${selectedAccounts.size === rows.length ? "#05A105" : "#CFCFD1"}`, background: selectedAccounts.size === rows.length ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {selectedAccounts.size === rows.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Select all ({rows.length})</span>
@@ -554,7 +554,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                      <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${checked ? "#4C71DF" : "#CFCFD1"}`, background: checked ? "#4C71DF" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${checked ? "#05A105" : "#CFCFD1"}`, background: checked ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                       </div>
                       <span style={{ fontSize: 14, color: "#080908" }}>{r.name}</span>
