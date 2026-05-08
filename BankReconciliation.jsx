@@ -284,8 +284,21 @@ const randomOutcome = () => {
 };
 
 
-function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewResults, reconciledAccounts = new Set(), reconciledData = {}, reconciledDates = {}, reconciledStatuses = {}, reconciledCounts = {}, bankStatements = {}, onUploadStatement, onAutoReconcile, onResetAccount, externalReconcilingAccounts = new Set() }) {
+function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewResults, reconciledAccounts = new Set(), reconciledData = {}, reconciledDates = {}, reconciledStatuses = {}, reconciledCounts = {}, bankStatements = {}, onUploadStatement, onAutoReconcile, onResetAccount, externalReconcilingAccounts = new Set(), rowComments = {}, onAddComment }) {
   const [hovered, setHovered] = useState(null);
+  const [expandedCommentRow, setExpandedCommentRow] = useState(null);
+  const [commentDraft, setCommentDraft] = useState({});
+  const [accountDropOpen, setAccountDropOpen] = useState(false);
+  const [accountSearch, setAccountSearch] = useState("");
+  const [selectedAccounts, setSelectedAccounts] = useState(new Set());
+  const accountDropRef = useRef(null);
+  useEffect(() => {
+    if (!accountDropOpen) return;
+    const handler = (e) => { if (accountDropRef.current && !accountDropRef.current.contains(e.target)) setAccountDropOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [accountDropOpen]);
+  const filteredRows = selectedAccounts.size === 0 ? rows : rows.filter(r => selectedAccounts.has(r.name));
   const fileInputRef = useRef(null);
   const [uploadingFor, setUploadingFor] = useState(null);
   const [reconcilingViaUpload, setReconcilingViaUpload] = useState(new Set());
@@ -480,14 +493,83 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
         <span style={{ fontSize: 18, fontWeight: 500, color: "#080908" }}>{title}</span>
       </div>
 
+      {/* Filter bar */}
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #E9E9EB", display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Bank account dropdown */}
+        <div ref={accountDropRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setAccountDropOpen(o => !o)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: selectedAccounts.size > 0 ? "#EEF2FF" : "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: selectedAccounts.size > 0 ? "#4C71DF" : "#080908", fontFamily: "'Inter', sans-serif", transition: "background 0.15s" }}
+            onMouseEnter={e => { if (!selectedAccounts.size) e.currentTarget.style.background = "#F5F5F5"; }}
+            onMouseLeave={e => { if (!selectedAccounts.size) e.currentTarget.style.background = "#FFFFFF"; }}
+          >
+            Bank account{selectedAccounts.size > 0 ? ` (${selectedAccounts.size})` : ""}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: accountDropOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {accountDropOpen && (
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 100, width: 320, paddingTop: 12 }}>
+              {/* Search */}
+              <div style={{ margin: "0 16px 10px", display: "flex", alignItems: "center", gap: 10, border: "1.5px solid #E9E9EB", borderRadius: 8, padding: "10px 14px" }}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <input value={accountSearch} onChange={e => setAccountSearch(e.target.value)} placeholder="Search bank accounts" style={{ border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif", width: "100%" }} />
+              </div>
+              {/* Select all */}
+              <div onClick={() => { if (selectedAccounts.size === rows.length) setSelectedAccounts(new Set()); else setSelectedAccounts(new Set(rows.map(r => r.name))); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${selectedAccounts.size === rows.length ? "#4C71DF" : "#CFCFD1"}`, background: selectedAccounts.size === rows.length ? "#4C71DF" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {selectedAccounts.size === rows.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Select all ({rows.length})</span>
+              </div>
+              <div style={{ height: 1, background: "#E9E9EB", margin: "6px 0" }} />
+              {/* Account list */}
+              <div style={{ maxHeight: 280, overflowY: "auto", paddingBottom: 8 }}>
+                {rows.filter(r => r.name.toLowerCase().includes(accountSearch.toLowerCase())).map(r => {
+                  const checked = selectedAccounts.has(r.name);
+                  return (
+                    <div key={r.name} onClick={() => { const next = new Set(selectedAccounts); checked ? next.delete(r.name) : next.add(r.name); setSelectedAccounts(next); }}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${checked ? "#4C71DF" : "#CFCFD1"}`, background: checked ? "#4C71DF" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <span style={{ fontSize: 14, color: "#080908" }}>{r.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {selectedAccounts.size > 0 && (
+          <button onClick={() => setSelectedAccounts(new Set())} style={{ fontSize: 13, color: "#8C8C8B", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", fontFamily: "'Inter', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.color = "#080908"}
+            onMouseLeave={e => e.currentTarget.style.color = "#8C8C8B"}>
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Scrollable table area — unified grid so all rows share column widths */}
       <div ref={scrollRef} style={{ overflowX: "auto" }}>
       <div style={{
         display: "grid",
-        gridTemplateColumns: "auto auto auto auto 160px 260px 220px",
+        gridTemplateColumns: "32px auto auto auto auto 160px 260px 220px 48px",
         minWidth: "100%",
         width: "max-content",
       }}>
+
+        {/* Chevron header — empty cell, 32px */}
+        <div style={{ padding: "10px 0", borderBottom: "1px solid #E9E9EB", borderRight: "1px solid #E9E9EB", background: "#FFFFFF" }} />
 
         {/* ── Header cells ── */}
         {cols.map((col, ci) => {
@@ -503,7 +585,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
               background: "#FFFFFF",
               whiteSpace: "nowrap",
               ...(isActions ? {
-                position: "sticky", right: 0,
+                position: "sticky", right: 48,
                 boxShadow: isScrollable ? "-6px 0 12px rgba(0,0,0,0.06)" : "none",
                 zIndex: 2,
               } : {}),
@@ -524,8 +606,11 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
           );
         })}
 
+        {/* Comment column header */}
+        <div style={{ padding: "10px 0", borderBottom: "1px solid #E9E9EB", borderLeft: "1px solid #E9E9EB", background: "#FFFFFF", position: "sticky", right: 0, zIndex: 2 }} />
+
         {/* ── Data rows ── */}
-        {rows.map((row, i) => {
+        {filteredRows.map((row, i) => {
           const isReconciled = reconciledAccounts.has(row.name);
           const rData = reconciledData[row.name] || {};
           const rowStatus = reconciledStatuses[row.name] || "reconciled";
@@ -540,6 +625,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
             onDragOver: e => handleRowDragOver(e, row.name),
             onDragLeave: handleRowDragLeave,
             onDrop: e => handleRowDrop(e, row.name),
+            onClick: () => setExpandedCommentRow(expandedCommentRow === row.name ? null : row.name),
           };
           const getCellBg = (pos) => {
             if (!isDragOver) return rowBg;
@@ -556,13 +642,22 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
           const cell = (extra = {}, pos = "middle") => ({
             background: getCellBg(pos),
             borderBottom,
+            cursor: "pointer",
             ...extra,
           });
 
           return (
             <React.Fragment key={i}>
+              {/* Chevron cell */}
+              <div {...cellProps} style={cell({ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px", borderRight: "1px solid #E9E9EB" }, "first")}
+>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform 0.2s ease", transform: expandedCommentRow === row.name ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+                  <path d="M3 5L7 9L11 5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
               {/* Account name */}
-              <div style={cell({ display: "flex", alignItems: "center", fontSize: 14, color: "#080908", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" }, "first")} {...cellProps}>
+              <div style={cell({ display: "flex", alignItems: "center", fontSize: 14, color: "#080908", padding: "14px 16px", borderRight: "1px solid #E9E9EB", whiteSpace: "nowrap" })} {...cellProps}>
                 {row.name}
               </div>
 
@@ -688,7 +783,7 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
               {/* Action button — sticky right */}
               <div style={cell({
                 display: "flex", alignItems: "center", padding: "14px 16px",
-                position: "sticky", right: 0,
+                position: "sticky", right: 48,
                 boxShadow: isDragOver ? "none" : isScrollable ? "-6px 0 12px rgba(0,0,0,0.06)" : "none",
                 zIndex: 1,
               }, "last")} {...cellProps}>
@@ -715,6 +810,98 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                 )}
               </div>
 
+              {/* Comment icon cell */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "14px 16px", borderBottom, borderLeft: "1px solid #E9E9EB", background: getCellBg("last"),
+                cursor: "pointer", position: "sticky", right: 0, zIndex: 1,
+              }}
+                onClick={e => { e.stopPropagation(); setExpandedCommentRow(expandedCommentRow === row.name ? null : row.name); }}
+              >
+                <span style={{ position: "relative", display: "inline-flex" }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M14 7.66669C14.0023 8.5466 13.7967 9.41461 13.4 10.2C12.9296 11.1412 12.2065 11.9328 11.3116 12.4862C10.4168 13.0396 9.3855 13.3329 8.33337 13.3334C7.45346 13.3356 6.58545 13.1301 5.80004 12.7334L2 14L3.26667 10.2C2.86995 9.41461 2.66441 8.5466 2.66671 7.66669C2.66714 6.61456 2.96041 5.58325 3.51385 4.6884C4.06729 3.79355 4.85893 3.07041 5.80004 2.60002C6.58545 2.2033 7.45346 1.99776 8.33337 2.00002H8.66671C10.0562 2.07668 11.3687 2.66319 12.3528 3.64726C13.3368 4.63132 13.9234 5.94388 14 7.33335V7.66669Z"
+                      stroke={(rowComments[row.name] && rowComments[row.name].length > 0) ? "#6BAC5B" : "#8C8C8B"}
+                      strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {rowComments[row.name] && rowComments[row.name].length > 0 && (
+                    <span style={{ position: "absolute", top: -1, right: -1, width: 6, height: 6, borderRadius: "50%", background: "#6BAC5B" }} />
+                  )}
+                </span>
+              </div>
+
+              {/* Expanded comment — inline after this row */}
+              {expandedCommentRow === row.name && (
+                <div key={`comment-${row.name}`} style={{ gridColumn: "1 / -1", background: "#FAFAFA", borderBottom: "1px solid #E9E9EB", padding: 16 }}>
+            <div style={{ background: "#FFFFFF", borderRadius: 8, border: "1px solid #E9E9EB", padding: 24, display: "flex", flexDirection: "column", gap: 0 }}>
+              {/* Comments list */}
+              {(rowComments[row.name] || []).length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 20 }}>
+                  {(rowComments[row.name] || []).map((c, i) => (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#E9E9EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "#545453" }}>{c.user?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()}</span>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "#080908" }}>{c.user}</span>
+                        <span style={{ fontSize: 12, color: "#8C8C8B" }}>{c.timestamp}</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: "#080908", lineHeight: "22px", margin: "0 0 0 32px" }}>{c.text}</p>
+                    </div>
+                  ))}
+                  <div style={{ height: 1, background: "#E9E9EB" }} />
+                </div>
+              )}
+              {/* Add comment button / input */}
+              {!(commentDraft[row.name + "_composing"]) ? (
+                <button
+                  onClick={() => setCommentDraft(prev => ({ ...prev, [row.name + "_composing"]: true }))}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", alignSelf: "flex-start" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M14 7.667a6.723 6.723 0 0 1-.6 2.533C12.93 11.141 12.206 11.933 11.311 12.486c-.894.554-1.926.847-2.978.847a6.584 6.584 0 0 1-2.533-.534L2 14l1.267-3.8a6.723 6.723 0 0 1-.6-2.533A6.584 6.584 0 0 1 3.514 4.69a6.41 6.41 0 0 1 2.286-1.493A6.39 6.39 0 0 1 8.333 2.667h.334A6.66 6.66 0 0 1 14 8v-.333Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Add comment
+                </button>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <textarea
+                    autoFocus
+                    value={commentDraft[row.name] || ""}
+                    onChange={e => setCommentDraft(prev => ({ ...prev, [row.name]: e.target.value }))}
+                    placeholder="Write a comment…"
+                    rows={3}
+                    style={{ width: "100%", border: "1px solid #E9E9EB", borderRadius: 6, padding: "8px 10px", fontSize: 14, fontFamily: "'Inter', sans-serif", color: "#080908", resize: "none", outline: "none", boxSizing: "border-box" }}
+                    onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
+                    onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        const text = (commentDraft[row.name] || "").trim();
+                        if (!text) return;
+                        onAddComment?.(row.name, text);
+                        setCommentDraft(prev => ({ ...prev, [row.name]: "", [row.name + "_composing"]: false }));
+                      }}
+                      style={{ height: 36, padding: "0 16px", border: "none", borderRadius: 8, background: "#05A105", color: "#FFFFFF", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#05A105"}
+                    >Save</button>
+                    <button
+                      onClick={() => setCommentDraft(prev => ({ ...prev, [row.name]: "", [row.name + "_composing"]: false }))}
+                      style={{ height: 36, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", color: "#080908", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}
+                    >Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        
+              )}
             </React.Fragment>
           );
         })}
@@ -2725,12 +2912,47 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
           "Mastercard Business":           { feed: "£155,000.00", statement: "£155,000.00", gl: "£152,500.00", diff: "£2,500.00",  matched: "53/56"   },
         };
         const s = resyncOverride || ACCOUNT_SUMMARY[accountName] || { feed: "—", statement: "—", gl: "—", diff: "—", matched: "—" };
+
+        // Compute resolved amount to update diff + matched dynamically
+        const resolvedSet = new Set([...resolvedCards, ...ignoredCards]);
+        let resolvedAmount = 0;
+        const allCards = ACCOUNT_CARDS[accountName] || [];
+        allCards.forEach(c => {
+          if (resolvedSet.has(c.idx)) {
+            const amt = parseFloat((c.amount || "£0").replace(/[£,]/g, "")) || 0;
+            resolvedAmount += amt;
+          }
+        });
+        // For default (non-ACCOUNT_CARDS) accounts
+        if (allCards.length === 0) {
+          const defaultCards = [...missingEntries, ...anomalies, ...duplicates, ...dateDifferences, ...omitted, ...general];
+          defaultCards.forEach((c, i) => {
+            if (resolvedSet.has(i)) {
+              const amt = parseFloat((c.amount || "£0").replace(/[£,]/g, "")) || 0;
+              resolvedAmount += amt;
+            }
+          });
+        }
+        const baseDiff = parseFloat((s.diff || "0").replace(/[£,]/g, "")) || 0;
+        const fmtGBP = (n) => n === 0 ? "£0.00" : `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const allResolved = resolvedSet.size >= totalSuggestions;
+
+        // When all resolved: diff=0, GL=statement, matched=total
+        const currentDiff = allResolved ? 0 : Math.max(0, baseDiff - resolvedAmount);
+        const [mNum, mTotal] = (s.matched || "0/0").split("/").map(Number);
+        const currentMatched = allResolved ? `${mTotal}/${mTotal}` : `${Math.min(mNum + resolvedSet.size, mTotal)}/${mTotal}`;
+        // GL updates proportionally; when fully resolved it equals statement
+        const baseGL = parseFloat((s.gl || "0").replace(/[£,]/g, "")) || 0;
+        const baseStmt = parseFloat((s.statement || "0").replace(/[£,]/g, "")) || 0;
+        const currentGL = allResolved ? baseStmt : (baseGL + resolvedAmount);
+        const glDisplay = allResolved ? s.statement : fmtGBP(currentGL);
+
         const rows = [
-          { label: "Feed balance",            value: s.feed      },
-          { label: "Bank statement balance",  value: s.statement },
-          { label: "GL balance",              value: s.gl        },
-          { label: "Difference",              value: s.diff      },
-          { label: "Transactions matched",    value: s.matched   },
+          { label: "Feed balance",            value: s.feed        },
+          { label: "Bank statement balance",  value: s.statement   },
+          { label: "GL balance",              value: glDisplay      },
+          { label: "Difference",              value: fmtGBP(currentDiff) },
+          { label: "Transactions matched",    value: currentMatched },
         ];
         return (
           <div style={{ marginBottom: 12 }}>
@@ -3166,7 +3388,7 @@ function WorkflowCard({ label = "Bank reconciliation" }) {
 }
 
 // ── Reconciliation flow ───────────────────────────────────────────────────────
-function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026", initialResolvedCards = null, initialIgnoredCards = null }) {
+function ReconciliationFlow({ accountName, onClose, showResults = false, allResolved = false, isCleanReconcile = false, onUploadStatement, reconciledDate = null, reconciledMatchedStr = null, accountStatus = null, existingStatement = null, reconciledStatuses = {}, reconciledCounts = {}, selectedPeriod = "April 2026", initialResolvedCards = null, initialIgnoredCards = null, onAddComment }) {
   const accounts = [
     "Lloyds Bank - Business", "Lloyds Bank - Operations GBP",
     "HSBC - Business Transactions", "Barclays - Operations",
@@ -3224,6 +3446,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const allResolvedSet = allResolved ? new Set(Array.from({ length: totalSuggestions }, (_, i) => i)) : new Set();
   const [resolvedCards, setResolvedCards] = useState(initialResolvedCards ? new Set(initialResolvedCards) : allResolvedSet);
   const [ignoredCards, setIgnoredCards] = useState(initialIgnoredCards ? new Set(initialIgnoredCards) : new Set());
+  const [markCompleteDrawerOpen, setMarkCompleteDrawerOpen] = useState(false);
+  const [markCompleteComment, setMarkCompleteComment] = useState("");
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -3673,7 +3897,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         {/* Uploaded file pills — all in one container with dividers */}
         {uploadedFiles && uploadedFiles.length > 0 && (
           <>
-            <div style={{ display: "flex", alignItems: "center", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", flexShrink: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", flexShrink: 0, overflow: "hidden" }}>
               {uploadedFiles.map((file, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <div style={{ width: 1, height: 32, background: "#E9E9EB", flexShrink: 0 }} />}
@@ -3692,6 +3916,29 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           </>
         )}
 
+        {/* Mark as complete button — shown when results canvas is open */}
+        {resultsVisible && canvasReady && (() => {
+          const allDoneNow = (resolvedCards.size + ignoredCards.size) >= totalSuggestions;
+          return allDoneNow ? (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 16px", background: "#EEF2FF", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "#4C71DF", fontFamily: "'Inter', sans-serif", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="8" fill="#4C71DF"/>
+                <path d="M4.5 8.5L6.5 10.5L11.5 5.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Completed
+            </div>
+          ) : (
+            <Tooltip text="All suggestions will be marked as resolved. No entries will be changed in GL" placement="bottom">
+              <PrimaryButton
+                onClick={() => setMarkCompleteDrawerOpen(true)}
+                style={{ height: 40, padding: "0 16px", fontSize: 14 }}
+              >
+                Mark as complete
+              </PrimaryButton>
+            </Tooltip>
+          );
+        })()}
+
         {resultsVisible && canvasReady && !effectiveIsCleanReconcile && (() => {
           const isHSBCCanvas = effectiveAccountName === "HSBC - Business Transactions";
           const totalSugg = ACCOUNT_TOTAL_SUGGESTIONS[effectiveAccountName] ?? 8;
@@ -3707,8 +3954,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 border: "1px solid #E9E9EB",
                 borderRadius: 8,
                 background: "#FFFFFF",
-                height: 48,
-                minWidth: 48,
+                height: 40,
+                minWidth: 40,
                 padding: boxesOpen ? 0 : "0 12px 0 0",
                 overflow: "hidden",
                 justifyContent: "center",
@@ -3751,6 +3998,62 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           </svg>
         </button>
       </div>
+
+      {/* Mark as complete drawer */}
+      {markCompleteDrawerOpen && (() => {
+        const unreviewed = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size);
+        const markAll = () => {
+          setResolvedCards(new Set(Array.from({ length: totalSuggestions }, (_, i) => i)));
+          if (markCompleteComment.trim()) {
+            onAddComment?.(effectiveAccountName, markCompleteComment.trim());
+          }
+          setMarkCompleteDrawerOpen(false);
+          setMarkCompleteComment("");
+        };
+        return (
+          <>
+            <div onClick={() => setMarkCompleteDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
+            <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 600, background: "#FFFFFF", borderLeft: "1px solid #E9E9EB", boxShadow: "-4px 0 16px rgba(0,0,0,0.06)", zIndex: 201, display: "flex", flexDirection: "column", animation: "slideInFromRight 0.25s ease both" }}>
+              <div style={{ height: 48, padding: "0 16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F5F5F5" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
+                <button onClick={() => setMarkCompleteDrawerOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              </div>
+              <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
+                <p style={{ fontSize: 14, color: "#545453", lineHeight: "22px", margin: "0 0 24px" }}>
+                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>. You can go back and review them, or mark all suggestions as resolved with a comment explaining why.
+                </p>
+                <label style={{ display: "block", fontSize: 12, color: "#8C8C8B", marginBottom: 4 }}>Comment</label>
+                <textarea
+                  value={markCompleteComment}
+                  onChange={e => setMarkCompleteComment(e.target.value)}
+                  placeholder="Explain why this account is being marked as complete with unreviewed suggestions…"
+                  style={{ width: "100%", minHeight: 120, padding: "8px 10px", border: "1px solid #E9E9EB", borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", color: "#080908", lineHeight: "22px", resize: "vertical", outline: "none", boxSizing: "border-box", background: "#FFFFFF" }}
+                  onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
+                  onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
+                />
+              </div>
+              <div style={{ padding: "16px 24px", borderTop: "1px solid #E9E9EB", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                <button onClick={() => setMarkCompleteDrawerOpen(false)}
+                  style={{ flex: 1, height: 40, borderRadius: 6, border: "1px solid #E9E9EB", background: "#FFFFFF", fontSize: 14, fontWeight: 500, color: "#080908", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#CFCFD1"; e.currentTarget.style.background = "#FAFAFA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#E9E9EB"; e.currentTarget.style.background = "#FFFFFF"; }}>
+                  Back to reconciliation
+                </button>
+                <button onClick={markAll}
+                  style={{ flex: 1, height: 40, borderRadius: 6, border: "none", background: "#05A105", color: "#FFFFFF", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+                  Mark as complete
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Content area — position:relative so the canvas overlay can anchor to it */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", padding: 16 }}>
@@ -9583,7 +9886,7 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
         </div>
       </div>
       {/* Collapsible content */}
-      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 600, opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
+      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 2000, opacity: collapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" }}>
         <div style={{ borderTop: "1px solid #F0F0F0" }}>
           {/* HMRC deadline card */}
           <div style={{ margin: "14px 20px 0", border: "1px solid #ECECEC", borderRadius: 8, padding: 16, background: "#FFFFFF" }}>
@@ -10283,7 +10586,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
         {/* Suggestions sidebar */}
         {canvasReady && (
-          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 400, zIndex: 3, display: "flex", flexDirection: "column", gap: 12, fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none" }}>
+          <div style={{ position: "absolute", top: 16, bottom: 16, right: 16, width: 400, zIndex: 3, display: "flex", flexDirection: "column", gap: 12, fontFamily: "'Inter', sans-serif", transform: boxesOpen ? "translateX(0)" : "translateX(calc(100% + 32px))", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)", pointerEvents: boxesOpen ? "auto" : "none", overflowY: "auto" }}>
 
             {/* VAT return report card */}
             <VATReturnCard
@@ -12135,10 +12438,7 @@ export default function BankReconciliation() {
       const currentStatus = reconciledStatuses[accountName];
       if (!(showResultsMode && currentStatus === "reconciled")) {
         const outcome = ACCOUNT_OUTCOMES[accountName];
-        const accountsWithCompletedState = new Set(["Lloyds Bank - Business", "HSBC - Business Transactions"]);
-        const resolvedStatus = (accountsWithCompletedState.has(accountName) && allSuggestionsResolved)
-          ? "completed"
-          : "suggestions";
+        const resolvedStatus = allSuggestionsResolved ? "completed" : "suggestions";
         const resolvedCount = (resolvedStatus === "completed" || resolvedStatus === "reconciled") ? null
           : remainingCount !== null ? remainingCount
           : (outcome?.count ?? reconciledData[accountName]?.suggestions ?? 3);
@@ -12220,7 +12520,8 @@ export default function BankReconciliation() {
   if (reconciling) {
     return <ReconciliationFlow accountName={reconciling} onClose={(completed, allSuggestionsResolved, actualAccount, remaining, resolvedSet, ignoredSet) => handleCloseReconciliation(actualAccount || reconciling, completed, allSuggestionsResolved, remaining, resolvedSet, ignoredSet)}
       initialResolvedCards={accountResolvedCards[reconciling] ? [...accountResolvedCards[reconciling]] : null}
-      initialIgnoredCards={accountIgnoredCards[reconciling] ? [...accountIgnoredCards[reconciling]] : null} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
+      initialIgnoredCards={accountIgnoredCards[reconciling] ? [...accountIgnoredCards[reconciling]] : null}
+      onAddComment={handleAddComment} showResults={showResultsMode} allResolved={allResolvedOnOpen} isCleanReconcile={isCleanReconcileOnOpen} onUploadStatement={handleUploadStatement} reconciledDate={reconciledDates[reconciling] || null} reconciledMatchedStr={reconciledData[reconciling]?.matched || null} accountStatus={reconciledStatuses[reconciling] || null} existingStatement={bankStatements[reconciling] || null} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} selectedPeriod={selectedPeriod} />;
   }
 
   if (accrualActive) {
@@ -12345,7 +12646,7 @@ export default function BankReconciliation() {
             })()} />
 
             {/* Bank accounts table */}
-            <AccountTable title="Accounts" rows={bankAccounts} footerLabel={`${bankAccounts.length} accounts`} onRunReconciliation={handleRunReconciliation} onViewResults={handleViewResults} reconciledAccounts={reconciledAccounts} reconciledData={reconciledData} reconciledDates={reconciledDates} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} bankStatements={bankStatements} onUploadStatement={handleUploadStatement} onAutoReconcile={handleAutoReconcile} onResetAccount={handleResetAccount} externalReconcilingAccounts={externalReconcilingAccounts} />
+            <AccountTable title="Accounts" rows={bankAccounts} footerLabel={`${bankAccounts.length} accounts`} onRunReconciliation={handleRunReconciliation} onViewResults={handleViewResults} reconciledAccounts={reconciledAccounts} reconciledData={reconciledData} reconciledDates={reconciledDates} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} bankStatements={bankStatements} onUploadStatement={handleUploadStatement} onAutoReconcile={handleAutoReconcile} onResetAccount={handleResetAccount} externalReconcilingAccounts={externalReconcilingAccounts} rowComments={rowComments} onAddComment={handleAddComment} />
 
           </div>
           </div>
