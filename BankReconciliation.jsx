@@ -1985,22 +1985,22 @@ function SpendMoneySidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
         <button
           onClick={!publishing ? handlePublish : undefined}
           style={{
-            flex: 2, padding: "10px 16px", border: publishing ? "1px solid #E9E9EB" : "none", borderRadius: 8,
-            background: publishing ? "#F5F5F5" : "#05A105", cursor: publishing ? "default" : "pointer",
+            flex: 2, padding: "10px 16px", border: "1px solid transparent", borderRadius: 8,
+            background: "#05A105", cursor: publishing ? "default" : "pointer",
             fontSize: 14, fontWeight: 500, color: "#FFFFFF",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.25s ease",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            opacity: publishing ? 0.8 : 1,
           }}
           onMouseEnter={e => { if (!publishing) e.currentTarget.style.background = "#058F05"; }}
           onMouseLeave={e => { if (!publishing) e.currentTarget.style.background = "#05A105"; }}
         >
           {publishing ? (
-            <div style={{
-              width: 20, height: 20, borderRadius: "50%",
-              border: "2.5px solid #E9E9EB",
-              borderTopColor: "#05A105",
-              animation: "spin 0.75s linear infinite",
-            }} />
+            <>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                <path d="M10 2A8 8 0 1 1 2 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Publishing...
+            </>
           ) : "Create spend money and publish"}
         </button>
       </div>
@@ -3881,7 +3881,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         <div ref={dropdownRef} style={{ position: "relative" }}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
           >
             <span style={{ color: selectedAccount ? "#080908" : "#9D9D9E" }}>
               {selectedAccount || "Select account"}
@@ -3921,7 +3921,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         {resultsVisible && canvasReady && (
           <button
             onClick={() => setAuditLogOpen(true)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "0 14px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "0 14px", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12L9 12M21 6L9 6M21 18L9 18M5 12C5 12.5523 4.55228 13 4 13C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11C4.55228 11 5 11.4477 5 12ZM5 6C5 6.55228 4.55228 7 4 7C3.44772 7 3 6.55228 3 6C3 5.44772 3.44772 5 4 5C4.55228 5 5 5.44772 5 6ZM5 18C5 18.5523 4.55228 19 4 19C3.44772 19 3 18.5523 3 18C3 17.4477 3.44772 17 4 17C4.55228 17 5 17.4477 5 18Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
