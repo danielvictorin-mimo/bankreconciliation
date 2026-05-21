@@ -1663,7 +1663,7 @@ function ChevronUpIcon() {
 }
 
 // ── Audit Trail Sidebar ───────────────────────────────────────────────────────
-function AuditTrailSidebar({ onClose }) {
+function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "April 2026", liveEntries = [] }) {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
@@ -1675,26 +1675,21 @@ function AuditTrailSidebar({ onClose }) {
 
   const AUDIT_DATA = [
     {
-      date: "28/04/2026",
+      date: "30/04/2026",
       entries: [
-        { time: "14:12", color: "#05A105", action: "Review re-run", actor: "Daniel Victorin", details: "VAT and miscoding review re-run triggered manually." },
-        { time: "13:55", color: "#05A105", action: "Suggestion resolved", actor: "Daniel Victorin", details: "Suggestion resolved: Non-reclaimable VAT on client entertainment (£340.00). Marked as reviewed and corrected." },
-        { time: "13:41", color: "#8C8C8B", action: "Suggestion ignored", actor: "Daniel Victorin", details: "Suggestion ignored: Late VAT claim outside HMRC 4-year limit (£125.00)." },
-        { time: "13:30", color: "#4C71DF", action: "Suggestion resolved", actor: "Mimo AI Agent", details: "Duplicate entry from Premier Office Supplies removed. Input VAT adjustment: –£90.00." },
+        { time: "16:45", color: "#05A105", action: "Reconciliation run completed", actor: "Laura Bennett", details: "RunId BR-1042 completed. Outcome: Matched. Remaining unreconciled: 0. Net difference: £0.00." },
+        { time: "16:30", color: "#8C8C8B", action: "Account status updated", actor: "Mimo AI Agent", details: "Status changed: Mismatch → Ready for final approval in Xero (all fixes prepared; Xero confirmation required)." },
+        { time: "16:12", color: "#05A105", action: "Suggestion resolved", actor: "Laura Bennett", details: "Suggestion SUG-8842 (Missing in Xero: \"ACME Hosting £240.00\") as Done. RunId BR-1042." },
+        { time: "15:48", color: "#05A105", action: "Receive Money created", actor: "Laura Bennett", details: "Receive Money £1,200.00 dated 2026-04-25 for \"Client payment – Northwind\"." },
+        { time: "15:22", color: "#05A105", action: "Spend Money created", actor: "Laura Bennett", details: "Spend Money £240.00 dated 2026-04-18 for \"ACME Hosting\", account \"Software Subscriptions\", tax \"No VAT\"." },
       ],
     },
     {
-      date: "23/04/2026",
+      date: "29/04/2026",
       entries: [
-        { time: "15:36", color: "#05A105", action: "Suggestion resolved", actor: "Daniel Victorin", details: "Wrong VAT code on Yorkshire Tea Estates corrected. VAT reclaimed: £480.00." },
-        { time: "15:20", color: "#05A105", action: "Suggestion resolved", actor: "Daniel Victorin", details: "Missing VAT number added for Clifton & Harrow Supplies. VAT reclaimed: £210.00." },
-        { time: "14:58", color: "#C8543A", action: "Review started", actor: "Daniel Victorin", details: "VAT and miscoding review initiated for April 2026. 184 transactions analysed, 6 suggestions generated." },
-      ],
-    },
-    {
-      date: "22/04/2026",
-      entries: [
-        { time: "09:10", color: "#4C71DF", action: "Transactions imported", actor: "Mimo AI Agent", details: "184 transactions pulled from Xero for April 2026. VAT codes and rates scanned." },
+        { time: "09:30", color: "#C8543A", action: "Mismatch detected", actor: "Mimo AI Agent", details: `Mismatch detected for "${accountName}" targeting ${period}. Net difference: £132.40. Unreconciled: 7. Category: Missing in Xero. RunId BR-1042.` },
+        { time: "09:15", color: "#4C71DF", action: "Statement uploaded", actor: "Laura Bennett", details: `Statement uploaded to RunId BR-1042 for ${accountName}.` },
+        { time: "09:02", color: "#4C71DF", action: "Reconciliation session created", actor: "Laura Bennett", details: `Reconciliation started for "${accountName}" (Bank) targeting ${period}. Tolerance £1. RunId BR-1042.` },
       ],
     },
   ];
@@ -1723,13 +1718,24 @@ function AuditTrailSidebar({ onClose }) {
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px 24px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 32px 24px" }}>
+          {liveEntries.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F5F5F5", borderRadius: 8, padding: "0 12px", height: 46, marginBottom: 12 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>Today</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {liveEntries.map((entry, i) => <AuditEntry key={i} {...entry} />)}
+              </div>
+            </div>
+          )}
           {AUDIT_DATA.map(({ date, entries }) => (
             <div key={date} style={{ marginBottom: 20 }}>
               {/* Date header */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F5F5F5", borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#545453" }}>{date}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F5F5F5", borderRadius: 8, padding: "0 12px", height: 46, marginBottom: 12 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>{date}</span>
               </div>
 
               {/* Entries */}
@@ -1758,29 +1764,20 @@ function AuditTrailSidebar({ onClose }) {
 }
 
 function AuditEntry({ time, color, action, actor, details }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", padding: "14px 16px", gap: 12 }}>
-        <span style={{ fontSize: 14, color: "#8C8C8B", whiteSpace: "nowrap", minWidth: 36, paddingTop: 1 }}>{time}</span>
-        <div style={{ width: 3, alignSelf: "stretch", borderRadius: 2, background: color, flexShrink: 0 }} />
+    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, overflow: "hidden", fontFamily: "'Inter', sans-serif", margin: "0 8px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", padding: "24px", gap: 12 }}>
+        <span style={{ fontSize: 16, color: "#000000", whiteSpace: "nowrap", minWidth: 36, paddingTop: 1 }}>{time}</span>
+        <div style={{ width: 3, alignSelf: "stretch", borderRadius: 2, background: color, flexShrink: 0, margin: "0 4px" }} />
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 14, color: "#545453", margin: "0 0 2px" }}>{action}</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#080908", margin: 0 }}>{actor}</p>
+          <p style={{ fontSize: 16, fontWeight: 400, color: "#4F4F4F", margin: "0 0 8px" }}>{action}</p>
+          <p style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>{actor}</p>
         </div>
       </div>
-      {/* Details section */}
-      <div style={{ borderTop: "1px solid #F0F0F0", padding: "0 16px" }}>
-        <button onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: "10px 0", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "#545453" }}>Details</span>
-          <div style={{ height: 1, flex: 1, background: "#ECECEC", margin: "0 10px" }} />
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(0deg)" : "rotate(180deg)" }}>
-            <path d="M3 9.5L7 5.5L11 9.5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div style={{ overflow: "hidden", maxHeight: open ? 200 : 0, opacity: open ? 1 : 0, transition: "max-height 0.3s ease, opacity 0.2s ease" }}>
-          <p style={{ fontSize: 13, color: "#545453", lineHeight: "20px", margin: "0 0 12px" }}>{details}</p>
-        </div>
+      {/* Details section — always visible */}
+      <div style={{ borderTop: "1px solid #F0F0F0", padding: "16px 24px 24px" }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#545453", display: "block", marginBottom: 6 }}>Details</span>
+        <p style={{ fontSize: 14, fontWeight: 400, color: "#4F4F4F", lineHeight: "20px", margin: 0 }}>{details}</p>
       </div>
     </div>
   );
@@ -2886,7 +2883,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       {/* Matched box — shown at top for clean accounts */}
       {effectiveClean && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 24px", textAlign: "center", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", marginBottom: 28 }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#EAF2E2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 48, height: 80, borderRadius: "50%", background: "#EAF2E2", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <path d="M4.5 11.5L8.5 15.5L17.5 7" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -3465,6 +3462,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [ignoredCards, setIgnoredCards] = useState(initialIgnoredCards ? new Set(initialIgnoredCards) : new Set());
   const [markCompleteDrawerOpen, setMarkCompleteDrawerOpen] = useState(false);
   const [markCompleteComment, setMarkCompleteComment] = useState("");
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [auditEntries, setAuditEntries] = useState([]);
+  const addAuditEntry = (action, details, color = "#05A105") => {
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
+    setAuditEntries(prev => [{ time, color, action, actor: "Laura Bennett", details }, ...prev]);
+  };
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -3909,6 +3913,18 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           )}
         </div>
 
+        {/* Audit log button — next to account dropdown */}
+        {resultsVisible && canvasReady && (
+          <button
+            onClick={() => setAuditLogOpen(true)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "0 14px", height: 48, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12L9 12M21 6L9 6M21 18L9 18M5 12C5 12.5523 4.55228 13 4 13C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11C4.55228 11 5 11.4477 5 12ZM5 6C5 6.55228 4.55228 7 4 7C3.44772 7 3 6.55228 3 6C3 5.44772 3.44772 5 4 5C4.55228 5 5 5.44772 5 6ZM5 18C5 18.5523 4.55228 19 4 19C3.44772 19 3 18.5523 3 18C3 17.4477 3.44772 17 4 17C4.55228 17 5 17.4477 5 18Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Audit log
+          </button>
+        )}
+
         <div style={{ flex: 1 }} />
 
         {/* Uploaded file pills — all in one container with dividers */}
@@ -4016,11 +4032,15 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         </button>
       </div>
 
+      {/* Audit log sidebar */}
+      {auditLogOpen && <AuditTrailSidebar onClose={() => setAuditLogOpen(false)} accountName={effectiveAccountName} period={selectedPeriod} liveEntries={auditEntries} />}
+
       {/* Mark as complete drawer */}
       {markCompleteDrawerOpen && (() => {
         const unreviewed = Math.max(0, totalSuggestions - resolvedCards.size - ignoredCards.size);
         const markAll = () => {
           setResolvedCards(new Set(Array.from({ length: totalSuggestions }, (_, i) => i)));
+          addAuditEntry("Mark as complete", `All ${totalSuggestions} suggestions marked as resolved.${markCompleteComment.trim() ? ` Note: ${markCompleteComment.trim()}` : ""}`, "#4C71DF");
           if (markCompleteComment.trim()) {
             onAddComment?.(effectiveAccountName, markCompleteComment.trim());
           }
@@ -4803,9 +4823,9 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 onOpenSpendMoney={(entry, cardIndex) => setSpendMoneySidebar({ ...entry, cardIndex })}
                 onOpenBatchDraft={(entry, cardIndex) => setBatchDraftSidebar({ ...entry, cardIndex })}
                 resolvedCards={resolvedCards}
-                onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
+                onResolveCard={(idx) => { setResolvedCards(prev => new Set([...prev, idx])); const card = (ACCOUNT_CARDS[effectiveAccountName]||[]).find(c=>c.idx===idx); addAuditEntry("Suggestion resolved", `${card ? card.contact : "Suggestion"} marked as resolved.`, "#05A105"); }}
                 ignoredCards={ignoredCards}
-                onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
+                onIgnoreCard={(idx) => { setIgnoredCards(prev => new Set([...prev, idx])); const card = (ACCOUNT_CARDS[effectiveAccountName]||[]).find(c=>c.idx===idx); addAuditEntry("Suggestion ignored", `${card ? card.contact : "Suggestion"} marked as ignored.`, "#8C8C8B"); }}
                 onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
                 accountStatus={accountStatus}
                 boxesOpen={false}
@@ -4950,6 +4970,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               if (spendMoneySidebar.cardIndex != null) {
                 setResolvedCards(prev => new Set([...prev, spendMoneySidebar.cardIndex]));
               }
+              addAuditEntry("Spend Money created", `Spend Money transaction created for ${spendMoneySidebar.contact || "contact"} — ${spendMoneySidebar.amount || ""}.`, "#05A105");
               setToast("Spend money created and published successfully");
               setTimeout(() => setToast(null), 4000);
             }}
@@ -5112,11 +5133,11 @@ function StatsRow({ items = [], columns }) {
 }
 
 // ── DataTable component (from Tables.jsx) ─────────────────────────────────────
-function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onRowClick }) {
+function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onRowClick, containerStyle = {} }) {
   const [hovered, setHovered] = useState(null);
   const gridTemplate = columns.map(c => c.width || "1fr").join(" ");
   return (
-    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden", fontFamily: "'Inter', sans-serif", ...containerStyle }}>
       {title && <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #E9E9EB" }}><span style={{ fontSize: 18, fontWeight: 500, color: "#080908" }}>{title}</span></div>}
       <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid #E9E9EB", background: "#FFFFFF" }}>
         {columns.map((col, ci) => (
@@ -12217,6 +12238,221 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
   );
 }
 
+
+// ── Collect Documents Page ────────────────────────────────────────────────────
+function CollectDocumentsPage({ selectedPeriod }) {
+  const [activeTab, setActiveTab] = useState("Missing documents");
+  const [search, setSearch] = useState("");
+
+  const MISSING_DOCS = [
+    { id: 1, contact: "Yorkshire Tea Estates", type: "Invoice", requestedBy: "Sarah Thompson", dueDate: "12 Apr 2026", status: "Pending", amount: "£1,840.00", account: "Lloyds Bank - Business" },
+    { id: 2, contact: "Clifton & Harrow Supplies", type: "Bank statement", requestedBy: "Laura Bennett", dueDate: "10 Apr 2026", status: "Overdue", amount: "£3,200.00", account: "Barclays - Operations" },
+    { id: 3, contact: "Meridian Office Solutions", type: "Receipt", requestedBy: "Sarah Thompson", dueDate: "14 Apr 2026", status: "Pending", amount: "£480.00", account: "Mastercard Business" },
+    { id: 4, contact: "Bakery & Food Supplies", type: "Invoice", requestedBy: "Laura Bennett", dueDate: "8 Apr 2026", status: "Overdue", amount: "£2,400.00", account: "Lloyds Bank - Business" },
+    { id: 5, contact: "Direct Expenses", type: "Expense report", requestedBy: "Sarah Thompson", dueDate: "15 Apr 2026", status: "Pending", amount: "£1,080.00", account: "American Express OP GBP" },
+    { id: 6, contact: "Internal Transfer", type: "Transfer confirmation", requestedBy: "Laura Bennett", dueDate: "9 Apr 2026", status: "Overdue", amount: "£810.00", account: "HSBC - Business Transactions" },
+    { id: 7, contact: "Parkway Solutions", type: "Invoice", requestedBy: "Sarah Thompson", dueDate: "16 Apr 2026", status: "Pending", amount: "£1,600.00", account: "Barclays - Operations" },
+    { id: 8, contact: "NorthStar Media", type: "Invoice", requestedBy: "Laura Bennett", dueDate: "11 Apr 2026", status: "Sent", amount: "£1,600.00", account: "Barclays - Operations" },
+  ];
+
+  const RECURRING_DOCS = [
+    { id: 1, contact: "Yorkshire Tea Estates", type: "Monthly invoice", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "Lloyds Bank - Business" },
+    { id: 2, contact: "Clifton & Harrow Supplies", type: "Quarterly statement", frequency: "Quarterly", nextDue: "1 Jul 2026", status: "Active", account: "Barclays - Operations" },
+    { id: 3, contact: "Meridian Office Solutions", type: "Monthly receipt", frequency: "Monthly", nextDue: "1 May 2026", status: "Paused", account: "Mastercard Business" },
+    { id: 4, contact: "Bakery & Food Supplies", type: "Weekly invoice", frequency: "Weekly", nextDue: "21 Apr 2026", status: "Active", account: "Lloyds Bank - Business" },
+    { id: 5, contact: "Direct Expenses", type: "Monthly report", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "American Express OP GBP" },
+  ];
+
+  const isMissing = activeTab === "Missing documents";
+  const rows = isMissing ? MISSING_DOCS : RECURRING_DOCS;
+  const filtered = rows.filter(r => r.contact.toLowerCase().includes(search.toLowerCase()) || r.type.toLowerCase().includes(search.toLowerCase()));
+
+  const STATUS_STYLE = {
+    "Pending":  { bg: "#FDF8EE", color: "#D5A750" },
+    "Overdue":  { bg: "#FDECEA", color: "#C8543A" },
+    "Sent":     { bg: "#EAF2E2", color: "#05A105" },
+    "Active":   { bg: "#EAF2E2", color: "#05A105" },
+    "Paused":   { bg: "#F5F5F5", color: "#7C7C7C" },
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#FFFFFF" }}>
+      {/* Header */}
+      <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
+        {/* Title row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Collect documents</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <PrimaryButton style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginRight: 6 }}><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round"/></svg>
+              Create batch
+            </PrimaryButton>
+            {[
+              { path: "M16.6666 8.74935V5.66602C16.6666 4.26588 16.6666 3.56582 16.3942 3.03104C16.1545 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0668 1.66602 12.6666 1.66602H7.33331C5.93318 1.66602 5.23312 1.66602 4.69834 1.9385C4.22793 2.17818 3.84548 2.56063 3.6058 3.03104C3.33331 3.56582 3.33331 4.26588 3.33331 5.66602V14.3327C3.33331 15.7328 3.33331 16.4329 3.6058 16.9677C3.84548 17.4381 4.22793 17.8205 4.69834 18.0602C5.23312 18.3327 5.93318 18.3327 7.33331 18.3327H9.99998M11.6666 9.16602H6.66665M8.33331 12.4993H6.66665M13.3333 5.83268H6.66665M15 17.4993V12.4993M12.5 14.9993H17.5" },
+              { path: "M2.08335 10.0007H4.90166C5.47266 10.0007 5.99466 10.3233 6.25002 10.834C6.50538 11.3447 7.02738 11.6673 7.59838 11.6673H12.4017C12.9727 11.6673 13.4947 11.3447 13.75 10.834C14.0054 10.3233 14.5274 10.0007 15.0984 10.0007H17.9167M7.47216 3.33398H12.5279C13.4253 3.33398 13.874 3.33398 14.2701 3.47062C14.6204 3.59145 14.9395 3.78865 15.2042 4.04794C15.5036 4.34115 15.7043 4.74248 16.1056 5.54513L17.9111 9.15607C18.0686 9.47106 18.1473 9.62855 18.2028 9.79361C18.2522 9.94019 18.2878 10.091 18.3092 10.2442C18.3334 10.4167 18.3334 10.5928 18.3334 10.9449V12.6673C18.3334 14.0674 18.3334 14.7675 18.0609 15.3023C17.8212 15.7727 17.4387 16.1552 16.9683 16.3948C16.4335 16.6673 15.7335 16.6673 14.3334 16.6673H5.66669C4.26656 16.6673 3.56649 16.6673 3.03171 16.3948C2.56131 16.1552 2.17885 15.7727 1.93917 15.3023C1.66669 14.7675 1.66669 14.0674 1.66669 12.6673V10.9449C1.66669 10.5928 1.66669 10.4167 1.69083 10.2442C1.71228 10.091 1.74789 9.94019 1.7972 9.79361C1.85274 9.62855 1.93149 9.47105 2.08898 9.15607L3.89445 5.54513C4.29577 4.74248 4.49644 4.34115 4.79581 4.04794C5.06055 3.78865 5.37962 3.59145 5.72993 3.47062C6.12606 3.33398 6.57476 3.33398 7.47216 3.33398Z" },
+              { path: "M10 12.4993C11.3807 12.4993 12.5 11.3801 12.5 9.99935C12.5 8.61864 11.3807 7.49935 10 7.49935C8.61931 7.49935 7.50002 8.61864 7.50002 9.99935C7.50002 11.3801 8.61931 12.4993 10 12.4993Z", path2: "M15.6061 12.2721C15.5052 12.5006 15.4752 12.754 15.5197 12.9998C15.5643 13.2455 15.6814 13.4723 15.8561 13.6509L15.9015 13.6963C16.0424 13.837 16.1542 14.0041 16.2304 14.1881C16.3067 14.372 16.3459 14.5692 16.3459 14.7683C16.3459 14.9674 16.3067 15.1646 16.2304 15.3485C16.1542 15.5324 16.0424 15.6995 15.9015 15.8403C15.7608 15.9811 15.5937 16.0929 15.4098 16.1691C15.2258 16.2454 15.0287 16.2846 14.8296 16.2846C14.6305 16.2846 14.4333 16.2454 14.2494 16.1691C14.0654 16.0929 13.8983 15.9811 13.7576 15.8403L13.7121 15.7948C13.5336 15.6202 13.3068 15.503 13.0611 15.4584C12.8153 15.4139 12.5619 15.444 12.3334 15.5448C12.1093 15.6408 11.9182 15.8003 11.7836 16.0035C11.649 16.2068 11.5768 16.445 11.5758 16.6887V16.8175C11.5758 17.2194 11.4161 17.6048 11.132 17.8889C10.8479 18.173 10.4625 18.3327 10.0606 18.3327C9.65878 18.3327 9.2734 18.173 8.98925 17.8889C8.70511 17.6048 8.54547 17.2194 8.54547 16.8175V16.7493C8.53961 16.4986 8.45844 16.2554 8.31253 16.0514C8.16661 15.8474 7.9627 15.692 7.72729 15.6054C7.4988 15.5046 7.24533 15.4745 6.99957 15.519C6.75382 15.5636 6.52705 15.6808 6.3485 15.8554L6.30305 15.9009C6.16233 16.0417 5.99523 16.1535 5.81129 16.2297C5.62736 16.306 5.4302 16.3452 5.23108 16.3452C5.03197 16.3452 4.8348 16.306 4.65087 16.2297C4.46693 16.1535 4.29983 16.0417 4.15911 15.9009C4.01824 15.7601 3.90648 15.593 3.83023 15.4091C3.75398 15.2252 3.71474 15.028 3.71474 14.8289C3.71474 14.6298 3.75398 14.4326 3.83023 14.2487C3.90648 14.0647 4.01824 13.8976 4.15911 13.7569L4.20457 13.7115C4.37921 13.5329 4.49637 13.3062 4.54093 13.0604C4.58549 12.8146 4.55541 12.5612 4.45457 12.3327C4.35853 12.1086 4.19908 11.9175 3.99583 11.7829C3.79258 11.6483 3.5544 11.5761 3.31063 11.5751H3.18184C2.78 11.5751 2.39461 11.4155 2.11046 11.1313C1.82632 10.8472 1.66669 10.4618 1.66669 10.06C1.66669 9.65811 1.82632 9.27273 2.11046 8.98858C2.39461 8.70444 2.78 8.5448 3.18184 8.5448H3.25002C3.50077 8.53894 3.74396 8.45777 3.94797 8.31186C4.15199 8.16594 4.30738 7.96203 4.39396 7.72662C4.4948 7.49812 4.52489 7.24466 4.48033 6.9989C4.43577 6.75315 4.31861 6.52638 4.14396 6.34783L4.09851 6.30238C3.95763 6.16166 3.84588 5.99456 3.76963 5.81062C3.69338 5.62669 3.65413 5.42952 3.65413 5.23041C3.65413 5.0313 3.69338 4.83413 3.76963 4.6502C3.84588 4.46626 3.95763 4.29916 4.09851 4.15844C4.23922 4.01757 4.40633 3.90581 4.59026 3.82956C4.7742 3.75331 4.97136 3.71407 5.17047 3.71407C5.36959 3.71407 5.56675 3.75331 5.75069 3.82956C5.93462 3.90581 6.10173 4.01757 6.24244 4.15844L6.2879 4.20389C6.46644 4.37854 6.69321 4.4957 6.93897 4.54026C7.18472 4.58482 7.43819 4.55474 7.66669 4.45389H7.72729C7.95136 4.35786 8.14246 4.19841 8.27706 3.99516C8.41166 3.79191 8.4839 3.55373 8.48487 3.30996V3.18117C8.48487 2.77932 8.6445 2.39394 8.92865 2.10979C9.21279 1.82565 9.59818 1.66602 10 1.66602C10.4019 1.66602 10.7872 1.82565 11.0714 2.10979C11.3555 2.39394 11.5152 2.77932 11.5152 3.18117V3.24935C11.5161 3.49313 11.5884 3.7313 11.723 3.93455C11.8576 4.1378 12.0487 4.29726 12.2727 4.39329C12.5012 4.49413 12.7547 4.52422 13.0005 4.47966C13.2462 4.4351 13.473 4.31794 13.6515 4.14329L13.697 4.09783C13.8377 3.95696 14.0048 3.8452 14.1887 3.76896C14.3727 3.69271 14.5698 3.65346 14.769 3.65346C14.9681 3.65346 15.1652 3.69271 15.3492 3.76896C15.5331 3.8452 15.7002 3.95696 15.8409 4.09783C15.9818 4.23855 16.0936 4.40565 16.1698 4.58959C16.2461 4.77353 16.2853 4.97069 16.2853 5.1698C16.2853 5.36892 16.2461 5.56608 16.1698 5.75002C16.0936 5.93395 15.9818 6.10106 15.8409 6.24177L15.7955 6.28723C15.6208 6.46577 15.5037 6.69254 15.4591 6.9383C15.4145 7.18405 15.4446 7.43752 15.5455 7.66602V7.72662C15.6415 7.95069 15.801 8.14179 16.0042 8.27639C16.2075 8.41099 16.4456 8.48322 16.6894 8.4842H16.8182C17.22 8.4842 17.6054 8.64383 17.8896 8.92798C18.1737 9.21212 18.3334 9.59751 18.3334 9.99935C18.3334 10.4012 18.1737 10.7866 17.8896 11.0707C17.6054 11.3549 17.22 11.5145 16.8182 11.5145H16.75C16.5062 11.5155 16.2681 11.5877 16.0648 11.7223C15.8616 11.8569 15.7021 12.048 15.6061 12.2721Z" },
+            ].map((btn, i) => (
+              <button key={i} style={{ width: 40, height: 40, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d={btn.path} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                  {btn.path2 && <path d={btn.path2} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>}
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 24, borderBottom: "1px solid #ECECEC", marginBottom: 0 }}>
+          {[{ label: "Missing documents", count: 8 }, { label: "Recurring requests", count: 5 }].map(tab => (
+            <button key={tab.label} onClick={() => setActiveTab(tab.label)}
+              style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px", fontFamily: "'Inter', sans-serif" }}>
+              <span style={{ fontSize: 14, fontWeight: activeTab === tab.label ? 500 : 400, color: activeTab === tab.label ? "#2A2A2A" : "#7C7C7C" }}>{tab.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "#FFFFFF", background: "#05A105", borderRadius: 5, padding: "0 5px", lineHeight: "20px", minWidth: 20, textAlign: "center" }}>{tab.count}</span>
+              {activeTab === tab.label && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: "#05A105" }} />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "32px 48px" }}>
+
+        {/* Email batches section */}
+        {isMissing && (
+          <div style={{ marginBottom: 32 }}>
+            <p style={{ fontSize: 16, fontWeight: 500, color: "#1F2024", margin: "0 0 16px" }}>Email batches</p>
+            <div style={{ display: "flex", gap: 16 }}>
+              {/* Draft batch card */}
+              <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: 16, width: 300 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, background: "#F5F5F5", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M16.3636 1.81836L19.9999 5.45472M1.81812 20.0002L2.97848 15.7455C3.05418 15.4679 3.09204 15.3291 3.15014 15.1997C3.20174 15.0848 3.26513 14.9755 3.33931 14.8737C3.42286 14.7591 3.52458 14.6573 3.72803 14.4539L13.122 5.05989C13.302 4.87988 13.392 4.78988 13.4958 4.75616C13.5871 4.7265 13.6855 4.7265 13.7768 4.75616C13.8805 4.78988 13.9705 4.87988 14.1506 5.05989L16.7584 7.66774C16.9384 7.84774 17.0284 7.93775 17.0621 8.04153C17.0918 8.13283 17.0918 8.23117 17.0621 8.32246C17.0284 8.42624 16.9384 8.51625 16.7584 8.69626L7.36439 18.0903C7.16094 18.2937 7.05922 18.3954 6.94455 18.479C6.84274 18.5532 6.7335 18.6166 6.61858 18.6681C6.48916 18.7263 6.35037 18.7641 6.07279 18.8398L1.81812 20.0002Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "#1F2024", margin: 0 }}>Lloyd Bank - Operations GBP</p>
+                    <p style={{ fontSize: 14, color: "#7C7C7C", margin: 0 }}>Draft</p>
+                  </div>
+                </div>
+                <div style={{ border: "1px solid #ECECEC", borderRadius: 8, padding: "0 12px", height: 42, display: "flex", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6666 7.91602V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H11.6666M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M13.7499 12.5012C13.8967 12.0838 14.1866 11.7319 14.568 11.5077C14.9495 11.2835 15.398 11.2015 15.8341 11.2763C16.2702 11.3511 16.6658 11.5779 16.9507 11.9164C17.2357 12.2549 17.3916 12.6833 17.391 13.1257C17.391 14.3748 15.5174 14.9993 15.5174 14.9993M15.5415 17.4993H15.5498" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span style={{ fontSize: 14, color: "#1F2024" }}>8 requests</span>
+                  </div>
+                  {/* Vertical divider — not full height */}
+                  <div style={{ width: 1, height: 20, background: "#E9E9EB", flexShrink: 0, margin: "0 12px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.3333 15L15 16.6667L18.3333 13.3333M9.99996 12.5H6.66663C5.11349 12.5 4.33692 12.5 3.72435 12.7537C2.90759 13.092 2.25867 13.741 1.92036 14.5577C1.66663 15.1703 1.66663 15.9469 1.66663 17.5M12.9166 2.7423C14.1382 3.23679 15 4.43443 15 5.83333C15 7.23224 14.1382 8.42988 12.9166 8.92437M11.25 5.83333C11.25 7.67428 9.75757 9.16667 7.91663 9.16667C6.07568 9.16667 4.58329 7.67428 4.58329 5.83333C4.58329 3.99238 6.07568 2.5 7.91663 2.5C9.75757 2.5 11.25 3.99238 11.25 5.83333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span style={{ fontSize: 14, color: "#1F2024" }}>2 assignees</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Create email batch card */}
+              <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: 24, width: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                <div style={{ width: 44, height: 44, background: "#F1F8F0", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4.167v11.666M4.167 10h11.666" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </div>
+                <p style={{ fontSize: 14, color: "#2A2A2A", margin: 0, textAlign: "center", lineHeight: "20px" }}>Create email<br/>batch</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Table container */}
+        <div style={{ background: "#FFFFFF" }}>
+
+          {/* Tabs row */}
+          <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 0 0", background: "#FFFFFF", borderBottom: "1px solid #ECECEC" }}>
+            {[{ label: "Open requests", count: 8 }, { label: "Received", count: 2 }, { label: "Archived", count: 0 }].map((tab, i) => (
+              <button key={tab.label} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 14px", border: "none", borderBottom: i === 0 ? "1px solid #ECECEC" : "none", marginBottom: i === 0 ? -1 : 0, borderRadius: "8px 8px 0 0", background: i === 0 ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: i === 0 ? 600 : 400, color: i === 0 ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}
+                onMouseEnter={e => { if (i !== 0) e.currentTarget.style.color = "#080908"; }}
+                onMouseLeave={e => { if (i !== 0) e.currentTarget.style.color = "#7C7C7C"; }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search + Export row */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderBottom: "1px solid #ECECEC", borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", gap: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167a6.667 6.667 0 1 1-13.333 0 6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif" }} />
+<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button style={{ display: "inline-flex", alignItems: "center", gap: 0, height: 36, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif", overflow: "hidden" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "0 12px" }}>Export CSV</span>
+              </button>
+              <button style={{ width: 36, height: 36, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1.25" fill="#080908"/><circle cx="8" cy="8" r="1.25" fill="#080908"/><circle cx="8" cy="13" r="1.25" fill="#080908"/></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter row */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderBottom: "1px solid #ECECEC", borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", gap: 8 }}>
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2.5 6.666L12.5 6.666M12.5 6.666C12.5 8.047 13.619 9.166 15 9.166C16.381 9.166 17.5 8.047 17.5 6.666C17.5 5.285 16.381 4.166 15 4.166C13.619 4.166 12.5 5.285 12.5 6.666ZM7.5 13.333L17.5 13.333M7.5 13.333C7.5 14.713 6.381 15.833 5 15.833C3.619 15.833 2.5 14.713 2.5 13.333C2.5 11.952 3.619 10.833 5 10.833C6.381 10.833 7.5 11.952 7.5 13.333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              All filters
+            </button>
+            {["Bank account", "Date", "Assignee"].map(f => (
+              <button key={f} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                {f}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            ))}
+          </div>
+
+          {/* Table */}
+          {(() => {
+            const TABLE_ROWS = [
+              { ref: "Maple Leaf Services", date: "17 Mar 2026", amount: "-£450.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business Account", dot: true },
+              { ref: "Gas Service Ltd.", date: "17 Mar 2026", amount: "-£324.87", batch: null, from: null, account: "HSBC - Transaction Account", dot: true },
+              { ref: "Thames Water Ltd. A918", date: "16 Mar 2026", amount: "-£987.65", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business Account", dot: false },
+              { ref: "British Gas PLC", date: "15 Mar 2026", amount: "-£432.10", batch: null, from: null, account: "Lloyds Bank - Business Account", dot: false },
+              { ref: "Highland Energy 455GBP", date: "15 Mar 2026", amount: "-£765.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Barclays - Credit Account", dot: false },
+              { ref: "Maple Leaf Services AVT7710p", date: "14 Mar 2026", amount: "-£320.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "Barclays - Business", dot: false },
+            ].filter(r => r.ref.toLowerCase().includes(search.toLowerCase()));
+
+            const cols = [
+              { key: "check",   label: <input type="checkbox" style={{ cursor: "pointer" }} />, width: "40px",  render: () => <input type="checkbox" style={{ cursor: "pointer" }} /> },
+              { key: "status",  label: "Status",         width: "90px",  render: () => <span style={{ fontSize: 12, fontWeight: 500, color: "#4C71DF", background: "#EEF2FF", border: "1px solid #C7D4F7", borderRadius: 6, padding: "2px 8px" }}>Open</span> },
+              { key: "ref",     label: "Reference",      width: "1fr",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#05A105", flexShrink: 0 }} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
+              { key: "date",    label: "Date",           width: "120px" },
+              { key: "amount",  label: "Amount",         width: "110px" },
+              { key: "batch",   label: "Email batch",    width: "130px", render: v => v ? <span style={{ fontSize: 12, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px" }}>{v}</span> : <span style={{ fontSize: 14, color: "#BCBCBC" }}>No Batch</span> },
+              { key: "from",    label: "Requested from", width: "180px", render: v => <span style={{ color: v ? "#545453" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v || "Not assigned"}</span> },
+              { key: "account", label: "Bank account",   width: "180px" },
+              { key: "upload",  label: "Upload file",    width: "150px", render: () => <button style={{ height: 32, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="#FFFFFF"}>Upload file</button> },
+              { key: "actions", label: "Actions",        width: "80px",  render: () => <div style={{ display: "flex", gap: 4 }}><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 7.667a6.723 6.723 0 0 1-.6 2.533C12.93 11.141 12.206 11.933 11.311 12.486c-.894.554-1.926.847-2.978.847a6.584 6.584 0 0 1-2.533-.534L2 14l1.267-3.8a6.723 6.723 0 0 1-.6-2.533 6.584 6.584 0 0 1 .847-3.143A6.41 6.41 0 0 1 5.8 2.027a6.39 6.39 0 0 1 2.533-.694h.334A6.66 6.66 0 0 1 14 7.333v.334Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3.5" r="1.25" fill="#8C8C8B"/><circle cx="8" cy="8" r="1.25" fill="#8C8C8B"/><circle cx="8" cy="12.5" r="1.25" fill="#8C8C8B"/></svg></button></div> },
+            ];
+            const gridTemplate = cols.map(c => c.width).join(" ");
+            const rows = TABLE_ROWS.map(r => ({ check: null, status: null, ref: r.ref, date: r.date, amount: r.amount, batch: r.batch, from: r.from, account: r.account, upload: null, actions: null, _raw: r }));
+
+            return (
+              <DataTable
+                columns={cols.map(c => ({ ...c, render: c.render ? (v, row) => c.render(v, row._raw || row) : undefined }))}
+                rows={rows}
+                footerLabel={`${TABLE_ROWS.length} requests`}
+                containerStyle={{ borderRadius: "0 0 8px 8px", borderTop: "none" }}
+              />
+            );
+          })()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
   const [activeNav, setActiveNav] = useState("Home");
@@ -12311,7 +12547,7 @@ export default function BankReconciliation() {
     const timestamp = `${day} ${monthNames[now.getMonth()]} at ${hours}:${mins}`;
     setRowComments(prev => ({
       ...prev,
-      [accountCode]: [...(prev[accountCode] || []), { user: "Daniel Victorin", timestamp, text }],
+      [accountCode]: [...(prev[accountCode] || []), { user: "Laura Bennett", timestamp, text }],
     }));
   };
 
@@ -12403,7 +12639,7 @@ export default function BankReconciliation() {
       const timestamp = `${day} ${monthNames[now.getMonth()]} at ${hours}:${mins}`;
       setRowComments(prev => ({
         ...prev,
-        [currentReconciling.code]: [...(prev[currentReconciling.code] || []), { user: "Daniel Victorin", timestamp, text: comment }],
+        [currentReconciling.code]: [...(prev[currentReconciling.code] || []), { user: "Laura Bennett", timestamp, text: comment }],
       }));
     }
     // Show success alert with account info
@@ -12597,6 +12833,11 @@ export default function BankReconciliation() {
           <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} onRunAccrual={() => setAccrualActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
+        ) : activeNav === "Collect documents" ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
+            <CollectDocumentsPage selectedPeriod={selectedPeriod} />
+          </div>
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
