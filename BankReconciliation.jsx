@@ -1681,7 +1681,7 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
         { time: "16:30", color: "#8C8C8B", action: "Account status updated", actor: "Mimo AI Agent", details: "Status changed: Mismatch → Ready for final approval in Xero (all fixes prepared; Xero confirmation required)." },
         { time: "16:12", color: "#05A105", action: "Suggestion resolved", actor: "Laura Bennett", details: "Suggestion SUG-8842 (Missing in Xero: \"ACME Hosting £240.00\") as Done. RunId BR-1042." },
         { time: "15:48", color: "#05A105", action: "Receive Money created", actor: "Laura Bennett", details: "Receive Money £1,200.00 dated 2026-04-25 for \"Client payment – Northwind\"." },
-        { time: "15:22", color: "#05A105", action: "Spend Money created", actor: "Laura Bennett", details: "Spend Money £240.00 dated 2026-04-18 for \"ACME Hosting\", account \"Software Subscriptions\", tax \"No VAT\"." },
+        { time: "15:22", color: "#05A105", action: "Spend money created", actor: "Laura Bennett", details: "Spend Money £240.00 dated 2026-04-18 for \"ACME Hosting\", account \"Software Subscriptions\", tax \"No VAT\"." },
       ],
     },
     {
@@ -1710,8 +1710,8 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
         fontFamily: "'Inter', sans-serif",
       }}>
         {/* Header */}
-        <div style={{ padding: "28px 24px 20px", borderBottom: "1px solid #ECECEC", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Audit log</h2>
+        <div style={{ height: 112, padding: "0 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", boxSizing: "border-box" }}>
+          <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Audit log</h2>
           <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
             <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
@@ -1726,7 +1726,7 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
                 <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>Today</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {liveEntries.map((entry, i) => <AuditEntry key={i} {...entry} />)}
+                {liveEntries.map((entry) => <AuditEntry key={entry.id || entry.time + entry.action} {...entry} />)}
               </div>
             </div>
           )}
@@ -1801,7 +1801,7 @@ function SpendMoneySidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
     setTimeout(() => {
       setVisible(false);
       setTimeout(() => {
-        onPublish?.();
+        onPublish?.({ amount, date: issueDate, contact: bankStatement, account: "Software Subscriptions", tax: "No VAT" });
         onClose();
       }, 320);
     }, 2500);
@@ -2642,7 +2642,7 @@ function SuggestionsBox({ isCleanReconcile, allJustResolved = false, accountStat
 }
 
 // ── Results panel ─────────────────────────────────────────────────────────────
-function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true, uploadedFileName = null }) {
+function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolvedCards = new Set(), onResolveCard, ignoredCards = new Set(), onIgnoreCard, onShowToast, isCleanReconcile = false, allJustResolved = false, onAccountsOverview = null, matchedTotal = null, accountStatus = null, boxesOpen = true, uploadedFileName = null, onAddAuditEntry }) {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const containerRef = useRef(null);
   const [resyncOverride, setResyncOverride] = useState(null); // null = use defaults
@@ -3039,12 +3039,12 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                           onPrimaryAction={
                             entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, entry.idx) :
                             entry.primaryLabel === "Review and publish"  ? () => onOpenBatchDraft?.(entry, entry.idx) :
-                            entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onShowToast?.("Reconciled in Xero successfully"); } :
-                            () => { onResolveCard?.(entry.idx); onShowToast?.("Action completed successfully"); }
+                            entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(entry.idx); onAddAuditEntry?.("Suggestion resolved", `Suggestion SUG-${1000 + entry.idx} (${{"missing":"Missing in Xero","anomaly":"Anomaly","duplicate":"Duplicate","date":"Date Difference","omitted":"Omitted","general":"General"}[entry.cat] || entry.cat}: "${entry.contact} ${entry.amount || ""}") reconciled in Xero.`, "#05A105"); onShowToast?.("Reconciled in Xero successfully"); } :
+                            () => { onResolveCard?.(entry.idx); onAddAuditEntry?.("Suggestion resolved", `Suggestion SUG-${1000 + entry.idx} (${{"missing":"Missing in Xero","anomaly":"Anomaly","duplicate":"Duplicate","date":"Date Difference","omitted":"Omitted","general":"General"}[entry.cat] || entry.cat}: "${entry.contact} ${entry.amount || ""}") marked as Done.`, "#05A105"); onShowToast?.("Action completed successfully"); }
                           }
-                          onSecondaryAction={entry.cat === "missing" ? undefined : () => { onResolveCard?.(entry.idx); onShowToast?.("Marked as done"); }}
+                          onSecondaryAction={entry.cat === "missing" ? undefined : () => { onResolveCard?.(entry.idx); onAddAuditEntry?.("Suggestion resolved", `Suggestion SUG-${1000 + entry.idx} (${{"missing":"Missing in Xero","anomaly":"Anomaly","duplicate":"Duplicate","date":"Date Difference","omitted":"Omitted","general":"General"}[entry.cat] || entry.cat}: "${entry.contact} ${entry.amount || ""}") marked as Done.`, "#05A105"); onShowToast?.("Marked as done"); }}
                           onMore={undefined}
-                          onIgnore={() => { onIgnoreCard?.(entry.idx); onShowToast?.("Suggestion ignored"); }}
+                          onIgnore={() => { onIgnoreCard?.(entry.idx); onAddAuditEntry?.("Suggestion ignored", `Suggestion SUG-${1000 + entry.idx} (${{"missing":"Missing in Xero","anomaly":"Anomaly","duplicate":"Duplicate","date":"Date Difference","omitted":"Omitted","general":"General"}[entry.cat] || entry.cat}: "${entry.contact} ${entry.amount || ""}") marked as Ignored.`, "#8C8C8B"); onShowToast?.("Suggestion ignored"); }}
                         />
                       </div>
                     );
@@ -3080,7 +3080,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               onPrimaryAction={
                 entry.primaryLabel === "Create spend money" ? () => onOpenSpendMoney?.(entry, i) :
                 entry.primaryLabel === "Review and publish"  ? () => onOpenBatchDraft?.(entry, i) :
-                entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(i); onShowToast?.("Reconciled in Xero successfully"); } :
+                entry.primaryLabel === "Reconcile in Xero"   ? () => { onResolveCard?.(i); onAddAuditEntry?.("Suggestion resolved", `${entry.contact} marked as resolved.`, "#05A105"); onShowToast?.("Reconciled in Xero successfully"); } :
                 undefined
               }
               onIgnore={() => { onIgnoreCard?.(i); onShowToast?.("Suggestion ignored"); }}
@@ -3464,11 +3464,15 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [markCompleteComment, setMarkCompleteComment] = useState("");
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [auditEntries, setAuditEntries] = useState([]);
+  const auditCounterRef = React.useRef(0);
+  const addAuditEntryRef = React.useRef(null);
   const addAuditEntry = (action, details, color = "#05A105") => {
     const now = new Date();
     const time = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
-    setAuditEntries(prev => [{ time, color, action, actor: "Laura Bennett", details }, ...prev]);
+    const id = ++auditCounterRef.current;
+    setAuditEntries(prev => [{ id, time, color, action, actor: "Laura Bennett", details }, ...prev]);
   };
+  addAuditEntryRef.current = addAuditEntry;
   const [toast, setToast] = useState(null);
 
   // Drag handler for resizable chat panel
@@ -4823,10 +4827,11 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 onOpenSpendMoney={(entry, cardIndex) => setSpendMoneySidebar({ ...entry, cardIndex })}
                 onOpenBatchDraft={(entry, cardIndex) => setBatchDraftSidebar({ ...entry, cardIndex })}
                 resolvedCards={resolvedCards}
-                onResolveCard={(idx) => { setResolvedCards(prev => new Set([...prev, idx])); const card = (ACCOUNT_CARDS[effectiveAccountName]||[]).find(c=>c.idx===idx); addAuditEntry("Suggestion resolved", `${card ? card.contact : "Suggestion"} marked as resolved.`, "#05A105"); }}
+                onResolveCard={(idx) => setResolvedCards(prev => new Set([...prev, idx]))}
                 ignoredCards={ignoredCards}
-                onIgnoreCard={(idx) => { setIgnoredCards(prev => new Set([...prev, idx])); const card = (ACCOUNT_CARDS[effectiveAccountName]||[]).find(c=>c.idx===idx); addAuditEntry("Suggestion ignored", `${card ? card.contact : "Suggestion"} marked as ignored.`, "#8C8C8B"); }}
+                onIgnoreCard={(idx) => setIgnoredCards(prev => new Set([...prev, idx]))}
                 onShowToast={(msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); }}
+                onAddAuditEntry={addAuditEntry}
                 accountStatus={accountStatus}
                 boxesOpen={false}
                 uploadedFileName={uploadedFiles?.[0]?.name}
@@ -4966,11 +4971,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             amount={spendMoneySidebar.amount}
             date={spendMoneySidebar.date}
             onClose={() => setSpendMoneySidebar(null)}
-            onPublish={() => {
+            onPublish={(data) => {
               if (spendMoneySidebar.cardIndex != null) {
                 setResolvedCards(prev => new Set([...prev, spendMoneySidebar.cardIndex]));
               }
-              addAuditEntry("Spend Money created", `Spend Money transaction created for ${spendMoneySidebar.contact || "contact"} — ${spendMoneySidebar.amount || ""}.`, "#05A105");
+              const d = data || {};
+              addAuditEntryRef.current?.("Spend money created", `Spend money created for ${d.amount || spendMoneySidebar.amount || ""} dated ${d.date || ""} for "${d.contact || spendMoneySidebar.contact || ""}", account "${d.account || "Software Subscriptions"}", tax "${d.tax || "No VAT"}".`, "#05A105");
               setToast("Spend money created and published successfully");
               setTimeout(() => setToast(null), 4000);
             }}
