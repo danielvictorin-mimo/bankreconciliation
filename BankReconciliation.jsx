@@ -1666,11 +1666,97 @@ function ChevronUpIcon() {
 function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "April 2026", liveEntries = [] }) {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [downloadState, setDownloadState] = useState("idle"); // idle | downloading | downloaded
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
 
   const handleClose = () => {
     setClosing(true);
     setTimeout(onClose, 340);
+  };
+
+  const handleExportPDF = () => {
+    if (downloadState !== "idle") return;
+    setDownloadState("downloading");
+    const sanitize = (s) => (s||"").replace(/\u2192/g,"->").replace(/\u2014/g,"--").replace(/\u2013/g,"-").replace(/\u201c/g,'"').replace(/\u201d/g,'"').replace(/\u2019/g,"'").replace(/[^\x00-\x7F]/g,"");
+    const generate = async () => {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
+        const W = doc.internal.pageSize.getWidth();
+        const margin = 40;
+        let y = 60;
+        const grey = [84, 84, 83];
+        const dark = [30, 30, 36];
+        // Logo — render Mimo SVG to canvas then add as image
+        try {
+          const logoSvg = `<svg width="196" height="42" viewBox="0 0 98 21" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#mc)"><path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/><path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/><path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/><path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/><path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/><path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/><path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/></g><defs><clipPath id="mc"><rect width="98" height="20.2181" fill="white"/></clipPath></defs></svg>`;
+          const logoCanvas = document.createElement("canvas");
+          logoCanvas.width = 196; logoCanvas.height = 42;
+          const logoCtx = logoCanvas.getContext("2d");
+          const logoImg = new Image();
+          logoImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(logoSvg);
+          await new Promise(r => { logoImg.onload = r; logoImg.onerror = r; });
+          logoCtx.drawImage(logoImg, 0, 0, 196, 42);
+          doc.addImage(logoCanvas.toDataURL("image/png"), "PNG", margin, 36, 110, 24);
+          y = 36 + 24 + 32;
+        } catch(e) { y = 60; }
+        // Title
+        doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...dark);
+        doc.text("Audit Log", margin, y); y += 28;
+        // Client name
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...dark);
+        doc.text("Seabrook Foods Ltd.", margin, y); y += 16;
+        // Account + period
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...grey);
+        doc.text(sanitize(accountName) + " - " + sanitize(period), margin, y); y += 14;
+        // Export timestamp
+        const exportedAt = new Date();
+        const exportTs = exportedAt.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) + " at " + exportedAt.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(140, 140, 140);
+        doc.text("Exported on " + exportTs, margin, y); y += 28;
+        // All entries
+        const allGroups = [];
+        if (liveEntries.length > 0) allGroups.push({ date: "Today", entries: liveEntries });
+        AUDIT_DATA.forEach(g => allGroups.push(g));
+        allGroups.forEach(({ date, entries }) => {
+          y += 10;
+          doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...dark);
+          doc.text(sanitize(date), margin, y); y += 6;
+          doc.setDrawColor(220, 220, 220); doc.line(margin, y, W - margin, y); y += 14;
+          entries.forEach(e => {
+            if (y > 760) { doc.addPage(); y = 50; }
+            // Time + action
+            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...grey);
+            doc.text(sanitize(e.time), margin, y);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...dark);
+            doc.text(sanitize(e.action), margin + 36, y);
+            y += 14;
+            // Actor
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...grey);
+            doc.text("by " + sanitize(e.actor), margin + 36, y); y += 12;
+            // Details
+            const lines = doc.splitTextToSize(sanitize(e.details || ""), W - margin * 2 - 36);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+            lines.forEach(line => { if (y > 760) { doc.addPage(); y = 50; } doc.setFont("helvetica","normal"); doc.text(sanitize(line), margin + 36, y); y += 11; });
+            y += 6;
+          });
+        });
+        const pdfFilename = "audit-log-" + sanitize(accountName).replace(/\s+/g, "-").toLowerCase() + ".pdf";
+        setTimeout(() => {
+          doc.save(pdfFilename);
+          setDownloadState("downloaded");
+          setTimeout(() => setDownloadState("idle"), 3000);
+        }, 1400);
+      } catch(err) { console.error(err); setDownloadState("idle"); }
+    };
+    if (window.jspdf) { generate(); }
+    else {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = generate;
+      s.onerror = () => setDownloadState("idle");
+      document.head.appendChild(s);
+    }
   };
 
   const AUDIT_DATA = [
@@ -1749,13 +1835,28 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
         </div>
 
         {/* Footer */}
-        <div style={{ flexShrink: 0, borderTop: "1px solid #ECECEC", padding: "16px 24px" }}>
+        <div style={{ flexShrink: 0, borderTop: "1px solid #ECECEC", padding: "16px 24px", display: "flex", gap: 12 }}>
           <button
             onClick={handleClose}
-            style={{ width: "100%", height: 44, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+            style={{ flex: "0 0 20%", height: 44, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}>
             Cancel
+          </button>
+          <button
+            onClick={handleExportPDF}
+            style={{ flex: "0 0 80%", height: 44, border: "none", borderRadius: 8,
+              background: downloadState === "idle" ? "#05A105" : "#F0F0F0",
+              cursor: downloadState !== "idle" ? "default" : "pointer",
+              fontSize: 14, fontWeight: 500,
+              color: downloadState === "idle" ? "#FFFFFF" : "#080908",
+              fontFamily: "'Inter', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              transition: "background 0.2s, color 0.2s" }}
+            onMouseEnter={e => { if (downloadState === "idle") e.currentTarget.style.background = "#058F05"; }}
+            onMouseLeave={e => { if (downloadState === "idle") e.currentTarget.style.background = "#05A105"; }}>
+            {downloadState === "downloading" && <span style={{ display:"inline-flex", alignItems:"center", gap:8 }}><div style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid #E9E9EB", borderTopColor: "#05A105", animation: "spin 0.75s linear infinite", flexShrink: 0 }} />Downloading</span>}
+            {downloadState === "downloaded" && <span style={{ display:"inline-flex", alignItems:"center", gap:8 }}><svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink:0 }}><circle cx="9" cy="9" r="9" fill="#05A105"/><path d="M5 9.5L7.5 12L13 6.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>Downloaded</span>}
+            {downloadState === "idle" && "Export as PDF"}
           </button>
         </div>
       </div>
