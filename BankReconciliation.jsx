@@ -102,12 +102,28 @@ function TrMatchBadge({ value = "0/0", noFeed = false }) {
 }
 
 // ── Inline tooltip ───────────────────────────────────────────────────────────
-function Tooltip({ text, children, placement = "top" }) {
+function Tooltip({ text, children, placement = "top", wrapperStyle = {} }) {
   const [visible, setVisible] = React.useState(false);
   const [pos, setPos] = React.useState({ x: 0, y: 0 });
   const ref = React.useRef(null);
+  const tooltipEl = visible ? ReactDOM.createPortal(
+    <div style={{
+      position: "fixed",
+      top: placement === "bottom" ? pos.y + 8 : pos.y - 8,
+      left: pos.x,
+      transform: placement === "bottom" ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+      background: "#2A2A2A", color: "#FFFFFF",
+      fontSize: 13, fontWeight: 400, lineHeight: "20px",
+      padding: "6px 10px", borderRadius: 8,
+      whiteSpace: "nowrap", zIndex: 99999,
+      pointerEvents: "none", fontFamily: "'Inter', sans-serif",
+    }}>
+      {text}
+    </div>,
+    document.body
+  ) : null;
   return (
-    <span ref={ref} style={{ display: "inline-flex", alignItems: "center" }}
+    <span ref={ref} style={{ display: "inline-flex", alignItems: "center", ...wrapperStyle }}
       onMouseEnter={() => {
         if (ref.current) {
           const rect = ref.current.getBoundingClientRect();
@@ -117,21 +133,7 @@ function Tooltip({ text, children, placement = "top" }) {
       }}
       onMouseLeave={() => setVisible(false)}>
       {children}
-      {visible && (
-        <div style={{
-          position: "fixed",
-          top: placement === "bottom" ? pos.y + 8 : pos.y - 8,
-          left: pos.x,
-          transform: placement === "bottom" ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-          background: "#2A2A2A", color: "#FFFFFF",
-          fontSize: 14, fontWeight: 400, lineHeight: "20px",
-          padding: "6px 8px", borderRadius: 8,
-          whiteSpace: "nowrap", zIndex: 9999,
-          pointerEvents: "none", fontFamily: "'Inter', sans-serif",
-        }}>
-          {text}
-        </div>
-      )}
+      {tooltipEl}
     </span>
   );
 }
@@ -866,6 +868,12 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                       <p style={{ fontSize: 14, color: "#080908", lineHeight: "22px", margin: "0 0 0 32px" }}>{c.text}</p>
                     </div>
                   ))}
+            <button onClick={() => { setSelectedBankAccounts(new Set()); setBankFilterCount(0); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", opacity: bankFilterCount > 0 ? 1 : 0, pointerEvents: bankFilterCount > 0 ? "auto" : "none" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                Reset
+              </button>
+
                   <div style={{ height: 1, background: "#E9E9EB" }} />
                 </div>
               )}
@@ -986,12 +994,24 @@ function StreamingMessage({ segments, speed = 80, instant = false }) {
 
 // ── All Documents Sidebar ─────────────────────────────────────────────────────
 const ALL_DOCUMENTS = [
-  { name: "Lloyds_Business_April_2026.pdf",        type: "pdf", date: "15 Apr, 2026" },
-  { name: "Lloyds_Operations_GBP_April_2026.csv",  type: "csv", date: "15 Apr, 2026" },
-  { name: "HSBC_Business_April_2026.pdf",           type: "pdf", date: "14 Apr, 2026" },
-  { name: "Barclays_Operations_April_2026.csv",     type: "csv", date: "14 Apr, 2026" },
-  { name: "AmEx_OP_GBP_April26.pdf",               type: "pdf", date: "12 Apr, 2026" },
-  { name: "Mastercard_Business_April26.csv",        type: "csv", date: "12 Apr, 2026" },
+  { name: "Lloyds_Business_April_2026.pdf",              type: "pdf", date: "15/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Daniel Victorin" },
+  { name: "Lloyds_Operations_GBP_April_2026.csv",        type: "csv", date: "15/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Daniel Victorin" },
+  { name: "HSBC_Business_April_2026.pdf",                type: "pdf", date: "14/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Sara Thompson" },
+  { name: "Barclays_Operations_April_2026.csv",          type: "csv", date: "14/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Sara Thompson" },
+  { name: "AmEx_OP_GBP_April26.pdf",                    type: "pdf", date: "12/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Oliver Bennett" },
+  { name: "Mastercard_Business_April26.csv",             type: "csv", date: "12/04/26", category: "Bank statement", uploadedBy: "accountant", uploadedByName: "Oliver Bennett" },
+  { name: "Maple_Leaf_Services_INV-2026-0441.pdf",       type: "pdf", date: "17/04/26", category: "Invoice",        uploadedBy: "client",     uploadedByName: "James Clarke" },
+  { name: "Gas_Service_Ltd_INV-7821.pdf",                type: "pdf", date: "17/04/26", category: null,             uploadedBy: "client",     uploadedByName: "Emily Watson" },
+  { name: "Thames_Water_A918_Receipt.pdf",               type: "pdf", date: "16/04/26", category: null,             uploadedBy: "client",     uploadedByName: "James Clarke" },
+  { name: "Ashford_Consulting_INV-0093.pdf",             type: "pdf", date: "14/04/26", category: "Invoice",        uploadedBy: "accountant", uploadedByName: "Daniel Victorin" },
+  { name: "Blackstone_Logistics_INV-2204.pdf",           type: "pdf", date: "13/04/26", category: "Invoice",        uploadedBy: "client",     uploadedByName: "Michael Osei" },
+  { name: "Ironbridge_Technologies_INV-5512.pdf",        type: "pdf", date: "05/04/26", category: "Invoice",        uploadedBy: "client",     uploadedByName: "Emily Watson" },
+  { name: "Cedar_Lane_Properties_Lease_Apr26.pdf",       type: "pdf", date: "12/04/26", category: "Receipt",        uploadedBy: "client",     uploadedByName: "Lucy Hartman" },
+  { name: "Eastbrook_Supplies_PO-8834.csv",              type: "csv", date: "10/04/26", category: null,             uploadedBy: "client",     uploadedByName: "Michael Osei" },
+  { name: "British_Gas_PLC_Bill_Apr2026.pdf",            type: "pdf", date: "15/04/26", category: "Receipt",        uploadedBy: "accountant", uploadedByName: "Sara Thompson" },
+  { name: "Highland_Energy_455GBP_INV.pdf",              type: "pdf", date: "15/04/26", category: "Invoice",        uploadedBy: "client",     uploadedByName: "Lucy Hartman" },
+  { name: "Apex_Consulting_INV-3301.pdf",                type: "pdf", date: "13/04/26", category: "Invoice",        uploadedBy: "accountant", uploadedByName: "Oliver Bennett" },
+  { name: "Meridian_Capital_Group_INV-0017.pdf",         type: "pdf", date: "05/04/26", category: "Invoice",        uploadedBy: "client",     uploadedByName: "James Clarke" },
 ];
 
 function DocFileIcon({ type }) {
@@ -1002,51 +1022,52 @@ function DocFileIcon({ type }) {
 function AllDocumentsSidebar({ onClose, onSelect }) {
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(new Set());
+  const [uploadedSort, setUploadedSort] = useState("desc"); // null | "asc" | "desc"
+  const [nameSort, setNameSort] = useState(null); // null | "asc" | "desc"
+  const fileInputRef = useRef(null);
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const close = () => {
     setVisible(false);
     setTimeout(() => onClose(), 320);
   };
 
-  const filtered = ALL_DOCUMENTS.filter(d =>
-    d.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const toggleRow = (i) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
-  const handleAdd = () => {
-    const docs = [...selected].map(i => filtered[i]);
-    onSelect?.(docs);
-    close();
-  };
+  const filtered = (() => {
+    let docs = ALL_DOCUMENTS.filter(d => d.name.toLowerCase().includes(search.toLowerCase()));
+    if (uploadedSort) {
+      docs = [...docs].sort((a, b) => {
+        const parse = s => { const [d,m,y] = s.split("/"); return new Date(`20${y}-${m}-${d}`); };
+        return uploadedSort === "asc" ? parse(a.date) - parse(b.date) : parse(b.date) - parse(a.date);
+      });
+    } else if (nameSort) {
+      docs = [...docs].sort((a, b) => nameSort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+    }
+    return docs;
+  })();
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9000 }} onClick={close}>
       {/* Backdrop */}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.18)", opacity: visible ? 1 : 0, transition: "opacity 0.3s ease" }} />
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", opacity: visible ? 1 : 0, transition: "opacity 0.3s ease" }} />
       {/* Panel */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          position: "absolute", top: 0, right: 0, bottom: 0, width: 560,
+          position: "absolute", top: 0, right: 0, bottom: 0, width: 600,
           background: "#FFFFFF",
-          boxShadow: "-4px 0 32px rgba(0,0,0,0.10)",
           display: "flex", flexDirection: "column",
           transform: visible ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.32s cubic-bezier(0.4,0,0.2,1)",
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 28px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0 }}>
-          <span style={{ fontSize: 20, fontWeight: 500, color: "#080908", letterSpacing: "-0.3px" }}>All statements</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+          <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>All documents</span>
           <button
             onClick={close}
             style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
@@ -1061,10 +1082,10 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
         </div>
 
         {/* Search + table — unified container */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 0" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 0" }}>
           <div style={{ border: "1px solid #E9E9EB", borderRadius: 10, overflow: "hidden" }}>
             {/* Search row */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid #E9E9EB", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid #E9E9EB", flexShrink: 0, height: 81, boxSizing: "border-box" }}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
                 <path d="M17.5 17.5L13.875 13.875M15.8333 9.16667C15.8333 12.8486 12.8486 15.8333 9.16667 15.8333C5.48477 15.8333 2.5 12.8486 2.5 9.16667C2.5 5.48477 5.48477 2.5 9.16667 2.5C12.8486 2.5 15.8333 5.48477 15.8333 9.16667Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -1085,72 +1106,112 @@ function AllDocumentsSidebar({ onClose, onSelect }) {
               </button>
             </div>
             {/* Table header */}
-            <div style={{ display: "flex", background: "#FBFBFB", borderBottom: "1px solid #E9E9EB", flexShrink: 0 }}>
-              <div style={{ width: 44, flexShrink: 0, borderRight: "1px solid #E9E9EB" }} />
-              <div style={{ flex: 1, padding: "10px 14px", fontSize: 14, color: "#8C8C8B", fontWeight: 400, borderRight: "1px solid #E9E9EB" }}>Name</div>
-              <div style={{ width: 130, padding: "10px 14px", fontSize: 14, color: "#8C8C8B", fontWeight: 400, flexShrink: 0 }}>Date uploaded</div>
+            <div style={{ display: "flex", background: "#FFFFFF", borderBottom: "1px solid #E9E9EB", flexShrink: 0 }}>
+              <div onClick={() => { setNameSort(s => s === "asc" ? "desc" : "asc"); setUploadedSort(null); }} style={{ flex: 1, padding: "10px 14px", fontSize: 14, color: "#8C8C8B", fontWeight: 400, borderRight: "1px solid #E9E9EB", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, userSelect: "none" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Name
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginLeft: 2, opacity: nameSort ? 1 : 0.4, transform: nameSort === "desc" ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                  <path d="M12 19V5M19 12L12 5L5 12" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div onClick={() => { setUploadedSort(s => s === "asc" ? "desc" : "asc"); setNameSort(null); }} style={{ width: 130, padding: "10px 14px", fontSize: 14, color: "#000000", fontWeight: 400, borderRight: "1px solid #E9E9EB", flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, userSelect: "none" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Uploaded
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginLeft: 2, opacity: uploadedSort ? 1 : 0.4, transform: uploadedSort === "desc" ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                  <path d="M12 19V5M19 12L12 5L5 12" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div style={{ width: 210, padding: "10px 14px", fontSize: 14, color: "#8C8C8B", fontWeight: 400, flexShrink: 0 }}>Actions</div>
             </div>
             {/* Rows */}
             {filtered.map((doc, i) => {
-              const isSelected = selected.has(i);
+              const unknownType = doc.category === null;
+              const hasSetType = !unknownType && doc.category !== "Bank statement";
+              const isClient = doc.uploadedBy === "client";
+              const avatarStyle = isClient
+                ? { bg: "#FDF8EE", color: "#D5A750" }
+                : { bg: "#EEF2FF", color: "#4A6CF7" };
+              const avatarLabel = isClient ? "C" : "A";
+              const tooltipText = `Uploaded by ${doc.uploadedByName}`;
               return (
                 <div
                   key={i}
-                  onClick={() => toggleRow(i)}
-                  style={{ display: "flex", alignItems: "center", borderBottom: i < filtered.length - 1 ? "1px solid #E9E9EB" : "none", cursor: "pointer", background: isSelected ? "#F4F9F1" : "#FFFFFF", transition: "background 0.1s" }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#FAFAFA"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isSelected ? "#F4F9F1" : "#FFFFFF"; }}
+                  style={{ display: "flex", alignItems: "stretch", borderBottom: i < filtered.length - 1 ? "1px solid #E9E9EB" : "none", background: "#FFFFFF", minHeight: 60, boxSizing: "border-box" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
                 >
-                  {/* Checkbox cell */}
-                  <div style={{ width: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRight: "1px solid #E9E9EB", alignSelf: "stretch" }}>
-                    <div style={{
-                      width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                      border: isSelected ? "none" : "1.5px solid #CFCFD1",
-                      background: isSelected ? "#05A105" : "#FFFFFF",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      transition: "all 0.15s",
-                    }}>
-                      {isSelected && (
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <path d="M2 5L4 7L8 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                  </div>
                   {/* Name cell */}
-                  <div style={{ flex: 1, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, borderRight: "1px solid #E9E9EB", minWidth: 0 }}>
-                    <DocFileIcon type={doc.type} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.name}</div>
-                      <div style={{ fontSize: 14, color: "#8C8C8B", marginTop: 1 }}>Bank statement</div>
+                  <div style={{ flex: 1, borderRight: "1px solid #E9E9EB", minWidth: 0, display: "flex", alignItems: "center" }}>
+                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, minWidth: 0, width: "100%" }}>
+                      <DocFileIcon type={doc.type} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ overflow: "hidden", minWidth: 0 }}>
+                          <Tooltip text={doc.name} wrapperStyle={{ display: "block", width: "100%", overflow: "hidden" }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.name}</div>
+                          </Tooltip>
+                        </div>
+                        {unknownType ? (
+                          <Tooltip text="Unable to determine the document type">
+                            <div style={{ fontSize: 14, color: "#C8543A", marginTop: 1, cursor: "default", display: "inline-block" }}>Set document type</div>
+                          </Tooltip>
+                        ) : (
+                          <div style={{ fontSize: 14, color: "#8C8C8B", marginTop: 1 }}>{doc.category}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {/* Date cell */}
-                  <div style={{ width: 130, padding: "10px 14px", fontSize: 14, color: "#080908", flexShrink: 0 }}>{doc.date}</div>
+                  {/* Uploaded cell */}
+                  <div style={{ width: 130, borderRight: "1px solid #E9E9EB", flexShrink: 0, display: "flex", alignItems: "center" }}>
+                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+                      <Tooltip text={tooltipText}>
+                        <div style={{ width: 26, height: 26, borderRadius: "50%", background: avatarStyle.bg, color: avatarStyle.color, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "default", fontFamily: "'Inter',sans-serif" }}>
+                          {avatarLabel}
+                        </div>
+                      </Tooltip>
+                      <span style={{ fontSize: 14, color: "#080908" }}>{doc.date}</span>
+                    </div>
+                  </div>
+                  {/* Actions cell */}
+                  <div style={{ width: 210, padding: "8px 12px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {unknownType ? (
+                      <button style={{ flex: 1, height: 32, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter',sans-serif" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                        Set type
+                      </button>
+                    ) : (<>
+                      <button style={{ flex: 1, height: 32, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter',sans-serif" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                        Review
+                      </button>
+                      {hasSetType && (
+                        <button style={{ flex: 1, height: 32, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter',sans-serif" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                          Set type
+                        </button>
+                      )}
+                    </>)}
+                    <button onClick={e => e.stopPropagation()} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0, borderRadius: 6 }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                        <path d="M17.5 12.5V15.8333C17.5 16.2754 17.3244 16.6993 17.0118 17.0118C16.6993 17.3244 16.2754 17.5 15.8333 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V12.5M5.83333 8.33333L10 12.5M10 12.5L14.1667 8.33333M10 12.5V2.5" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div style={{ padding: "16px 24px", flexShrink: 0, background: "#FFFFFF", borderTop: "1px solid #ECECEC" }}>
-          <button
-            onClick={handleAdd}
-            disabled={selected.size === 0}
-            style={{
-              width: "100%", height: 40, border: "none", borderRadius: 8,
-              fontSize: 14, fontWeight: 500, fontFamily: "'Inter', sans-serif",
-              background: selected.size === 0 ? "#E9E9EB" : "#05A105",
-              color: selected.size === 0 ? "#BCBCBC" : "#FFFFFF",
-              cursor: selected.size === 0 ? "default" : "pointer",
-              transition: "background 0.15s, color 0.15s",
-            }}
-            onMouseEnter={e => { if (selected.size > 0) e.currentTarget.style.background = "#058F05"; }}
-            onMouseLeave={e => { if (selected.size > 0) e.currentTarget.style.background = "#05A105"; }}
-          >
-            {selected.size > 0 ? `Add ${selected.size} ${selected.size === 1 ? "file" : "files"}` : "Add files"}
-          </button>
+        {/* Footer */}
+        <div style={{ padding: "16px 24px", flexShrink: 0, borderTop: "1px solid #ECECEC" }}>
+          <SecondaryButton onClick={close} style={{ width: "100%", justifyContent: "center", height: 40, borderRadius: 8, boxSizing: "border-box" }}>Close</SecondaryButton>
         </div>
       </div>
     </div>
@@ -1668,6 +1729,11 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
   const [closing, setClosing] = useState(false);
   const [downloadState, setDownloadState] = useState("idle"); // idle | downloading | downloaded
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") handleClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const handleClose = () => {
     setClosing(true);
@@ -1783,13 +1849,12 @@ function AuditTrailSidebar({ onClose, accountName = "HSBC Current", period = "Ap
   return (
     <>
       {/* Backdrop */}
-      <div onClick={handleClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, opacity: visible && !closing ? 1 : 0, transition: "opacity 0.32s ease" }} />
+      <div onClick={handleClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.15)", zIndex: 200, opacity: visible && !closing ? 1 : 0, transition: "opacity 0.32s ease" }} />
 
       {/* Sidebar */}
       <div style={{
         position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
         background: "#FFFFFF", zIndex: 201,
-        boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
         transform: visible && !closing ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.32s cubic-bezier(0.4,0,0.2,1)",
         display: "flex", flexDirection: "column",
@@ -1896,6 +1961,11 @@ function SpendMoneySidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
   const [lineItemsOpen, setLineItemsOpen] = useState(true);
   const [publishing, setPublishing] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(() => onClose?.(), 320); } };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const handlePublish = () => {
     setPublishing(true);
@@ -1926,14 +1996,14 @@ function SpendMoneySidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
   return (
     <div style={{
       position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
-      background: "#FFFFFF", boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
+      background: "#FFFFFF",
       display: "flex", flexDirection: "column", zIndex: 201,
       transform: visible ? "translateX(0)" : "translateX(100%)",
       transition: "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
         <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Review spend money</span>
         <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}>
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
@@ -2179,7 +2249,12 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
   const fileInputRef = useRef(null);
   const email = "associatetesting@dev.platform.mimohq.com";
 
-  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => { requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true))); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") handleClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const handleClose = () => {
     setVisible(false);
@@ -2216,17 +2291,21 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
   };
 
   return (
-    <div style={{
-      position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
-      background: "#FFFFFF", boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
-      display: "flex", flexDirection: "column", zIndex: 201,
+    <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={handleClose}>
+      {/* Backdrop */}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", opacity: visible ? 1 : 0, transition: "opacity 0.32s ease" }} />
+      {/* Panel */}
+    <div onClick={e => e.stopPropagation()} style={{
+      position: "absolute", top: 0, right: 0, bottom: 0, width: 600,
+      background: "#FFFFFF",
+      display: "flex", flexDirection: "column",
       transform: visible ? "translateX(0)" : "translateX(100%)",
       transition: "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
-        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Upload statements</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Add document</span>
         <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", flexShrink: 0, padding: 0 }}>
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
             <rect width="30" height="30" rx="15" fill="#F5F5F5"/>
@@ -2236,7 +2315,7 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 36px", display: "flex", flexDirection: "column", gap: 12 }}>
         {uploading ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 300 }}>
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
@@ -2258,7 +2337,7 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
             <div style={{ fontSize: 13, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
           </div>
           <button onClick={handleCopy}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", flexShrink: 0, whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0, whiteSpace: "nowrap" }}
             onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
             onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -2369,13 +2448,7 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
         <div style={{ height: 1, background: "#E9E9EB", flexShrink: 0 }} />
 
         {/* Close button */}
-        <button
-          onClick={handleClose}
-          style={{ width: "100%", height: 44, border: "1px solid #E9E9EB", background: "#FFFFFF", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0 }}
-          onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-          onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-          Close
-        </button>
+        <SecondaryButton onClick={handleClose} style={{ width: "100%", justifyContent: "center", height: 44, borderRadius: 8, boxSizing: "border-box", flexShrink: 0 }}>Close</SecondaryButton>
         </>)}
       </div>
 
@@ -2387,16 +2460,25 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
         />
       )}
     </div>
+    </div>
   );
 }
 
 // ── Batch Draft Sidebar ───────────────────────────────────────────────────────
-function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.00", date = "23 March 2026", fileName = "yte-invoice172.pdf", onClose, onConfirm }) {
+function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.00", date = "23 March 2026", account = "Lloyds Bank - Business", accountNumber = "1048 9418-2251", batchInfo = null, fileName = "yte-invoice172.pdf", onClose, onConfirm }) {
   const [visible, setVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("Document");
+  const [activeTab, setActiveTab] = useState("Documents");
   const [confirming, setConfirming] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [draggingOver, setDraggingOver] = useState(false);
+  const fileInputRef2 = useRef(null);
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(() => onClose?.(), 320); } };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const handleConfirm = () => {
     setConfirming(true);
@@ -2406,56 +2488,59 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
     }, 2000);
   };
 
+  const handleDropFiles = (files) => {
+    const arr = Array.from(files).map(f => ({ name: f.name, size: f.size }));
+    setUploadedFiles(prev => [...prev, ...arr]);
+  };
+
   const cardStyle = { border: "1px solid #E9E9EB", borderRadius: 12, background: "#FFFFFF" };
-  const tabs = ["Document", "Notes", "Audit log"];
+  const tabs = ["Documents", "Notes", "Audit trail"];
 
   return (
     <div style={{
       position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
-      background: "#FFFFFF", boxShadow: "-4px 0 24px rgba(0,0,0,0.10)",
+      background: "#FFFFFF",
       display: "flex", flexDirection: "column", zIndex: 201,
       transform: visible ? "translateX(0)" : "translateX(100%)",
       transition: "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 28px", borderBottom: "1px solid #ECECEC", flexShrink: 0 }}>
-        <span style={{ fontSize: 22, fontWeight: 600, color: "#080908" }}>{contact}</span>
-        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 4 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M15 5L5 15M5 5L15 15" stroke="#545453" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+        <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>{contact}</span>
+        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
 
       {/* Scrollable body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 36px", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── Bank account card ── */}
         <div style={cardStyle}>
           {/* Bank row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <BankBuildingIcon size={18} />
+              <div style={{ width: 44, height: 44, borderRadius: 8, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <BankBuildingIcon size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Lloyds Bank - Business</div>
-                <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 1 }}>1048 9418-2251</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{account}</div>
+                <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 4 }}>{accountNumber}</div>
               </div>
             </div>
-            <button style={{ padding: "7px 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+            <button style={{ height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
               onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
               onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
             >Copy upload link</button>
           </div>
           {/* Amount + Date */}
-          <div style={{ display: "flex", alignItems: "center", borderTop: "1px solid #F0F0F0" }}>
+          <div style={{ display: "flex", alignItems: "stretch", borderTop: "1px solid #F0F0F0" }}>
             <div style={{ flex: 1, padding: "14px 18px" }}>
               <div style={{ fontSize: 14, color: "#7C7C7C", marginBottom: 4 }}>Amount</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>-{amount}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{amount}</div>
             </div>
-            <div style={{ width: 1, background: "#F0F0F0", height: 28, flexShrink: 0 }} />
+            <div style={{ width: 1, background: "#F0F0F0", height: 36, flexShrink: 0, alignSelf: "center" }} />
             <div style={{ flex: 1, padding: "14px 18px" }}>
               <div style={{ fontSize: 14, color: "#7C7C7C", marginBottom: 4 }}>Date</div>
               <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{date}</div>
@@ -2463,70 +2548,101 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
           </div>
         </div>
 
-        {/* ── Batch info card ── */}
-        <div style={cardStyle}>
-          {/* Batch header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <PencilIcon size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Lloyd Bank - Operations GBP</div>
-              <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 1 }}>Drafted batch</div>
-            </div>
-          </div>
-          {/* Stats */}
-          <div style={{ margin: "0 18px", border: "1px solid #E9E9EB", borderRadius: 8 }}>
-            <div style={{ display: "flex", padding: "10px 0", alignItems: "center" }}>
-              {[
-                { icon: <FileQuestionIcon />, label: "8 requests" },
-                { icon: <BankStatIcon />, label: "2 accounts" },
-                { icon: <UsersCheckIcon />, label: "2 assignees" },
-              ].map(({ icon, label }, i) => (
-                <React.Fragment key={label}>
-                  {i > 0 && <div style={{ width: 1, background: "#E9E9EB", height: 14, flexShrink: 0 }} />}
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#1F2024", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                    {icon} {label}
-                  </span>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-          {/* Separator below stats */}
-          <div style={{ margin: "12px 18px 0", borderTop: "1px solid #F0F0F0" }} />
-          {/* Assignees */}
-          <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "16px 18px" }}>
-            {[["S", "Sara Thompson"], ["O", "Oliver Davies"]].map(([initial, name], i) => (
-              <React.Fragment key={name}>
-                {i > 0 && <div style={{ width: 1, background: "#E9E9EB", alignSelf: "stretch", margin: "0 16px" }} />}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#6389CF" }}>{initial}</span>
+        {/* ── Batch info card (only when row belongs to a batch) ── */}
+        {batchInfo && (() => {
+          const AVATAR_COLORS = [
+            { bg: "#F0F5FC", color: "#6389CF" },
+            { bg: "#F0F5FC", color: "#6389CF" },
+            { bg: "#F0F5FC", color: "#6389CF" },
+            { bg: "#F0F5FC", color: "#6389CF" },
+          ];
+          const SHORT_MONTHS_B = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const statusLabel = batchInfo.status === "Scheduled" && batchInfo.scheduledDate
+            ? `Will be sent: ${batchInfo.scheduledDate.d} ${SHORT_MONTHS_B[batchInfo.scheduledDate.m]}, 09:00`
+            : batchInfo.status === "Sent" && batchInfo.sentDate
+            ? `Sent ${batchInfo.sentDate.getDate()} ${SHORT_MONTHS_B[batchInfo.sentDate.getMonth()]}, ${String(batchInfo.sentDate.getHours()).padStart(2,"0")}:${String(batchInfo.sentDate.getMinutes()).padStart(2,"0")}`
+            : batchInfo.status === "Draft" ? "Drafted batch"
+            : batchInfo.status;
+          return (
+            <div style={cardStyle}>
+              {/* Batch header */}
+              {(() => {
+                const bIconBg = batchInfo.status === "Scheduled" ? "#EEF2FF" : batchInfo.status === "Sent" ? "#F1F8F0" : "#F5F5F5";
+                const bIcon = batchInfo.status === "Scheduled"
+                  ? <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M19.0909 9.09109H2.72729M19.0909 11.3638V8.00018C19.0909 6.47276 19.0909 5.70905 18.7937 5.12566C18.5322 4.61249 18.115 4.19527 17.6018 3.9338C17.0184 3.63654 16.2547 3.63654 14.7273 3.63654H7.09093C5.56352 3.63654 4.79981 3.63654 4.21641 3.9338C3.70324 4.19527 3.28602 4.61249 3.02455 5.12566C2.72729 5.70905 2.72729 6.47276 2.72729 8.00018V15.6365C2.72729 17.164 2.72729 17.9277 3.02455 18.5111C3.28602 19.0242 3.70324 19.4414 4.21641 19.7029C4.79981 20.0002 5.56352 20.0002 7.09093 20.0002H10.9091M14.5455 1.81836V5.45472M7.27275 1.81836V5.45472M13.1818 17.2729L15 19.0911L19.0909 15.0002" stroke="#4C71DF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : batchInfo.status === "Sent"
+                  ? <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.74952 11.2501L17.4995 2.50014M8.85584 11.5235L11.0459 17.1552C11.2389 17.6513 11.3353 17.8994 11.4743 17.9718C11.5948 18.0346 11.7384 18.0347 11.859 17.972C11.998 17.8998 12.0948 17.6518 12.2883 17.1559L17.7803 3.08281C17.955 2.63516 18.0423 2.41133 17.9945 2.26831C17.953 2.1441 17.8556 2.04663 17.7314 2.00514C17.5883 1.95736 17.3645 2.0447 16.9169 2.21939L2.84373 7.71134C2.34784 7.90486 2.09989 8.00163 2.02763 8.14071C1.96499 8.26129 1.96508 8.40483 2.02786 8.52533C2.10028 8.66433 2.34834 8.7608 2.84446 8.95373L8.47613 11.1438C8.57684 11.183 8.62719 11.2026 8.66959 11.2328C8.70717 11.2596 8.74004 11.2925 8.76685 11.3301C8.79709 11.3725 8.81667 11.4228 8.85584 11.5235Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M16.3636 1.81836L19.9999 5.45472M1.81812 20.0002L2.97848 15.7455C3.05418 15.4679 3.09204 15.3291 3.15014 15.1997C3.20174 15.0848 3.26513 14.9755 3.33931 14.8737C3.42286 14.7591 3.52458 14.6573 3.72803 14.4539L13.122 5.05989C13.302 4.87988 13.392 4.78988 13.4958 4.75616C13.5871 4.7265 13.6855 4.7265 13.7768 4.75616C13.8805 4.78988 13.9705 4.87988 14.1506 5.05989L16.7584 7.66774C16.9384 7.84774 17.0284 7.93775 17.0621 8.04153C17.0918 8.13283 17.0918 8.23117 17.0621 8.32246C17.0284 8.42624 16.9384 8.51625 16.7584 8.69626L7.36439 18.0903C7.16094 18.2937 7.05922 18.3954 6.94455 18.479C6.84274 18.5532 6.7335 18.6166 6.61858 18.6681C6.48916 18.7263 6.35037 18.7641 6.07279 18.8398L1.81812 20.0002Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px" }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 8, background: bIconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {bIcon}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{batchInfo.title}</div>
+                      <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 4 }}>{statusLabel}</div>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 14, color: "#080908" }}>{name}</span>
+                );
+              })()}
+              {/* Stats */}
+              <div style={{ margin: "0 18px", border: "1px solid #E9E9EB", borderRadius: 8 }}>
+                <div style={{ display: "flex", height: 42, alignItems: "center" }}>
+                  {[
+                    { icon: <FileQuestionIcon />, label: `${batchInfo.requestCount} request${batchInfo.requestCount !== 1 ? "s" : ""}` },
+                    { icon: <BankStatIcon />, label: `${batchInfo.accountCount} account${batchInfo.accountCount !== 1 ? "s" : ""}` },
+                    { icon: <UsersCheckIcon />, label: `${batchInfo.assignees.length} assignee${batchInfo.assignees.length !== 1 ? "s" : ""}` },
+                  ].map(({ icon, label }, i) => (
+                    <React.Fragment key={label}>
+                      {i > 0 && <div style={{ width: 1, background: "#E9E9EB", height: 14, flexShrink: 0 }} />}
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#1F2024", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                        {icon} {label}
+                      </span>
+                    </React.Fragment>
+                  ))}
                 </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+              </div>
+              {/* Separator + Assignees (only if there are assignees) */}
+              {batchInfo.assignees.length > 0 && (<>
+                <div style={{ margin: "12px 18px 0", borderTop: "1px solid #F0F0F0" }} />
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0, padding: "16px 18px" }}>
+                  {batchInfo.assignees.map((name, i) => {
+                    const av = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                    return (
+                      <React.Fragment key={name}>
+                        {i > 0 && <div style={{ width: 1, background: "#E9E9EB", alignSelf: "stretch", margin: "0 16px" }} />}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: "50%", background: av.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: av.color }}>{name.charAt(0).toUpperCase()}</span>
+                          </div>
+                          <span style={{ fontSize: 14, color: "#080908" }}>{name}</span>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </>)}
+            </div>
+          );
+        })()}
 
-        {/* ── Archive request ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", border: "1px solid #E9E9EB", borderRadius: 12, background: "#FFFFFF" }}>
+        {/* ── Cancel request ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 80, border: "1px solid #E9E9EB", borderRadius: 12, background: "#FFFFFF", boxSizing: "border-box" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 2 }}>Archive request</div>
-            <div style={{ fontSize: 14, color: "#7C7C7C" }}>If no document needed, archive this request</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 4 }}>Cancel request</div>
+            <div style={{ fontSize: 14, color: "#7C7C7C" }}>If no document is needed, cancel this request</div>
           </div>
-          <button style={{ padding: "7px 14px", border: "none", borderRadius: 8, background: "#FCEFEC", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#C8543A", whiteSpace: "nowrap", flexShrink: 0 }}
-            onMouseEnter={e => e.currentTarget.style.background = "#F9DDD8"}
-            onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}
-          >Archive request</button>
+          <button style={{ height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#C8543A", whiteSpace: "nowrap", flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#FFF5F3"; e.currentTarget.style.borderColor = "#F5C4BC"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
+          >Cancel request</button>
         </div>
 
         {/* ── Tabs ── */}
         <div style={{ display: "flex", borderBottom: "1px solid #ECECEC", marginTop: 4 }}>
           {tabs.map(tab => (
-            <button key={tab} onClick={() => onTabChange(tab)} style={{
-              padding: "10px 0", marginRight: 24, fontSize: 14, fontWeight: activeTab === tab ? 600 : 400,
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              padding: "10px 0", marginRight: 24, fontSize: 14, fontWeight: activeTab === tab ? 500 : 400,
               color: activeTab === tab ? "#080908" : "#7C7C7C", background: "none", border: "none",
               borderBottom: activeTab === tab ? "2px solid #05A105" : "2px solid transparent",
               cursor: "pointer", transition: "all 0.15s",
@@ -2534,71 +2650,133 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
           ))}
         </div>
 
-        {/* ── Document tab ── */}
-        {activeTab === "Document" && (
-          <div style={cardStyle}>
-            {/* Invoice header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "16px 18px", borderBottom: "1px solid #F0F0F0" }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#080908" }}>Invoice</div>
-                <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 2 }}><span style={{ fontWeight: 500 }}>Direct Expenses</span> 325</div>
-              </div>
-              <button style={{ padding: "6px 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-              >Review</button>
+        {/* ── Documents tab ── */}
+        {activeTab === "Documents" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Uploaded files list */}
+            {uploadedFiles.map((f, i) => {
+              const ext = (f.name.split(".").pop() || "").toLowerCase();
+              const isCSV = ext === "csv";
+              const isPDF = ext === "pdf";
+              const isImg = ["png","jpg","jpeg","webp"].includes(ext);
+              const fileIcon = isCSV ? (
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: "#F0FAF0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="2" stroke="#05A105" strokeWidth="1.25"/><path d="M2 7h16M7 7v11" stroke="#05A105" strokeWidth="1.25"/></svg>
+                </div>
+              ) : isPDF ? (
+                <div style={{ flexShrink: 0 }}><InvoiceFileIcon width={28} height={34} /></div>
+              ) : isImg ? (
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: "#F0F4FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#4C71DF" strokeWidth="1.25"/><circle cx="7" cy="8" r="1.5" stroke="#4C71DF" strokeWidth="1.25"/><path d="M2 14l4-4 3 3 2-2 5 5" stroke="#4C71DF" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              ) : (
+                <div style={{ flexShrink: 0 }}><InvoiceFileIcon width={28} height={34} /></div>
+              );
+              return (
+                <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", height: 72, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    {fileIcon}
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#7C7C7C", background: "#F5F5F5", borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap" }}>Pending upload</span>
+                    <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 6, padding: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V15M7 10L12 15L17 10M12 15V3" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button onClick={() => setUploadedFiles(prev => prev.filter((_, j) => j !== i))} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 6, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.background = "#FFF0EE"; e.currentTarget.querySelector("path").setAttribute("stroke","#C8543A"); }} onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.querySelector("path").setAttribute("stroke","#7C7C7C"); }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M10 11.5V16.5M14 11.5V16.5M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setDraggingOver(true); }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDraggingOver(false); }}
+              onDrop={e => { e.preventDefault(); setDraggingOver(false); handleDropFiles(e.dataTransfer.files); }}
+              style={{ border: `1.5px dashed ${draggingOver ? "#05A105" : "#DBDBDB"}`, borderRadius: 12, padding: "36px 24px 28px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: draggingOver ? "#F4F9F1" : "transparent", transition: "background 0.15s, border-color 0.15s" }}
+            >
+              {/* 3-document fan illustration */}
+              <svg width="107" height="70" viewBox="0 0 86 56" fill="none" style={{ marginBottom: 20 }}>
+                <defs>
+                  <filter id="filter0_d_upload_br" x="15.84" y="-3.31" width="57.44" height="65.62" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                    <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feOffset dy="4.96"/>
+                    <feGaussianBlur stdDeviation="4.13"/>
+                    <feComposite in2="hardAlpha" operator="out"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.11 0"/>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+                  </filter>
+                  <clipPath id="clip0_upload_br">
+                    <rect width="86" height="56" fill="white"/>
+                  </clipPath>
+                </defs>
+                <g clipPath="url(#clip0_upload_br)">
+                  <path d="M53.2218 13.2854C53.7433 11.3393 55.7436 10.1844 57.6897 10.7059L76.3653 15.71L79.0693 22.1909L82.5746 30.5922L76.6263 52.7914C76.1049 54.7375 74.1046 55.8924 72.1585 55.3709L47.4927 48.7617C45.5466 48.2403 44.3917 46.2399 44.9132 44.2939L53.2218 13.2854Z" fill="#DCF0D7"/>
+                  <path d="M73.5917 26.0618L76.3652 15.7109L82.5746 30.5931L75.0427 28.5749C74.1084 28.3246 73.6412 28.1994 73.4287 27.8314C73.2162 27.4633 73.3414 26.9961 73.5917 26.0618Z" fill="#D0EFC8"/>
+                  <path d="M32.7772 13.2854C32.2557 11.3393 30.2554 10.1844 28.3093 10.7059L9.63377 15.71L6.92969 22.1909L3.42441 30.5922L9.37268 52.7914C9.89413 54.7375 11.8945 55.8924 13.8405 55.3709L38.5064 48.7617C40.4524 48.2403 41.6073 46.2399 41.0859 44.2939L32.7772 13.2854Z" fill="#D2DEF6"/>
+                  <path d="M12.4073 26.0618L9.63379 15.7109L3.42442 30.5931L10.9563 28.5749C11.8907 28.3246 12.3578 28.1994 12.5703 27.8314C12.7828 27.4633 12.6576 26.9961 12.4073 26.0618Z" fill="#BCCFF2"/>
+                  <g filter="url(#filter0_d_upload_br)">
+                    <path d="M24.1064 4.54527C24.1064 2.03499 26.1414 0 28.6517 0H52.7417L58.086 6.92787L65.0139 15.9084V44.5437C65.0139 47.0539 62.9789 49.0889 60.4686 49.0889H28.6517C26.1414 49.0889 24.1064 47.0539 24.1064 44.5437V4.54527Z" fill="#F4F4F2"/>
+                    <path d="M40.5298 16.6758C45.1308 15.296 40.3532 38.7468 36.769 35.521C32.3247 31.521 53.4258 25.4246 51.4695 31.2906C49.7549 36.4317 35.4016 18.2137 40.5298 16.6758Z" stroke="#FF6056" strokeWidth="1.57261"/>
+                    <path d="M52.7412 13.3517V0L65.0134 15.9085H55.2979C54.0927 15.9085 53.4901 15.9085 53.1156 15.534C52.7412 15.1596 52.7412 14.557 52.7412 13.3517Z" fill="#D6D6D4"/>
+                  </g>
+                </g>
+              </svg>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", textAlign: "center", margin: "0 0 2px" }}>
+                Drag &amp; drop your file here, or
+              </p>
+              <p style={{ fontSize: 14, textAlign: "center", margin: "0 0 10px" }}>
+                <span style={{ color: "#05A105", fontWeight: 600, cursor: "pointer" }} onClick={() => fileInputRef2.current?.click()}>
+                  Choose a file
+                </span>{" "}to upload it manually
+              </p>
+              <p style={{ fontSize: 13, color: "#8C8C8B", margin: "0 0 20px", textAlign: "center" }}>We support PDF, PNG, WEBP and JPG formats</p>
+              <button
+                onClick={() => fileInputRef2.current?.click()}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, height: 40, padding: "0 20px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
+                onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/></svg>
+                Upload document
+              </button>
             </div>
-            {/* Invoice detail */}
-            <div style={{ padding: "14px 18px" }}>
-              <div style={{ fontSize: 14, color: "#080908" }}>
-                <span style={{ fontWeight: 500 }}>{contact}</span> 31 Jan 2026
-              </div>
-              <div style={{ fontSize: 14, color: "#7C7C7C", marginTop: 4 }}>
-                <span style={{ fontWeight: 500, color: "#080908" }}>-{amount}</span> 20% tax, £48.00
-              </div>
-            </div>
-            {/* Attached PDF */}
-            <div style={{ margin: "0 14px 14px", border: "1px solid #E9E9EB", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", height: 70 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <InvoiceFileIcon width={32} height={38} />
-                <span style={{ fontSize: 14, color: "#080908" }}>{fileName}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ padding: "3px 8px", borderRadius: 6, background: "#FDF8EE", fontSize: 13, fontWeight: 500, color: "#D5A750" }}>Review</span>
-                <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 2 }}>
-                  <DownloadIcon />
-                </button>
-                <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 2 }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round"/></svg>
-                </button>
-              </div>
-            </div>
+            <input ref={fileInputRef2} type="file" multiple accept=".pdf,.png,.webp,.jpg,.jpeg" style={{ display: "none" }} onChange={e => { handleDropFiles(e.target.files); e.target.value = ""; }} />
           </div>
         )}
 
         {activeTab === "Notes" && (
           <div style={{ color: "#7C7C7C", fontSize: 14, padding: "8px 0" }}>No notes yet.</div>
         )}
-        {activeTab === "Audit log" && (
+        {activeTab === "Audit trail" && (
           <div style={{ color: "#7C7C7C", fontSize: 14, padding: "8px 0" }}>No audit events yet.</div>
         )}
       </div>
 
       {/* Footer */}
       <div style={{ padding: "16px 28px", borderTop: "1px solid #ECECEC", display: "flex", gap: 12, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ padding: "10px 24px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+        <button onClick={onClose} style={{ height: 40, padding: "0 24px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
           onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
           onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
         >Close</button>
-        <button onClick={!confirming ? handleConfirm : undefined}
-          style={{ flex: 1, padding: "10px 16px", border: confirming ? "1px solid #E9E9EB" : "none", borderRadius: 8, background: confirming ? "#F5F5F5" : "#05A105", cursor: confirming ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s ease" }}
-          onMouseEnter={e => { if (!confirming) e.currentTarget.style.background = "#058F05"; }}
-          onMouseLeave={e => { if (!confirming) e.currentTarget.style.background = "#05A105"; }}
-        >
-          {confirming ? (
-            <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid #E9E9EB", borderTopColor: "#05A105", animation: "spin 0.75s linear infinite" }} />
-          ) : "Publish to Xero"}
-        </button>
+        {(() => {
+          const hasFiles = uploadedFiles.length > 0;
+          const disabled = !hasFiles || confirming;
+          return (
+            <button onClick={!disabled ? handleConfirm : undefined}
+              style={{ flex: 1, padding: "10px 16px", border: disabled ? "1px solid #E9E9EB" : "none", borderRadius: 8, background: confirming ? "#F5F5F5" : disabled ? "#F5F5F5" : "#05A105", cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: disabled ? "#ADADAD" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s ease" }}
+              onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = "#058F05"; }}
+              onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = "#05A105"; }}
+            >
+              {confirming ? (
+                <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid #E9E9EB", borderTopColor: "#05A105", animation: "spin 0.75s linear infinite" }} />
+              ) : "Confirm documents"}
+            </button>
+          );
+        })()}
       </div>
     </div>
   );
@@ -4154,8 +4332,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         };
         return (
           <>
-            <div onClick={() => setMarkCompleteDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
-            <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 600, background: "#FFFFFF", borderLeft: "1px solid #E9E9EB", boxShadow: "-4px 0 16px rgba(0,0,0,0.06)", zIndex: 201, display: "flex", flexDirection: "column", animation: "slideInFromRight 0.25s ease both" }}>
+            <div onClick={() => setMarkCompleteDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.15)", zIndex: 200 }} />
+            <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 600, background: "#FFFFFF", zIndex: 201, display: "flex", flexDirection: "column", animation: "slideInFromRight 0.25s ease both" }}>
               <div style={{ height: 48, padding: "0 16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F5F5F5" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
                 <button onClick={() => setMarkCompleteDrawerOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}
@@ -5248,7 +5426,7 @@ function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onR
       {title && <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #E9E9EB" }}><span style={{ fontSize: 18, fontWeight: 500, color: "#080908" }}>{title}</span></div>}
       <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid #E9E9EB", background: "#FFFFFF" }}>
         {columns.map((col, ci) => (
-          <div key={col.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 500, color: "#8C8C8B", padding: "10px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none", justifyContent: col.align === "right" ? "flex-end" : "flex-start" }}>
+          <div key={col.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 500, color: "#8C8C8B", padding: col.cellPadding ? col.cellPadding.replace("14px", "10px") : "10px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none", justifyContent: col.align === "right" ? "flex-end" : "flex-start" }}>
             {col.label}{col.sortable && <SortIcon />}
           </div>
         ))}
@@ -5257,7 +5435,7 @@ function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onR
         <div key={ri} onClick={() => onRowClick?.(row, ri)} onMouseEnter={() => setHovered(ri)} onMouseLeave={() => setHovered(null)}
           style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid #E9E9EB", background: hovered === ri ? "#FAFAFA" : "#FFFFFF", transition: "background 0.1s", cursor: onRowClick ? "pointer" : "default" }}>
           {columns.map((col, ci) => (
-            <div key={col.key} style={{ display: "flex", alignItems: "center", justifyContent: col.align === "right" ? "flex-end" : "flex-start", fontSize: 14, color: "#080908", padding: "14px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none" }}>
+            <div key={col.key} style={{ display: "flex", alignItems: "center", justifyContent: col.align === "right" ? "flex-end" : "flex-start", fontSize: 14, color: "#080908", padding: col.cellPadding || "14px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none", overflow: "hidden", minWidth: 0, whiteSpace: "nowrap" }}>
               {col.render ? col.render(row[col.key], row, ri) : row[col.key]}
             </div>
           ))}
@@ -5790,7 +5968,7 @@ function DataTableV2({
           <div key={col.key} style={{
             display: "flex", alignItems: "center", gap: 4,
             fontSize: 14, fontWeight: 500, color: "#8C8C8B",
-            padding: "10px 16px",
+            padding: col.cellPadding ? col.cellPadding.replace("14px", "10px") : "10px 16px",
             borderRight: (ci < columns.length - 1 || showCommentColumn) ? "1px solid #E9E9EB" : "none",
             justifyContent: col.align === "right" ? "flex-end" : "flex-start",
           }}>
@@ -8852,7 +9030,6 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
         left: chatWidth + 6,
         right: 0,
         background: "#FFFFFF",
-        borderLeft: "1px solid #E9E9EB",
         overflowY: "auto",
         zIndex: 2,
         transform: resultsVisible ? "none" : "translateX(100vw)",
@@ -8915,14 +9092,12 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           <>
             {/* Scrim */}
             <div onClick={() => setDrawerOpen(false)} style={{
-              position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200,
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.15)", zIndex: 200,
             }} />
             {/* Drawer panel */}
             <div style={{
               position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
               background: "#FFFFFF",
-              borderLeft: "1px solid #E9E9EB",
-              boxShadow: "-4px 0 16px rgba(0,0,0,0.06)",
               zIndex: 201, display: "flex", flexDirection: "column",
               animation: "drawerSlideIn 0.25s ease both",
             }}>
@@ -10367,7 +10542,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
         {/* Suggestions toggle — same expanding button as bank rec */}
         {resultsVisible && canvasReady && (
-          <Tooltip text={boxesOpen ? "Collapse sidebar" : "Expand sidebar"} placement="bottom">
+          <Tooltip text={boxesOpen ? "Collapse sidebar" : "Expand sidebar"}>
           <button
             onClick={() => setBoxesOpen(o => !o)}
             style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 8, cursor: "pointer", fontFamily: "inherit", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", height: 48, minWidth: 48, padding: boxesOpen ? 0 : "0 12px 0 0", overflow: "hidden", justifyContent: "center", flexShrink: 0, transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s" }}
@@ -12347,9 +12522,518 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
 
 
 // ── Collect Documents Page ────────────────────────────────────────────────────
-function CollectDocumentsPage({ selectedPeriod }) {
+function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadStatements, onAllStatements }) {
   const [activeTab, setActiveTab] = useState("Missing documents");
   const [search, setSearch] = useState("");
+  const collectScrollRef = useRef(null);
+  const [collectScrollable, setCollectScrollable] = useState(false);
+  const [bankFilterOpen, setBankFilterOpen] = useState(false);
+  const [bankFilterSearch, setBankFilterSearch] = useState("");
+  const [assigneeFilterSearch, setAssigneeFilterSearch] = useState("");
+  const [selectedBankAccounts, setSelectedBankAccounts] = useState(new Set());
+  const [bankFilterCount, setBankFilterCount] = useState(0);
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const [allFilterTab, setAllFilterTab] = useState("Bank account");
+  const [draftBankAccounts, setDraftBankAccounts] = useState(new Set());
+  const [draftAmountMin, setDraftAmountMin] = useState("");
+  const [draftAmountMax, setDraftAmountMax] = useState("");
+  const [draftDateFrom, setDraftDateFrom] = useState("");
+  const [draftDateTo, setDraftDateTo] = useState("");
+  const [draftAssignees, setDraftAssignees] = useState(new Set());
+  const [activeAmountMin, setActiveAmountMin] = useState("");
+  const [activeAmountMax, setActiveAmountMax] = useState("");
+  const [activeDateFrom, setActiveDateFrom] = useState("");
+  const [activeDateTo, setActiveDateTo] = useState("");
+  const [activeAssignees, setActiveAssignees] = useState(new Set());
+  const [collectChecked, setCollectChecked] = useState(new Set());
+  const [batchUncheckedRefs, setBatchUncheckedRefs] = useState(new Set());
+  // Preview client portal dropdown
+  const [previewDropOpen, setPreviewDropOpen] = useState(false);
+  const [previewDropPos, setPreviewDropPos] = useState({ top: 0, left: 0 });
+  const previewBtnRef = useRef(null);
+  const previewDropRef = useRef(null);
+  // Settings sidebar
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("Email notifications");
+  const [settingsGeneralOpen, setSettingsGeneralOpen] = useState(true);
+  const [settingsRecurringOpen, setSettingsRecurringOpen] = useState(true);
+  const [settingsAccountingOpen, setSettingsAccountingOpen] = useState(true);
+  const [openRequestSidebar, setOpenRequestSidebar] = useState(null);
+  const [showAddRequestSidebar, setShowAddRequestSidebar] = useState(false);
+  const [addRequestSidebarVisible, setAddRequestSidebarVisible] = useState(false);
+  const [addRequestCadence, setAddRequestCadence] = useState("Monthly");
+  const [addReqDocType, setAddReqDocType] = useState("General file");
+  const [addReqTitle, setAddReqTitle] = useState("");
+  const [addReqFrom, setAddReqFrom] = useState(new Set());
+  const [addReqFromOpen, setAddReqFromOpen] = useState(false);
+  const [addReqFromSearch, setAddReqFromSearch] = useState("");
+  const addReqFromBtnRef = useRef(null);
+  const addReqFromDropRef = useRef(null);
+  const [addReqEmailReminders, setAddReqEmailReminders] = useState(false);
+  const [addReqNote, setAddReqNote] = useState(false);
+  const [addReqNoteText, setAddReqNoteText] = useState("");
+  const [addReqDocTypeOpen, setAddReqDocTypeOpen] = useState(false);
+  const addReqDocTypeBtnRef = useRef(null);
+  const addReqDocTypeDropRef = useRef(null);
+  const [addReqCadenceOpen, setAddReqCadenceOpen] = useState(false);
+  const addReqCadenceBtnRef = useRef(null);
+  const addReqCadenceDropRef = useRef(null);
+  useEffect(() => {
+    if (!addReqFromOpen) return;
+    const handler = (e) => {
+      if (addReqFromDropRef.current && !addReqFromDropRef.current.contains(e.target) && addReqFromBtnRef.current && !addReqFromBtnRef.current.contains(e.target)) {
+        setAddReqFromOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [addReqFromOpen]);
+  useEffect(() => {
+    if (!addReqDocTypeOpen) return;
+    const handler = (e) => {
+      if (addReqDocTypeDropRef.current && !addReqDocTypeDropRef.current.contains(e.target) && addReqDocTypeBtnRef.current && !addReqDocTypeBtnRef.current.contains(e.target)) {
+        setAddReqDocTypeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [addReqDocTypeOpen]);
+  useEffect(() => {
+    if (!addReqCadenceOpen) return;
+    const handler = (e) => {
+      if (addReqCadenceDropRef.current && !addReqCadenceDropRef.current.contains(e.target) && addReqCadenceBtnRef.current && !addReqCadenceBtnRef.current.contains(e.target)) {
+        setAddReqCadenceOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [addReqCadenceOpen]);
+  const openAddRequestSidebar = (cadence) => {
+    setAddRequestCadence(cadence);
+    setAddReqDocType("General file");
+    setAddReqTitle("");
+    setAddReqFrom(new Set());
+    setAddReqFromOpen(false);
+    setAddReqFromSearch("");
+    setAddReqEmailReminders(false);
+    setAddReqNote(false);
+    setAddReqNoteText("");
+    setAddReqDocTypeOpen(false);
+    setAddReqCadenceOpen(false);
+    setShowAddRequestSidebar(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => setAddRequestSidebarVisible(true)));
+  };
+  const closeAddRequestSidebar = () => {
+    setAddRequestSidebarVisible(false);
+    setTimeout(() => setShowAddRequestSidebar(false), 320);
+  };
+  const [tmplMonthlyOpen, setTmplMonthlyOpen] = useState(true);
+  const [tmplQuarterlyOpen, setTmplQuarterlyOpen] = useState(true);
+  const [tmplYearlyOpen, setTmplYearlyOpen] = useState(true);
+  const [tmplMonthlyChecked, setTmplMonthlyChecked] = useState(new Set());
+  const [tmplQuarterlyChecked, setTmplQuarterlyChecked] = useState(new Set());
+  const [tmplYearlyChecked, setTmplYearlyChecked] = useState(new Set());
+  const [tmplMonthlyItems, setTmplMonthlyItems] = useState([
+    { name: "Monthly expenses", people: "Daniel Victorin, James Clarke", visible: true },
+    { name: "Monthly payroll summary", people: "Sara Thompson", visible: false },
+  ]);
+  const [tmplQuarterlyItems, setTmplQuarterlyItems] = useState([
+    { name: "Quarterly test", people: "Daniel Victorin", visible: true },
+  ]);
+  const [tmplYearlyItems, setTmplYearlyItems] = useState([
+    { name: "Annual accounts", people: "Oliver Bennett, Emily Watson", visible: true },
+    { name: "Year-end statements", people: "Daniel Victorin", visible: false },
+  ]);
+  const [settingAutoForward, setSettingAutoForward] = useState(false);
+  const [settingCustomMessage, setSettingCustomMessage] = useState(false);
+  const [settingRecurringEnabled, setSettingRecurringEnabled] = useState(true);
+  const [settingRecurringCustomMsg, setSettingRecurringCustomMsg] = useState(false);
+  const [settingCompletedNotif, setSettingCompletedNotif] = useState(true);
+  const openSettingsSidebar = () => { setSettingsOpen(true); requestAnimationFrame(() => setSettingsVisible(true)); };
+  const closeSettingsSidebar = () => { setSettingsVisible(false); setTimeout(() => setSettingsOpen(false), 320); };
+  const collectTableRowsRef = useRef([]);
+  const [collectPage, setCollectPage] = useState(1);
+  const [collectPageSize, setCollectPageSize] = useState(10);
+  const [showPageSizeDrop, setShowPageSizeDrop] = useState(false);
+  const pageSizeDropRef = useRef(null);
+  const [toast, setToast] = useState(null);
+  const [toastLeaving, setToastLeaving] = useState(false);
+  const showToast = (msg) => {
+    setToastLeaving(false);
+    setToast(msg);
+    setTimeout(() => setToastLeaving(true), 3150);
+    setTimeout(() => { setToast(null); setToastLeaving(false); }, 3500);
+  };
+  const [isSending, setIsSending] = useState(false);
+  const formatSentDate = (d) => {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${d.getDate()} ${months[d.getMonth()]}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  };
+  const [showBatchPanel, setShowBatchPanel] = useState(false);
+  const [showFabDots, setShowFabDots] = useState(false);
+  const [fabDotsPos, setFabDotsPos] = useState({ bottom: 0, left: 0 });
+  const fabDotsBtnRef = useRef(null);
+  const fabDotsMenuRef = useRef(null);
+  const [showCreateBatchSidebar, setShowCreateBatchSidebar] = useState(false);
+  const [createBatchSidebarVisible, setCreateBatchSidebarVisible] = useState(false);
+  const [cbSelectedAccounts, setCbSelectedAccounts] = useState(new Set());
+  const [cbReference, setCbReference] = useState("");
+  const [cbFromDate, setCbFromDate] = useState("");
+  const [cbToDate, setCbToDate] = useState("");
+  const [cbActiveRange, setCbActiveRange] = useState("");
+  const [cbGenerating, setCbGenerating] = useState(false);
+  const [cbStep, setCbStep] = useState(1);
+  const [cbBatchTitle, setCbBatchTitle] = useState("");
+  const [cbCustomMessage, setCbCustomMessage] = useState(false);
+  const [cbCreating, setCbCreating] = useState(false);
+  const [cbCustomText, setCbCustomText] = useState("");
+  const [cbShowAll, setCbShowAll] = useState(new Set());
+  const [cbCheckedRows, setCbCheckedRows] = useState(new Set());
+  const [cbStep2Assignees, setCbStep2Assignees] = useState(new Set());
+  const [cbAssigneeDropOpen, setCbAssigneeDropOpen] = useState(false);
+  const [cbAssigneeSearch, setCbAssigneeSearch] = useState("");
+  const cbAssigneeBtnRef = useRef(null);
+  const cbAssigneeDropRef = useRef(null);
+  useEffect(() => {
+    if (!cbAssigneeDropOpen) return;
+    const handler = (e) => {
+      if (cbAssigneeDropRef.current && !cbAssigneeDropRef.current.contains(e.target) && cbAssigneeBtnRef.current && !cbAssigneeBtnRef.current.contains(e.target)) {
+        setCbAssigneeDropOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [cbAssigneeDropOpen]);
+  useEffect(() => {
+    if (!showFabDots) return;
+    if (fabDotsBtnRef.current) {
+      const r = fabDotsBtnRef.current.getBoundingClientRect();
+      setFabDotsPos({ bottom: window.innerHeight - r.top + 8, left: r.left + r.width / 2 });
+    }
+    const handler = (e) => {
+      if (fabDotsMenuRef.current && !fabDotsMenuRef.current.contains(e.target) && fabDotsBtnRef.current && !fabDotsBtnRef.current.contains(e.target)) setShowFabDots(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showFabDots]);
+  const openCreateBatchSidebar = () => { setShowCreateBatchSidebar(true); setCreateBatchSidebarVisible(false); requestAnimationFrame(() => requestAnimationFrame(() => setCreateBatchSidebarVisible(true))); };
+  const closeCreateBatchSidebar = () => { setCreateBatchSidebarVisible(false); setTimeout(() => { setShowCreateBatchSidebar(false); setCbSelectedAccounts(new Set()); setCbReference(""); setCbFromDate(""); setCbToDate(""); setCbActiveRange(""); setCbGenerating(false); setCbStep(1); setCbBatchTitle(""); setCbCustomMessage(false); setCbCreating(false); setCbCustomText(""); setCbShowAll(new Set()); setCbCheckedRows(new Set()); setCbStep2Assignees(new Set()); setCbAssigneeDropOpen(false); setCbAssigneeSearch(""); }, 380); };
+
+  const [showEditAssigneesSidebar, setShowEditAssigneesSidebar] = useState(false);
+  const [editAssigneesVisible, setEditAssigneesVisible] = useState(false);
+  const [editAssigneesSelected, setEditAssigneesSelected] = useState(new Set());
+  const [editAssigneeSearch, setEditAssigneeSearch] = useState("");
+  const [editAssigneeDropOpen, setEditAssigneeDropOpen] = useState(false);
+  const editAssigneeBtnRef = useRef(null);
+  const editAssigneeDropRef = useRef(null);
+  useEffect(() => {
+    if (!editAssigneeDropOpen) return;
+    const handler = (e) => { if (editAssigneeDropRef.current && !editAssigneeDropRef.current.contains(e.target) && editAssigneeBtnRef.current && !editAssigneeBtnRef.current.contains(e.target)) setEditAssigneeDropOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [editAssigneeDropOpen]);
+  const openEditAssigneesSidebar = () => {
+    const batch = batches.find(b => b.id === selectedBatchId);
+    setEditAssigneesSelected(new Set(batch?.assignees || []));
+    setEditAssigneeSearch("");
+    setEditAssigneeDropOpen(false);
+    setShowEditAssigneesSidebar(true);
+    setEditAssigneesVisible(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setEditAssigneesVisible(true)));
+  };
+  const closeEditAssigneesSidebar = () => { setEditAssigneesVisible(false); setTimeout(() => { setShowEditAssigneesSidebar(false); }, 380); };
+  const CB_ACCOUNTS = [
+    { name: "Lloyds Bank - Business", number: "12-5561-12344-27" },
+    { name: "Lloyds Bank - Operations GBP", number: "12-5561-12344-27" },
+    { name: "HSBC - Business Transactions", number: "12-5561-12344-27" },
+    { name: "Barclays - Operations", number: "12-5561-12344-27" },
+    { name: "American Express OP GBP", number: "12-5561-12344-27" },
+    { name: "Mastercard Business", number: "12-5561-12344-27" },
+  ];
+  const [showPreviewPanel, setShowPreviewPanel] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewAssigneeIdx, setPreviewAssigneeIdx] = useState(0);
+  const closePreview = () => {
+    setPreviewVisible(false);
+    setTimeout(() => setShowPreviewPanel(false), 400);
+  };
+  useEffect(() => {
+    if (!showPreviewPanel) return;
+    const handler = (e) => { if (e.key === "Escape") closePreview(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showPreviewPanel]);
+  const [batchTitle, setBatchTitle] = useState("");
+  const [batches, setBatches] = useState([
+    { id: 1, title: "Lloyd Bank - Operations GBP", status: "Draft", requestCount: 8, accountCount: 1, assigneeCount: 2, assignees: ["Oliver Bennett", "Sara Thompson"] }
+  ]);
+  const [rowBatchMap, setRowBatchMap] = useState({
+    "Maple Leaf Services AVT7710p": 1,
+    "Northgate Supplies Co.": 1,
+    "Riverside Engineering": 1,
+    "Falcon Tech Solutions": 1,
+    "Cobalt Digital Ltd": 1,
+    "Highland Energy 455GBP": 1,
+    "Apex Consulting Ltd": 1,
+    "Greenwood Partners": 1,
+  });
+  const [tableTab, setTableTab] = useState("Open requests");
+  const [sortKey, setSortKey] = useState("date");
+  const [sortDir, setSortDir] = useState("desc");
+  const [rowStatusMap, setRowStatusMap] = useState({
+    "Highland Energy 455GBP": "Review",
+    "Apex Consulting Ltd": "Review",
+    "Greenwood Partners": "Ready",
+    "Maple Leaf Services": "Review",
+    "Thames Water Ltd. A918": "Ready",
+    "Ashford Consulting Group": "Review",
+    "Blackstone Logistics": "Ready",
+    "Cedar Lane Properties": "Review",
+    "Dawson & Partners LLP": "Review",
+    "Eastbrook Supplies Ltd": "Ready",
+    "Finsbury Capital Group": "Review",
+    "Greystone Media Ltd": "Ready",
+    "Harrow Building Services": "Review",
+    "Ironbridge Technologies": "Ready",
+    "Jasper Retail Group": "Review",
+    "Kingston Software Ltd": "Review",
+    "Langley Print Services": "Ready",
+    "Mercer Freight Ltd": "Review",
+    "Newgate Advisory LLP": "Ready",
+    "Oakhill Energy PLC": "Review",
+    "Preston Utilities Ltd": "Ready",
+    "Quantex Systems Ltd": "Review",
+    "Regent Street Holdings": "Ready",
+    "Silverstone Recruitment": "Review",
+    "Thornbury Estates Ltd": "Review",
+    "Underhill Engineering": "Ready",
+    "Vantage Solutions Group": "Review",
+    "Westfield Contractors Ltd": "Ready",
+    "Gas Service Ltd.": "Review",
+    "Clearwater Services": "Ready",
+    "Redwood Advisory": "Review",
+    "Barclays - Operations": "Received",
+    "Mastercard Business": "Received",
+  });
+  const [receivedRefs, setReceivedRefs] = useState(new Set(["Highland Energy 455GBP", "Apex Consulting Ltd", "Greenwood Partners", "Maple Leaf Services", "Thames Water Ltd. A918", "Ashford Consulting Group", "Blackstone Logistics", "Cedar Lane Properties", "Dawson & Partners LLP", "Eastbrook Supplies Ltd", "Finsbury Capital Group", "Greystone Media Ltd", "Harrow Building Services", "Ironbridge Technologies", "Jasper Retail Group", "Kingston Software Ltd", "Langley Print Services", "Mercer Freight Ltd", "Newgate Advisory LLP", "Oakhill Energy PLC", "Preston Utilities Ltd", "Quantex Systems Ltd", "Regent Street Holdings", "Silverstone Recruitment", "Thornbury Estates Ltd", "Underhill Engineering", "Vantage Solutions Group", "Westfield Contractors Ltd", "Gas Service Ltd.", "Clearwater Services", "Redwood Advisory", "Barclays - Operations", "Mastercard Business"]));
+  const archivedRefs = new Set(["Elmwood Recruitment", "Thornfield Capital", "Cornerstone Advisory", "Whitmore & Clarke", "Crestwood Ventures", "Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]);
+  const excludedRefs = new Set(["Seagate Systems Ltd", "Ashford Group plc"]);
+  const closedRefs = new Set(["Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]);
+  const [rowFromMap, setRowFromMap] = useState({
+    "Highland Energy 455GBP": "Oliver Bennett, Sara Thompson",
+    "Maple Leaf Services AVT7710p": "Oliver Bennett, Sara Thompson",
+    "Apex Consulting Ltd": "Oliver Bennett, Sara Thompson",
+    "Northgate Supplies Co.": "Oliver Bennett, Sara Thompson",
+    "Greenwood Partners": "Oliver Bennett, Sara Thompson",
+    "Riverside Engineering": "Oliver Bennett, Sara Thompson",
+    "Falcon Tech Solutions": "Oliver Bennett, Sara Thompson",
+    "Cobalt Digital Ltd": "Oliver Bennett, Sara Thompson",
+  });
+  const [selectedBatchId, setSelectedBatchId] = useState(null);
+  const [showMembersDropdown, setShowMembersDropdown] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState(new Set());
+  const [memberDropPos, setMemberDropPos] = useState({ bottom: 0, left: 0 });
+  const membersBtnRef = useRef(null);
+  const membersDropRef = useRef(null);
+  const batchPanelRef = useRef(null);
+  const createBatchBtnRef = useRef(null);
+  const [showAddToBatch, setShowAddToBatch] = useState(false);
+  const [addToBatchPos, setAddToBatchPos] = useState({ bottom: 0, left: 0 });
+  const addToBatchBtnRef = useRef(null);
+  const addToBatchDropRef = useRef(null);
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false);
+  const [scheduleMonth, setScheduleMonth] = useState(new Date().getMonth());
+  const [scheduleYear, setScheduleYear] = useState(new Date().getFullYear());
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
+  const [schedulePos, setSchedulePos] = useState({ bottom: 0, left: 0 });
+  const schedulePanelRef = useRef(null);
+  const calendarBtnRef = useRef(null);
+  const MEMBER_OPTIONS = ["Oliver Bennett", "Sara Thompson", "James Clarke", "Emily Watson", "Michael Osei", "Lucy Hartman"];
+  const [bankFilterPos, setBankFilterPos] = useState({ top: 0, left: 0 });
+  const bankBtnRef = useRef(null);
+  const bankDropRef = useRef(null);
+  const allFiltersBtnRef = useRef(null);
+  const allFiltersDropRef = useRef(null);
+  const [allFiltersPos, setAllFiltersPos] = useState({ top: 0, left: 0 });
+  const [dateFiltOpen, setDateFiltOpen] = useState(false);
+  const [dateFiltPos, setDateFiltPos] = useState({ top: 0, left: 0 });
+  const dateBtnRef = useRef(null);
+  const dateDropRef = useRef(null);
+  const [dateCalField, setDateCalField] = useState(null);
+  const [dateCalMonth, setDateCalMonth] = useState(new Date().getMonth());
+  const [dateCalYear, setDateCalYear] = useState(new Date().getFullYear());
+  const [dateCalPos, setDateCalPos] = useState({ top: 0, left: 0 });
+  const dateCalRef = useRef(null);
+  const dateFromFieldRef = useRef(null);
+  const dateToFieldRef = useRef(null);
+  const allDateFromFieldRef = useRef(null);
+  const allDateToFieldRef = useRef(null);
+  const [assigneeFiltOpen, setAssigneeFiltOpen] = useState(false);
+  const [assigneeFiltPos, setAssigneeFiltPos] = useState({ top: 0, left: 0 });
+  const assigneeBtnRef = useRef(null);
+  const assigneeDropRef = useRef(null);
+  const COLLECT_BANK_ACCOUNTS = ["Lloyds Bank - Business", "Lloyds Bank - Operations GBP", "HSBC - Business Transactions", "Barclays - Operations", "American Express OP GBP", "Mastercard Business"];
+  useEffect(() => { setBatchUncheckedRefs(new Set()); }, [selectedBatchId]);
+  // ESC key closes any open sidebar
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (settingsOpen) { closeSettingsSidebar(); return; }
+      if (showEditAssigneesSidebar) { closeEditAssigneesSidebar(); return; }
+      if (showCreateBatchSidebar) { closeCreateBatchSidebar(); return; }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [settingsOpen, showEditAssigneesSidebar, showCreateBatchSidebar]);
+  useEffect(() => {
+    if (!previewDropOpen) return;
+    const handler = (e) => { if (previewDropRef.current && !previewDropRef.current.contains(e.target) && previewBtnRef.current && !previewBtnRef.current.contains(e.target)) setPreviewDropOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [previewDropOpen]);
+  useEffect(() => {
+    const el = collectScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const scrollable = el.scrollWidth > el.clientWidth + 2;
+      setCollectScrollable(scrollable);
+      el.querySelectorAll("[data-collect-sticky]").forEach(cell => {
+        cell.style.boxShadow = scrollable ? "-6px 0 12px rgba(0,0,0,0.08)" : "none";
+      });
+    };
+    el.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    setTimeout(update, 100);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, []);
+  useEffect(() => {
+    const handleClose = (e) => {
+      const drop = document.getElementById("exportDropdown");
+      if (drop && drop.style.display !== "none") {
+        const btn = document.getElementById("exportBtn");
+        if (!drop.contains(e.target) && btn && !btn.contains(e.target)) {
+          drop.style.display = "none";
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClose);
+    return () => document.removeEventListener("mousedown", handleClose);
+  }, []);
+
+  useEffect(() => {
+    if (!bankFilterOpen) return;
+    if (bankBtnRef.current) { const r = bankBtnRef.current.getBoundingClientRect(); setBankFilterPos({ top: r.bottom + 6, left: r.left }); }
+    const handler = (e) => { if (bankDropRef.current && !bankDropRef.current.contains(e.target) && bankBtnRef.current && !bankBtnRef.current.contains(e.target)) setBankFilterOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [bankFilterOpen]);
+  useEffect(() => {
+    if (!showAllFilters) return;
+    const handler = (e) => { if (allFiltersDropRef.current && !allFiltersDropRef.current.contains(e.target) && allFiltersBtnRef.current && !allFiltersBtnRef.current.contains(e.target)) setShowAllFilters(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showAllFilters]);
+  useEffect(() => {
+    if (!dateFiltOpen) return;
+    const handler = (e) => { if (dateDropRef.current && !dateDropRef.current.contains(e.target) && dateBtnRef.current && !dateBtnRef.current.contains(e.target)) setDateFiltOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dateFiltOpen]);
+  useEffect(() => {
+    if (!dateCalField) return;
+    const handler = (e) => {
+      if (dateCalRef.current && !dateCalRef.current.contains(e.target) &&
+          (!dateFromFieldRef.current || !dateFromFieldRef.current.contains(e.target)) &&
+          (!dateToFieldRef.current || !dateToFieldRef.current.contains(e.target))) {
+        setDateCalField(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dateCalField]);
+  useEffect(() => {
+    if (!assigneeFiltOpen) return;
+    const handler = (e) => { if (assigneeDropRef.current && !assigneeDropRef.current.contains(e.target) && assigneeBtnRef.current && !assigneeBtnRef.current.contains(e.target)) setAssigneeFiltOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [assigneeFiltOpen]);
+
+  useEffect(() => {
+    if (!showMembersDropdown) return;
+    if (membersBtnRef.current) {
+      const r = membersBtnRef.current.getBoundingClientRect();
+      setMemberDropPos({ bottom: window.innerHeight - r.top + 6, left: r.left, width: r.width });
+    }
+    const handler = (e) => { if (membersDropRef.current && !membersDropRef.current.contains(e.target) && membersBtnRef.current && !membersBtnRef.current.contains(e.target)) setShowMembersDropdown(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMembersDropdown]);
+
+  const [batchPanelPos, setBatchPanelPos] = useState({ bottom: 0, left: 0 });
+  useEffect(() => {
+    if (!showBatchPanel) return;
+    if (createBatchBtnRef.current) {
+      const r = createBatchBtnRef.current.getBoundingClientRect();
+      setBatchPanelPos({ bottom: 104, left: r.left + r.width / 2 });
+    }
+    const handler = (e) => {
+      if (
+        batchPanelRef.current && !batchPanelRef.current.contains(e.target) &&
+        createBatchBtnRef.current && !createBatchBtnRef.current.contains(e.target) &&
+        (!membersDropRef.current || !membersDropRef.current.contains(e.target))
+      ) {
+        setShowBatchPanel(false);
+        setShowMembersDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showBatchPanel]);
+
+  useEffect(() => {
+    if (!showAddToBatch) return;
+    if (addToBatchBtnRef.current) {
+      const r = addToBatchBtnRef.current.getBoundingClientRect();
+      setAddToBatchPos({ bottom: 104, left: r.left + r.width / 2 });
+    }
+    const handler = (e) => {
+      if (addToBatchDropRef.current && !addToBatchDropRef.current.contains(e.target) && addToBatchBtnRef.current && !addToBatchBtnRef.current.contains(e.target)) setShowAddToBatch(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showAddToBatch]);
+
+  useEffect(() => {
+    if (!showSchedulePanel) return;
+    if (calendarBtnRef.current) {
+      const r = calendarBtnRef.current.getBoundingClientRect();
+      setSchedulePos({ bottom: 104, left: r.left + r.width / 2 });
+    }
+    const handler = (e) => {
+      if (schedulePanelRef.current && !schedulePanelRef.current.contains(e.target) && calendarBtnRef.current && !calendarBtnRef.current.contains(e.target)) {
+        setShowSchedulePanel(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showSchedulePanel]);
+
+  useEffect(() => {
+    if (selectedBatchId === null) { setCollectChecked(new Set()); return; }
+    const sorted = [...MISSING_TABLE_DATA].sort((a,b)=>(b.dot?1:0)-(a.dot?1:0));
+    const filtered = sorted.filter(r => {
+      const ms = (r.ref||"").toLowerCase().includes(search.toLowerCase()) || (r.from||"").toLowerCase().includes(search.toLowerCase());
+      const mb = selectedBankAccounts.size === 0 || selectedBankAccounts.has(r.account);
+      const matchBatch = rowBatchMap[r.ref] === selectedBatchId;
+      const activeBatchStatus = selectedBatchId ? (batches.find(b => b.id === selectedBatchId)?.status || null) : null;
+              const canShowReceived = activeBatchStatus === "Sent" || activeBatchStatus === null;
+              const matchTab = tableTab === "Received" ? (canShowReceived && receivedRefs.has(r.ref)) : tableTab === "Open requests" ? (!archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref))) : tableTab === "Archived" ? archivedRefs.has(r.ref) : tableTab === "Excluded" ? (isMissing && excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)) : false;
+      return ms && mb && matchBatch && matchTab;
+    });
+    setCollectChecked(new Set(filtered.map(r => r.ref)));
+  }, [selectedBatchId, tableTab, receivedRefs]);
 
   const MISSING_DOCS = [
     { id: 1, contact: "Yorkshire Tea Estates", type: "Invoice", requestedBy: "Sarah Thompson", dueDate: "12 Apr 2026", status: "Pending", amount: "£1,840.00", account: "Lloyds Bank - Business" },
@@ -12364,57 +13048,171 @@ function CollectDocumentsPage({ selectedPeriod }) {
 
   const RECURRING_DOCS = [
     { id: 1, contact: "Yorkshire Tea Estates", type: "Monthly invoice", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "Lloyds Bank - Business" },
-    { id: 2, contact: "Clifton & Harrow Supplies", type: "Quarterly statement", frequency: "Quarterly", nextDue: "1 Jul 2026", status: "Active", account: "Barclays - Operations" },
+    { id: 2, contact: "Clifton & Harrow Supplies", type: "Quarterly statement", frequency: "Quarterly", nextDue: "1 Jul 2026", status: "Upcoming", account: "Barclays - Operations" },
     { id: 3, contact: "Meridian Office Solutions", type: "Monthly receipt", frequency: "Monthly", nextDue: "1 May 2026", status: "Paused", account: "Mastercard Business" },
     { id: 4, contact: "Bakery & Food Supplies", type: "Weekly invoice", frequency: "Weekly", nextDue: "21 Apr 2026", status: "Active", account: "Lloyds Bank - Business" },
     { id: 5, contact: "Direct Expenses", type: "Monthly report", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "American Express OP GBP" },
   ];
 
+  const MISSING_TABLE_DATA = [
+    { ref: "Maple Leaf Services", date: "17 Apr 2026", amount: "-£450.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business", dot: true },
+    { ref: "Gas Service Ltd.", date: "17 Apr 2026", amount: "-£324.87", batch: null, from: null, account: "HSBC - Business Transactions", dot: true },
+    { ref: "Thames Water Ltd. A918", date: "16 Apr 2026", amount: "-£987.65", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Ashford Consulting Group", date: "14 Apr 2026", amount: "-£1,240.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Blackstone Logistics", date: "13 Apr 2026", amount: "-£780.00", batch: null, from: "Sara Thompson", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Cedar Lane Properties", date: "12 Apr 2026", amount: "-£2,100.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Dawson & Partners LLP", date: "11 Apr 2026", amount: "-£560.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Eastbrook Supplies Ltd", date: "10 Apr 2026", amount: "-£3,450.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Finsbury Capital Group", date: "9 Apr 2026", amount: "-£920.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+    { ref: "Greystone Media Ltd", date: "7 Apr 2026", amount: "-£1,680.00", batch: null, from: "Oliver Bennett", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Harrow Building Services", date: "6 Apr 2026", amount: "-£440.00", batch: null, from: "Sara Thompson", account: "Barclays - Operations", dot: false },
+    { ref: "Ironbridge Technologies", date: "5 Apr 2026", amount: "-£5,200.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Jasper Retail Group", date: "4 Apr 2026", amount: "-£870.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Kingston Software Ltd", date: "3 Apr 2026", amount: "-£1,330.00", batch: null, from: "Oliver Bennett", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Langley Print Services", date: "28 Apr 2026", amount: "-£620.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+    { ref: "Mercer Freight Ltd", date: "27 Apr 2026", amount: "-£2,760.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Newgate Advisory LLP", date: "26 Apr 2026", amount: "-£480.00", batch: null, from: "Sara Thompson", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Oakhill Energy PLC", date: "25 Apr 2026", amount: "-£3,900.00", batch: null, from: "Oliver Bennett", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Preston Utilities Ltd", date: "24 Apr 2026", amount: "-£710.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Quantex Systems Ltd", date: "21 Apr 2026", amount: "-£1,580.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Regent Street Holdings", date: "20 Apr 2026", amount: "-£340.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+    { ref: "Silverstone Recruitment", date: "19 Apr 2026", amount: "-£2,040.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Thornbury Estates Ltd", date: "18 Apr 2026", amount: "-£660.00", batch: null, from: "Sara Thompson", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Underhill Engineering", date: "17 Apr 2026", amount: "-£4,100.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Vantage Solutions Group", date: "14 Apr 2026", amount: "-£830.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Westfield Contractors Ltd", date: "13 Apr 2026", amount: "-£1,900.00", batch: null, from: "Oliver Bennett", account: "Mastercard Business", dot: false },
+    { ref: "British Gas PLC", date: "15 Apr 2026", amount: "-£432.10", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Highland Energy 455GBP", date: "15 Apr 2026", amount: "-£765.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Barclays - Operations", dot: false },
+    { ref: "Maple Leaf Services AVT7710p", date: "14 Apr 2026", amount: "-£320.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "American Express OP GBP", dot: false },
+    { ref: "Apex Consulting Ltd", date: "13 Apr 2026", amount: "-£2,150.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Northgate Supplies Co.", date: "12 Apr 2026", amount: "-£890.00", batch: null, from: null, account: "Mastercard Business", dot: false },
+    { ref: "Greenwood Partners", date: "11 Apr 2026", amount: "-£3,400.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business", dot: true },
+    { ref: "Riverside Engineering", date: "10 Apr 2026", amount: "-£1,250.00", batch: null, from: null, account: "Barclays - Operations", dot: false },
+    { ref: "Falcon Tech Solutions", date: "9 Apr 2026", amount: "-£4,800.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Cobalt Digital Ltd", date: "8 Apr 2026", amount: "-£620.00", batch: null, from: null, account: "American Express OP GBP", dot: false },
+    { ref: "Summit Projects Ltd", date: "7 Apr 2026", amount: "-£1,970.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Birchfield Logistics", date: "6 Apr 2026", amount: "-£530.00", batch: null, from: null, account: "Mastercard Business", dot: false },
+    { ref: "Meridian Capital Group", date: "5 Apr 2026", amount: "-£7,200.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Clearwater Services", date: "4 Apr 2026", amount: "-£345.00", batch: null, from: null, account: "Barclays - Operations", dot: true },
+    { ref: "Hartwell & Sons", date: "3 Apr 2026", amount: "-£2,640.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "American Express OP GBP", dot: false },
+    { ref: "Pinnacle Software Ltd", date: "28 Apr 2026", amount: "-£1,100.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: true },
+    { ref: "Redwood Advisory", date: "27 Apr 2026", amount: "-£880.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "HSBC - Business Transactions", dot: true },
+    { ref: "Oaktree Maintenance", date: "26 Apr 2026", amount: "-£490.00", batch: null, from: null, account: "Mastercard Business", dot: true },
+    { ref: "Sterling Freight Ltd", date: "25 Apr 2026", amount: "-£3,150.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business", dot: true },
+    { ref: "Harborview Consulting", date: "24 Apr 2026", amount: "-£760.00", batch: null, from: null, account: "Barclays - Operations", dot: true },
+    { ref: "Ironclad Technologies", date: "23 Apr 2026", amount: "-£5,500.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "American Express OP GBP", dot: true },
+    { ref: "Cascade Partners", date: "22 Apr 2026", amount: "-£1,380.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: true },
+    { ref: "Woodland Estates Ltd", date: "21 Apr 2026", amount: "-£920.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Horizon Analytics", date: "20 Apr 2026", amount: "-£2,200.00", batch: null, from: null, account: "Mastercard Business", dot: false },
+    { ref: "Bluebell Technologies", date: "19 Apr 2026", amount: "-£670.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Elmwood Recruitment", date: "18 Apr 2026", amount: "-£1,840.00", batch: null, from: null, account: "Barclays - Operations", dot: false },
+    { ref: "Thornfield Capital", date: "17 Apr 2026", amount: "-£9,100.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "American Express OP GBP", dot: false },
+    { ref: "Pathfinder Consulting", date: "16 Apr 2026", amount: "-£430.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Seagate Systems Ltd", date: "15 Apr 2026", amount: "-£3,750.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "HSBC - Business Transactions", dot: true },
+    { ref: "Cornerstone Advisory", date: "14 Apr 2026", amount: "-£1,060.00", batch: null, from: null, account: "Mastercard Business", dot: false },
+    { ref: "Evergreen Properties", date: "13 Apr 2026", amount: "-£2,900.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Whitmore & Clarke", date: "12 Apr 2026", amount: "-£580.00", batch: null, from: null, account: "Barclays - Operations", dot: false },
+    { ref: "Nova Digital Agency", date: "11 Apr 2026", amount: "-£1,450.00", batch: "Draft", from: "Laura Bennett, Ol...", account: "American Express OP GBP", dot: false },
+    { ref: "Crestwood Ventures", date: "10 Apr 2026", amount: "-£740.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Tidewater Logistics", date: "9 Apr 2026", amount: "-£6,300.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Ashford Group plc", date: "8 Apr 2026", amount: "-£1,120.00", batch: null, from: null, account: "Mastercard Business", dot: false },
+    { ref: "Brampton Legal Ltd", date: "7 Apr 2026", amount: "-£2,340.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Foxgrove Consulting", date: "6 Apr 2026", amount: "-£870.00", batch: null, from: "Sara Thompson", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Kestrel Media Group", date: "5 Apr 2026", amount: "-£1,650.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Linden Park Services", date: "4 Apr 2026", amount: "-£490.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Moorfield Solutions", date: "3 Apr 2026", amount: "-£3,100.00", batch: null, from: "Oliver Bennett", account: "Mastercard Business", dot: false },
+    { ref: "Northbrook Advisory", date: "2 Apr 2026", amount: "-£720.00", batch: null, from: "Sara Thompson", account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Pemberton Holdings", date: "1 Apr 2026", amount: "-£5,800.00", batch: null, from: "Oliver Bennett", account: "Lloyds Bank - Business", dot: false },
+    { ref: "Ravenscroft Ltd", date: "1 Apr 2026", amount: "-£1,270.00", batch: null, from: "Sara Thompson", account: "HSBC - Business Transactions", dot: false },
+    { ref: "Aldgate Capital Ltd", date: "30 Mar 2026", amount: "-£2,480.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Belmont Industries", date: "29 Mar 2026", amount: "-£670.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Cairnwood Consulting", date: "28 Mar 2026", amount: "-£1,950.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Dalton & Finch LLP", date: "27 Mar 2026", amount: "-£530.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Edgewater Holdings", date: "26 Mar 2026", amount: "-£8,400.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Fenchurch Advisory", date: "25 Mar 2026", amount: "-£1,130.00", batch: null, from: "Oliver Bennett", account: "Mastercard Business", dot: false },
+    { ref: "Gilmore & Watts Ltd", date: "24 Mar 2026", amount: "-£3,620.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Halcyon Ventures", date: "21 Mar 2026", amount: "-£890.00", batch: null, from: "Sara Thompson", account: "Barclays - Operations", dot: false },
+    { ref: "Invicta Recruitment", date: "20 Mar 2026", amount: "-£2,200.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Jubilee Press Ltd", date: "19 Mar 2026", amount: "-£460.00", batch: null, from: "Oliver Bennett", account: "American Express OP GBP", dot: false },
+    { ref: "Kenilworth Group", date: "18 Mar 2026", amount: "-£5,700.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Larkspur Media", date: "17 Mar 2026", amount: "-£1,040.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+    { ref: "Meridian Software Ltd", date: "14 Mar 2026", amount: "-£3,350.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Northfields Advisory", date: "13 Mar 2026", amount: "-£750.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Orchard Gate Estates", date: "12 Mar 2026", amount: "-£1,820.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Pemberton Logistics", date: "11 Mar 2026", amount: "-£420.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Queensgate Partners", date: "10 Mar 2026", amount: "-£6,100.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Redbridge Capital", date: "7 Mar 2026", amount: "-£980.00", batch: null, from: "Oliver Bennett", account: "Mastercard Business", dot: false },
+    { ref: "Sandhurst Solutions", date: "6 Mar 2026", amount: "-£2,560.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Tilbury Freight Ltd", date: "5 Mar 2026", amount: "-£1,370.00", batch: null, from: "Sara Thompson", account: "Barclays - Operations", dot: false },
+    { ref: "Upminster Ventures", date: "4 Mar 2026", amount: "-£4,450.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Vauxhall Digital", date: "3 Mar 2026", amount: "-£610.00", batch: null, from: "Oliver Bennett", account: "American Express OP GBP", dot: false },
+    { ref: "Westbury Accounting", date: "28 Feb 2026", amount: "-£1,690.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Xbridge Consulting", date: "27 Feb 2026", amount: "-£830.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+    { ref: "Yardley Properties", date: "26 Feb 2026", amount: "-£3,080.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Zephyr Engineering", date: "25 Feb 2026", amount: "-£1,540.00", batch: null, from: "Oliver Bennett", account: "Barclays - Operations", dot: false },
+    { ref: "Ashdown & Fraser", date: "24 Feb 2026", amount: "-£720.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Bracknell Services Ltd", date: "21 Feb 2026", amount: "-£5,300.00", batch: null, from: "Sara Thompson", account: "American Express OP GBP", dot: false },
+    { ref: "Chiltern Advisory Group", date: "20 Feb 2026", amount: "-£1,160.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Dunmore Technology", date: "19 Feb 2026", amount: "-£2,730.00", batch: null, from: "Oliver Bennett", account: "Mastercard Business", dot: false },
+    { ref: "Earlsfield Supplies", date: "18 Feb 2026", amount: "-£490.00", batch: null, from: null, account: "Lloyds Bank - Business", dot: false },
+    { ref: "Fortis Legal LLP", date: "17 Feb 2026", amount: "-£1,880.00", batch: null, from: "Sara Thompson", account: "Barclays - Operations", dot: false },
+    { ref: "Gainsborough Media", date: "14 Feb 2026", amount: "-£940.00", batch: null, from: null, account: "HSBC - Business Transactions", dot: false },
+    { ref: "Hadlow Investments", date: "13 Feb 2026", amount: "-£4,200.00", batch: null, from: "Oliver Bennett", account: "American Express OP GBP", dot: false },
+    { ref: "Inkstone Digital Ltd", date: "12 Feb 2026", amount: "-£1,310.00", batch: null, from: null, account: "Lloyds Bank - Operations GBP", dot: false },
+    { ref: "Junction Park Group", date: "11 Feb 2026", amount: "-£670.00", batch: null, from: "Sara Thompson", account: "Mastercard Business", dot: false },
+  ];
   const isMissing = activeTab === "Missing documents";
   const rows = isMissing ? MISSING_DOCS : RECURRING_DOCS;
+  const _activeBatchStatus = selectedBatchId ? (batches.find(b => b.id === selectedBatchId)?.status || null) : null;
+  const canShowReceived = _activeBatchStatus === "Sent" || _activeBatchStatus === null;
   const filtered = rows.filter(r => r.contact.toLowerCase().includes(search.toLowerCase()) || r.type.toLowerCase().includes(search.toLowerCase()));
 
   const STATUS_STYLE = {
     "Pending":  { bg: "#FDF8EE", color: "#D5A750" },
     "Overdue":  { bg: "#FDECEA", color: "#C8543A" },
-    "Sent":     { bg: "#EAF2E2", color: "#05A105" },
+    "Sent":     { bg: "#F1F8F0", color: "#05A105" },
     "Active":   { bg: "#EAF2E2", color: "#05A105" },
     "Paused":   { bg: "#F5F5F5", color: "#7C7C7C" },
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#FFFFFF" }}>
-      {/* Header */}
-      <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
+    <div style={{ flex: 1, overflowY: "auto", background: "#FFFFFF" }}>
+      <div style={{ padding: "32px 48px 0", background: "#FFFFFF" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
         {/* Title row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
           <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Collect documents</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <PrimaryButton style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
+            <PrimaryButton onClick={openCreateBatchSidebar} style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginRight: 6 }}><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round"/></svg>
               Create batch
             </PrimaryButton>
             {[
-              { path: "M16.6666 8.74935V5.66602C16.6666 4.26588 16.6666 3.56582 16.3942 3.03104C16.1545 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0668 1.66602 12.6666 1.66602H7.33331C5.93318 1.66602 5.23312 1.66602 4.69834 1.9385C4.22793 2.17818 3.84548 2.56063 3.6058 3.03104C3.33331 3.56582 3.33331 4.26588 3.33331 5.66602V14.3327C3.33331 15.7328 3.33331 16.4329 3.6058 16.9677C3.84548 17.4381 4.22793 17.8205 4.69834 18.0602C5.23312 18.3327 5.93318 18.3327 7.33331 18.3327H9.99998M11.6666 9.16602H6.66665M8.33331 12.4993H6.66665M13.3333 5.83268H6.66665M15 17.4993V12.4993M12.5 14.9993H17.5" },
-              { path: "M2.08335 10.0007H4.90166C5.47266 10.0007 5.99466 10.3233 6.25002 10.834C6.50538 11.3447 7.02738 11.6673 7.59838 11.6673H12.4017C12.9727 11.6673 13.4947 11.3447 13.75 10.834C14.0054 10.3233 14.5274 10.0007 15.0984 10.0007H17.9167M7.47216 3.33398H12.5279C13.4253 3.33398 13.874 3.33398 14.2701 3.47062C14.6204 3.59145 14.9395 3.78865 15.2042 4.04794C15.5036 4.34115 15.7043 4.74248 16.1056 5.54513L17.9111 9.15607C18.0686 9.47106 18.1473 9.62855 18.2028 9.79361C18.2522 9.94019 18.2878 10.091 18.3092 10.2442C18.3334 10.4167 18.3334 10.5928 18.3334 10.9449V12.6673C18.3334 14.0674 18.3334 14.7675 18.0609 15.3023C17.8212 15.7727 17.4387 16.1552 16.9683 16.3948C16.4335 16.6673 15.7335 16.6673 14.3334 16.6673H5.66669C4.26656 16.6673 3.56649 16.6673 3.03171 16.3948C2.56131 16.1552 2.17885 15.7727 1.93917 15.3023C1.66669 14.7675 1.66669 14.0674 1.66669 12.6673V10.9449C1.66669 10.5928 1.66669 10.4167 1.69083 10.2442C1.71228 10.091 1.74789 9.94019 1.7972 9.79361C1.85274 9.62855 1.93149 9.47105 2.08898 9.15607L3.89445 5.54513C4.29577 4.74248 4.49644 4.34115 4.79581 4.04794C5.06055 3.78865 5.37962 3.59145 5.72993 3.47062C6.12606 3.33398 6.57476 3.33398 7.47216 3.33398Z" },
-              { path: "M10 12.4993C11.3807 12.4993 12.5 11.3801 12.5 9.99935C12.5 8.61864 11.3807 7.49935 10 7.49935C8.61931 7.49935 7.50002 8.61864 7.50002 9.99935C7.50002 11.3801 8.61931 12.4993 10 12.4993Z", path2: "M15.6061 12.2721C15.5052 12.5006 15.4752 12.754 15.5197 12.9998C15.5643 13.2455 15.6814 13.4723 15.8561 13.6509L15.9015 13.6963C16.0424 13.837 16.1542 14.0041 16.2304 14.1881C16.3067 14.372 16.3459 14.5692 16.3459 14.7683C16.3459 14.9674 16.3067 15.1646 16.2304 15.3485C16.1542 15.5324 16.0424 15.6995 15.9015 15.8403C15.7608 15.9811 15.5937 16.0929 15.4098 16.1691C15.2258 16.2454 15.0287 16.2846 14.8296 16.2846C14.6305 16.2846 14.4333 16.2454 14.2494 16.1691C14.0654 16.0929 13.8983 15.9811 13.7576 15.8403L13.7121 15.7948C13.5336 15.6202 13.3068 15.503 13.0611 15.4584C12.8153 15.4139 12.5619 15.444 12.3334 15.5448C12.1093 15.6408 11.9182 15.8003 11.7836 16.0035C11.649 16.2068 11.5768 16.445 11.5758 16.6887V16.8175C11.5758 17.2194 11.4161 17.6048 11.132 17.8889C10.8479 18.173 10.4625 18.3327 10.0606 18.3327C9.65878 18.3327 9.2734 18.173 8.98925 17.8889C8.70511 17.6048 8.54547 17.2194 8.54547 16.8175V16.7493C8.53961 16.4986 8.45844 16.2554 8.31253 16.0514C8.16661 15.8474 7.9627 15.692 7.72729 15.6054C7.4988 15.5046 7.24533 15.4745 6.99957 15.519C6.75382 15.5636 6.52705 15.6808 6.3485 15.8554L6.30305 15.9009C6.16233 16.0417 5.99523 16.1535 5.81129 16.2297C5.62736 16.306 5.4302 16.3452 5.23108 16.3452C5.03197 16.3452 4.8348 16.306 4.65087 16.2297C4.46693 16.1535 4.29983 16.0417 4.15911 15.9009C4.01824 15.7601 3.90648 15.593 3.83023 15.4091C3.75398 15.2252 3.71474 15.028 3.71474 14.8289C3.71474 14.6298 3.75398 14.4326 3.83023 14.2487C3.90648 14.0647 4.01824 13.8976 4.15911 13.7569L4.20457 13.7115C4.37921 13.5329 4.49637 13.3062 4.54093 13.0604C4.58549 12.8146 4.55541 12.5612 4.45457 12.3327C4.35853 12.1086 4.19908 11.9175 3.99583 11.7829C3.79258 11.6483 3.5544 11.5761 3.31063 11.5751H3.18184C2.78 11.5751 2.39461 11.4155 2.11046 11.1313C1.82632 10.8472 1.66669 10.4618 1.66669 10.06C1.66669 9.65811 1.82632 9.27273 2.11046 8.98858C2.39461 8.70444 2.78 8.5448 3.18184 8.5448H3.25002C3.50077 8.53894 3.74396 8.45777 3.94797 8.31186C4.15199 8.16594 4.30738 7.96203 4.39396 7.72662C4.4948 7.49812 4.52489 7.24466 4.48033 6.9989C4.43577 6.75315 4.31861 6.52638 4.14396 6.34783L4.09851 6.30238C3.95763 6.16166 3.84588 5.99456 3.76963 5.81062C3.69338 5.62669 3.65413 5.42952 3.65413 5.23041C3.65413 5.0313 3.69338 4.83413 3.76963 4.6502C3.84588 4.46626 3.95763 4.29916 4.09851 4.15844C4.23922 4.01757 4.40633 3.90581 4.59026 3.82956C4.7742 3.75331 4.97136 3.71407 5.17047 3.71407C5.36959 3.71407 5.56675 3.75331 5.75069 3.82956C5.93462 3.90581 6.10173 4.01757 6.24244 4.15844L6.2879 4.20389C6.46644 4.37854 6.69321 4.4957 6.93897 4.54026C7.18472 4.58482 7.43819 4.55474 7.66669 4.45389H7.72729C7.95136 4.35786 8.14246 4.19841 8.27706 3.99516C8.41166 3.79191 8.4839 3.55373 8.48487 3.30996V3.18117C8.48487 2.77932 8.6445 2.39394 8.92865 2.10979C9.21279 1.82565 9.59818 1.66602 10 1.66602C10.4019 1.66602 10.7872 1.82565 11.0714 2.10979C11.3555 2.39394 11.5152 2.77932 11.5152 3.18117V3.24935C11.5161 3.49313 11.5884 3.7313 11.723 3.93455C11.8576 4.1378 12.0487 4.29726 12.2727 4.39329C12.5012 4.49413 12.7547 4.52422 13.0005 4.47966C13.2462 4.4351 13.473 4.31794 13.6515 4.14329L13.697 4.09783C13.8377 3.95696 14.0048 3.8452 14.1887 3.76896C14.3727 3.69271 14.5698 3.65346 14.769 3.65346C14.9681 3.65346 15.1652 3.69271 15.3492 3.76896C15.5331 3.8452 15.7002 3.95696 15.8409 4.09783C15.9818 4.23855 16.0936 4.40565 16.1698 4.58959C16.2461 4.77353 16.2853 4.97069 16.2853 5.1698C16.2853 5.36892 16.2461 5.56608 16.1698 5.75002C16.0936 5.93395 15.9818 6.10106 15.8409 6.24177L15.7955 6.28723C15.6208 6.46577 15.5037 6.69254 15.4591 6.9383C15.4145 7.18405 15.4446 7.43752 15.5455 7.66602V7.72662C15.6415 7.95069 15.801 8.14179 16.0042 8.27639C16.2075 8.41099 16.4456 8.48322 16.6894 8.4842H16.8182C17.22 8.4842 17.6054 8.64383 17.8896 8.92798C18.1737 9.21212 18.3334 9.59751 18.3334 9.99935C18.3334 10.4012 18.1737 10.7866 17.8896 11.0707C17.6054 11.3549 17.22 11.5145 16.8182 11.5145H16.75C16.5062 11.5155 16.2681 11.5877 16.0648 11.7223C15.8616 11.8569 15.7021 12.048 15.6061 12.2721Z" },
-            ].map((btn, i) => (
-              <button key={i} style={{ width: 40, height: 40, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d={btn.path} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                  {btn.path2 && <path d={btn.path2} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>}
-                </svg>
-              </button>
-            ))}
+              { customRender: () => (<Tooltip text="Preview client portal"><button ref={previewBtnRef} onClick={() => { if (previewBtnRef.current) { const r = previewBtnRef.current.getBoundingClientRect(); setPreviewDropPos({ top: r.bottom + 6, left: r.left }); } setPreviewDropOpen(v => !v); }} style={{ width:40, height:40, border:"1px solid #DBDBDB", borderRadius:8, background: previewDropOpen ? "#F5F5F5" : "#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }} onMouseEnter={e=>{ if(!previewDropOpen) e.currentTarget.style.background="#F5F5F5"; }} onMouseLeave={e=>{ if(!previewDropOpen) e.currentTarget.style.background="#FFFFFF"; }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M16 3.46776C17.4817 4.20411 18.5 5.73314 18.5 7.5C18.5 9.26686 17.4817 10.7959 16 11.5322M18 16.7664C19.5115 17.4503 20.8725 18.565 22 20M2 20C3.94649 17.5226 6.58918 16 9.5 16C12.4108 16 15.0535 17.5226 17 20M14 7.5C14 9.98528 11.9853 12 9.5 12C7.01472 12 5 9.98528 5 7.5C5 5.01472 7.01472 3 9.5 3C11.9853 3 14 5.01472 14 7.5Z" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button></Tooltip>) },
+              { path: "M16.6666 8.74935V5.66602C16.6666 4.26588 16.6666 3.56582 16.3942 3.03104C16.1545 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0668 1.66602 12.6666 1.66602H7.33331C5.93318 1.66602 5.23312 1.66602 4.69834 1.9385C4.22793 2.17818 3.84548 2.56063 3.6058 3.03104C3.33331 3.56582 3.33331 4.26588 3.33331 5.66602V14.3327C3.33331 15.7328 3.33331 16.4329 3.6058 16.9677C3.84548 17.4381 4.22793 17.8205 4.69834 18.0602C5.23312 18.3327 5.93318 18.3327 7.33331 18.3327H9.99998M11.6666 9.16602H6.66665M8.33331 12.4993H6.66665M13.3333 5.83268H6.66665M15 17.4993V12.4993M12.5 14.9993H17.5", tooltip: "Add document", onClick: onUploadStatements },
+              { path: "M2.08335 10.0007H4.90166C5.47266 10.0007 5.99466 10.3233 6.25002 10.834C6.50538 11.3447 7.02738 11.6673 7.59838 11.6673H12.4017C12.9727 11.6673 13.4947 11.3447 13.75 10.834C14.0054 10.3233 14.5274 10.0007 15.0984 10.0007H17.9167M7.47216 3.33398H12.5279C13.4253 3.33398 13.874 3.33398 14.2701 3.47062C14.6204 3.59145 14.9395 3.78865 15.2042 4.04794C15.5036 4.34115 15.7043 4.74248 16.1056 5.54513L17.9111 9.15607C18.0686 9.47106 18.1473 9.62855 18.2028 9.79361C18.2522 9.94019 18.2878 10.091 18.3092 10.2442C18.3334 10.4167 18.3334 10.5928 18.3334 10.9449V12.6673C18.3334 14.0674 18.3334 14.7675 18.0609 15.3023C17.8212 15.7727 17.4387 16.1552 16.9683 16.3948C16.4335 16.6673 15.7335 16.6673 14.3334 16.6673H5.66669C4.26656 16.6673 3.56649 16.6673 3.03171 16.3948C2.56131 16.1552 2.17885 15.7727 1.93917 15.3023C1.66669 14.7675 1.66669 14.0674 1.66669 12.6673V10.9449C1.66669 10.5928 1.66669 10.4167 1.69083 10.2442C1.71228 10.091 1.74789 9.94019 1.7972 9.79361C1.85274 9.62855 1.93149 9.47105 2.08898 9.15607L3.89445 5.54513C4.29577 4.74248 4.49644 4.34115 4.79581 4.04794C5.06055 3.78865 5.37962 3.59145 5.72993 3.47062C6.12606 3.33398 6.57476 3.33398 7.47216 3.33398Z", tooltip: "All documents", onClick: onAllStatements },
+              { path: "M10 12.4993C11.3807 12.4993 12.5 11.3801 12.5 9.99935C12.5 8.61864 11.3807 7.49935 10 7.49935C8.61931 7.49935 7.50002 8.61864 7.50002 9.99935C7.50002 11.3801 8.61931 12.4993 10 12.4993Z", path2: "M15.6061 12.2721C15.5052 12.5006 15.4752 12.754 15.5197 12.9998C15.5643 13.2455 15.6814 13.4723 15.8561 13.6509L15.9015 13.6963C16.0424 13.837 16.1542 14.0041 16.2304 14.1881C16.3067 14.372 16.3459 14.5692 16.3459 14.7683C16.3459 14.9674 16.3067 15.1646 16.2304 15.3485C16.1542 15.5324 16.0424 15.6995 15.9015 15.8403C15.7608 15.9811 15.5937 16.0929 15.4098 16.1691C15.2258 16.2454 15.0287 16.2846 14.8296 16.2846C14.6305 16.2846 14.4333 16.2454 14.2494 16.1691C14.0654 16.0929 13.8983 15.9811 13.7576 15.8403L13.7121 15.7948C13.5336 15.6202 13.3068 15.503 13.0611 15.4584C12.8153 15.4139 12.5619 15.444 12.3334 15.5448C12.1093 15.6408 11.9182 15.8003 11.7836 16.0035C11.649 16.2068 11.5768 16.445 11.5758 16.6887V16.8175C11.5758 17.2194 11.4161 17.6048 11.132 17.8889C10.8479 18.173 10.4625 18.3327 10.0606 18.3327C9.65878 18.3327 9.2734 18.173 8.98925 17.8889C8.70511 17.6048 8.54547 17.2194 8.54547 16.8175V16.7493C8.53961 16.4986 8.45844 16.2554 8.31253 16.0514C8.16661 15.8474 7.9627 15.692 7.72729 15.6054C7.4988 15.5046 7.24533 15.4745 6.99957 15.519C6.75382 15.5636 6.52705 15.6808 6.3485 15.8554L6.30305 15.9009C6.16233 16.0417 5.99523 16.1535 5.81129 16.2297C5.62736 16.306 5.4302 16.3452 5.23108 16.3452C5.03197 16.3452 4.8348 16.306 4.65087 16.2297C4.46693 16.1535 4.29983 16.0417 4.15911 15.9009C4.01824 15.7601 3.90648 15.593 3.83023 15.4091C3.75398 15.2252 3.71474 15.028 3.71474 14.8289C3.71474 14.6298 3.75398 14.4326 3.83023 14.2487C3.90648 14.0647 4.01824 13.8976 4.15911 13.7569L4.20457 13.7115C4.37921 13.5329 4.49637 13.3062 4.54093 13.0604C4.58549 12.8146 4.55541 12.5612 4.45457 12.3327C4.35853 12.1086 4.19908 11.9175 3.99583 11.7829C3.79258 11.6483 3.5544 11.5761 3.31063 11.5751H3.18184C2.78 11.5751 2.39461 11.4155 2.11046 11.1313C1.82632 10.8472 1.66669 10.4618 1.66669 10.06C1.66669 9.65811 1.82632 9.27273 2.11046 8.98858C2.39461 8.70444 2.78 8.5448 3.18184 8.5448H3.25002C3.50077 8.53894 3.74396 8.45777 3.94797 8.31186C4.15199 8.16594 4.30738 7.96203 4.39396 7.72662C4.4948 7.49812 4.52489 7.24466 4.48033 6.9989C4.43577 6.75315 4.31861 6.52638 4.14396 6.34783L4.09851 6.30238C3.95763 6.16166 3.84588 5.99456 3.76963 5.81062C3.69338 5.62669 3.65413 5.42952 3.65413 5.23041C3.65413 5.0313 3.69338 4.83413 3.76963 4.6502C3.84588 4.46626 3.95763 4.29916 4.09851 4.15844C4.23922 4.01757 4.40633 3.90581 4.59026 3.82956C4.7742 3.75331 4.97136 3.71407 5.17047 3.71407C5.36959 3.71407 5.56675 3.75331 5.75069 3.82956C5.93462 3.90581 6.10173 4.01757 6.24244 4.15844L6.2879 4.20389C6.46644 4.37854 6.69321 4.4957 6.93897 4.54026C7.18472 4.58482 7.43819 4.55474 7.66669 4.45389H7.72729C7.95136 4.35786 8.14246 4.19841 8.27706 3.99516C8.41166 3.79191 8.4839 3.55373 8.48487 3.30996V3.18117C8.48487 2.77932 8.6445 2.39394 8.92865 2.10979C9.21279 1.82565 9.59818 1.66602 10 1.66602C10.4019 1.66602 10.7872 1.82565 11.0714 2.10979C11.3555 2.39394 11.5152 2.77932 11.5152 3.18117V3.24935C11.5161 3.49313 11.5884 3.7313 11.723 3.93455C11.8576 4.1378 12.0487 4.29726 12.2727 4.39329C12.5012 4.49413 12.7547 4.52422 13.0005 4.47966C13.2462 4.4351 13.473 4.31794 13.6515 4.14329L13.697 4.09783C13.8377 3.95696 14.0048 3.8452 14.1887 3.76896C14.3727 3.69271 14.5698 3.65346 14.769 3.65346C14.9681 3.65346 15.1652 3.69271 15.3492 3.76896C15.5331 3.8452 15.7002 3.95696 15.8409 4.09783C15.9818 4.23855 16.0936 4.40565 16.1698 4.58959C16.2461 4.77353 16.2853 4.97069 16.2853 5.1698C16.2853 5.36892 16.2461 5.56608 16.1698 5.75002C16.0936 5.93395 15.9818 6.10106 15.8409 6.24177L15.7955 6.28723C15.6208 6.46577 15.5037 6.69254 15.4591 6.9383C15.4145 7.18405 15.4446 7.43752 15.5455 7.66602V7.72662C15.6415 7.95069 15.801 8.14179 16.0042 8.27639C16.2075 8.41099 16.4456 8.48322 16.6894 8.4842H16.8182C17.22 8.4842 17.6054 8.64383 17.8896 8.92798C18.1737 9.21212 18.3334 9.59751 18.3334 9.99935C18.3334 10.4012 18.1737 10.7866 17.8896 11.0707C17.6054 11.3549 17.22 11.5145 16.8182 11.5145H16.75C16.5062 11.5155 16.2681 11.5877 16.0648 11.7223C15.8616 11.8569 15.7021 12.048 15.6061 12.2721Z", tooltip: "Settings", onClick: openSettingsSidebar },
+            ].map((btn, i) => {
+              if (btn.customRender) return <React.Fragment key={i}>{btn.customRender()}</React.Fragment>;
+              const btnEl = (
+                <button key={i} onClick={btn.onClick} style={{ width: 40, height: 40, border: "1px solid #DBDBDB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d={btn.path} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                    {btn.path2 && <path d={btn.path2} stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>}
+                  </svg>
+                </button>
+              );
+              return btn.tooltip ? <Tooltip key={i} text={btn.tooltip}>{btnEl}</Tooltip> : btnEl;
+            })}
           </div>
         </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 24, borderBottom: "1px solid #ECECEC", marginBottom: 0 }}>
-          {[{ label: "Missing documents", count: 8 }, { label: "Recurring requests", count: 5 }].map(tab => (
-            <button key={tab.label} onClick={() => setActiveTab(tab.label)}
+          {[{ label: "Missing documents", count: MISSING_TABLE_DATA.filter(r => !archivedRefs.has(r.ref) && !excludedRefs.has(r.ref) && !receivedRefs.has(r.ref)).length }, { label: "Recurring requests", count: RECURRING_DOCS.filter(r => r.status === "Active" && !archivedRefs.has(r.account)).length }].map(tab => (
+            <button key={tab.label} onClick={() => { setActiveTab(tab.label); if (tab.label === "Recurring requests" && tableTab === "Excluded") setTableTab("Open requests"); }}
               style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px", fontFamily: "'Inter', sans-serif" }}>
               <span style={{ fontSize: 14, fontWeight: activeTab === tab.label ? 500 : 400, color: activeTab === tab.label ? "#2A2A2A" : "#7C7C7C" }}>{tab.label}</span>
               <span style={{ fontSize: 12, fontWeight: 500, color: "#FFFFFF", background: "#05A105", borderRadius: 5, padding: "0 5px", lineHeight: "20px", minWidth: 20, textAlign: "center" }}>{tab.count}</span>
@@ -12423,42 +13221,65 @@ function CollectDocumentsPage({ selectedPeriod }) {
           ))}
         </div>
       </div>
+        </div>
 
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "32px 48px" }}>
+      <div style={{ padding: "32px 48px" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
 
         {/* Email batches section */}
         {isMissing && (
           <div style={{ marginBottom: 32 }}>
             <p style={{ fontSize: 16, fontWeight: 500, color: "#1F2024", margin: "0 0 16px" }}>Email batches</p>
-            <div style={{ display: "flex", gap: 16 }}>
-              {/* Draft batch card */}
-              <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: 16, width: 300 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <div style={{ width: 40, height: 40, background: "#F5F5F5", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M16.3636 1.81836L19.9999 5.45472M1.81812 20.0002L2.97848 15.7455C3.05418 15.4679 3.09204 15.3291 3.15014 15.1997C3.20174 15.0848 3.26513 14.9755 3.33931 14.8737C3.42286 14.7591 3.52458 14.6573 3.72803 14.4539L13.122 5.05989C13.302 4.87988 13.392 4.78988 13.4958 4.75616C13.5871 4.7265 13.6855 4.7265 13.7768 4.75616C13.8805 4.78988 13.9705 4.87988 14.1506 5.05989L16.7584 7.66774C16.9384 7.84774 17.0284 7.93775 17.0621 8.04153C17.0918 8.13283 17.0918 8.23117 17.0621 8.32246C17.0284 8.42624 16.9384 8.51625 16.7584 8.69626L7.36439 18.0903C7.16094 18.2937 7.05922 18.3954 6.94455 18.479C6.84274 18.5532 6.7335 18.6166 6.61858 18.6681C6.48916 18.7263 6.35037 18.7641 6.07279 18.8398L1.81812 20.0002Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              {/* Dynamic batch cards */}
+              {batches.map(batch => {
+                const STATUS_CYCLE = { Draft: "Scheduled", Scheduled: "Sent", Sent: "Draft" };
+                const STATUS_COLOR = { Draft: "#7C7C7C", Scheduled: "#4C71DF", Sent: "#05A105" };
+                const STATUS_BG    = { Draft: "#F5F5F5",  Scheduled: "#EEF2FF", Sent: "#F1F8F0" };
+                return (
+                  <div key={batch.id} onClick={() => setSelectedBatchId(id => id === batch.id ? null : batch.id)} style={{ background: "#FFFFFF", border: `1px solid ${selectedBatchId === batch.id ? "transparent" : "#ECECEC"}`, outline: selectedBatchId === batch.id ? "1.5px solid #05A105" : "none", borderRadius: 8, padding: 16, width: 320, cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }} onMouseEnter={e => { if (selectedBatchId !== batch.id) { e.currentTarget.style.borderColor = "#DBDBDB"; e.currentTarget.style.background = "#FAFAFA"; } }} onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; if (selectedBatchId !== batch.id) { e.currentTarget.style.borderColor = "#ECECEC"; } e.currentTarget.style.outline = selectedBatchId === batch.id ? "1.5px solid #05A105" : "none"; }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        {(() => {
+                          const iconBg = batch.status === "Scheduled" ? "#EEF2FF" : batch.status === "Sent" ? "#F1F8F0" : "#F5F5F5";
+                          const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                          const subtitle = batch.status === "Scheduled" && batch.scheduledDate
+                            ? `Will be sent: ${batch.scheduledDate.d} ${SHORT_MONTHS[batch.scheduledDate.m]}, 09:00`
+                            : batch.status === "Sent" && batch.sentDate
+                            ? `Sent ${formatSentDate(batch.sentDate)}`
+                            : batch.status;
+                          const icon = batch.status === "Scheduled"
+                            ? <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M19.0909 9.09109H2.72729M19.0909 11.3638V8.00018C19.0909 6.47276 19.0909 5.70905 18.7937 5.12566C18.5322 4.61249 18.115 4.19527 17.6018 3.9338C17.0184 3.63654 16.2547 3.63654 14.7273 3.63654H7.09093C5.56352 3.63654 4.79981 3.63654 4.21641 3.9338C3.70324 4.19527 3.28602 4.61249 3.02455 5.12566C2.72729 5.70905 2.72729 6.47276 2.72729 8.00018V15.6365C2.72729 17.164 2.72729 17.9277 3.02455 18.5111C3.28602 19.0242 3.70324 19.4414 4.21641 19.7029C4.79981 20.0002 5.56352 20.0002 7.09093 20.0002H10.9091M14.5455 1.81836V5.45472M7.27275 1.81836V5.45472M13.1818 17.2729L15 19.0911L19.0909 15.0002" stroke="#4C71DF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : batch.status === "Sent"
+                            ? <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C12 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M16.3636 1.81836L19.9999 5.45472M1.81812 20.0002L2.97848 15.7455C3.05418 15.4679 3.09204 15.3291 3.15014 15.1997C3.20174 15.0848 3.26513 14.9755 3.33931 14.8737C3.42286 14.7591 3.52458 14.6573 3.72803 14.4539L13.122 5.05989C13.302 4.87988 13.392 4.78988 13.4958 4.75616C13.5871 4.7265 13.6855 4.7265 13.7768 4.75616C13.8805 4.78988 13.9705 4.87988 14.1506 5.05989L16.7584 7.66774C16.9384 7.84774 17.0284 7.93775 17.0621 8.04153C17.0918 8.13283 17.0918 8.23117 17.0621 8.32246C17.0284 8.42624 16.9384 8.51625 16.7584 8.69626L7.36439 18.0903C7.16094 18.2937 7.05922 18.3954 6.94455 18.479C6.84274 18.5532 6.7335 18.6166 6.61858 18.6681C6.48916 18.7263 6.35037 18.7641 6.07279 18.8398L1.81812 20.0002Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+                          return (<>
+                            <div style={{ width: 40, height: 40, background: iconBg, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</div>
+                            <div>
+                              <p style={{ fontSize: 14, fontWeight: 500, color: "#1F2024", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{batch.title}</p>
+                              <span style={{ fontSize: 14, color: "#7C7C7C", marginTop: 4 }}>{subtitle}</span>
+                            </div>
+                          </>);
+                        })()}
+                      </div>
+                    </div>
+                    <div style={{ border: "1px solid #ECECEC", borderRadius: 8, padding: "0 12px", height: 42, display: "flex", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6666 7.91602V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H11.6666M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M13.7499 12.5012C13.8967 12.0838 14.1866 11.7319 14.568 11.5077C14.9495 11.2835 15.398 11.2015 15.8341 11.2763C16.2702 11.3511 16.6658 11.5779 16.9507 11.9164C17.2357 12.2549 17.3916 12.6833 17.391 13.1257C17.391 14.3748 15.5174 14.9993 15.5174 14.9993M15.5415 17.4993H15.5498" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span style={{ fontSize: 14, color: "#1F2024", whiteSpace: "nowrap" }}>{batch.status === "Sent" ? `${Object.entries(rowBatchMap).filter(([ref, id]) => id === batch.id && receivedRefs.has(ref)).length}/${batch.requestCount} received` : `${batch.requestCount} request${batch.requestCount !== 1 ? "s" : ""}`}</span>
+                      </div>
+                      <div style={{ width: 1, height: 20, background: "#E9E9EB", flexShrink: 0, margin: "0 12px" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.3333 15L15 16.6667L18.3333 13.3333M9.99996 12.5H6.66663C5.11349 12.5 4.33692 12.5 3.72435 12.7537C2.90759 13.092 2.25867 13.741 1.92036 14.5577C1.66663 15.1703 1.66663 15.9469 1.66663 17.5M12.9166 2.7423C14.1382 3.23679 15 4.43443 15 5.83333C15 7.23224 14.1382 8.42988 12.9166 8.92437M11.25 5.83333C11.25 7.67428 9.75757 9.16667 7.91663 9.16667C6.07568 9.16667 4.58329 7.67428 4.58329 5.83333C4.58329 3.99238 6.07568 2.5 7.91663 2.5C9.75757 2.5 11.25 3.99238 11.25 5.83333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span style={{ fontSize: 14, color: "#1F2024", whiteSpace: "nowrap" }}>{batch.assigneeCount} assignee{batch.assigneeCount !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: "#1F2024", margin: 0 }}>Lloyd Bank - Operations GBP</p>
-                    <p style={{ fontSize: 14, color: "#7C7C7C", margin: 0 }}>Draft</p>
-                  </div>
-                </div>
-                <div style={{ border: "1px solid #ECECEC", borderRadius: 8, padding: "0 12px", height: 42, display: "flex", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6666 7.91602V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H11.6666M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M13.7499 12.5012C13.8967 12.0838 14.1866 11.7319 14.568 11.5077C14.9495 11.2835 15.398 11.2015 15.8341 11.2763C16.2702 11.3511 16.6658 11.5779 16.9507 11.9164C17.2357 12.2549 17.3916 12.6833 17.391 13.1257C17.391 14.3748 15.5174 14.9993 15.5174 14.9993M15.5415 17.4993H15.5498" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span style={{ fontSize: 14, color: "#1F2024" }}>8 requests</span>
-                  </div>
-                  {/* Vertical divider — not full height */}
-                  <div style={{ width: 1, height: 20, background: "#E9E9EB", flexShrink: 0, margin: "0 12px" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.3333 15L15 16.6667L18.3333 13.3333M9.99996 12.5H6.66663C5.11349 12.5 4.33692 12.5 3.72435 12.7537C2.90759 13.092 2.25867 13.741 1.92036 14.5577C1.66663 15.1703 1.66663 15.9469 1.66663 17.5M12.9166 2.7423C14.1382 3.23679 15 4.43443 15 5.83333C15 7.23224 14.1382 8.42988 12.9166 8.92437M11.25 5.83333C11.25 7.67428 9.75757 9.16667 7.91663 9.16667C6.07568 9.16667 4.58329 7.67428 4.58329 5.83333C4.58329 3.99238 6.07568 2.5 7.91663 2.5C9.75757 2.5 11.25 3.99238 11.25 5.83333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span style={{ fontSize: 14, color: "#1F2024" }}>2 assignees</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
 
               {/* Create email batch card */}
-              <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: 24, width: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
+              <div onClick={openCreateBatchSidebar} style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: 24, width: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
                 onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
                 <div style={{ width: 44, height: 44, background: "#F1F8F0", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -12474,95 +13295,2188 @@ function CollectDocumentsPage({ selectedPeriod }) {
         <div style={{ background: "#FFFFFF" }}>
 
           {/* Tabs row */}
-          <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 0 0", background: "#FFFFFF", borderBottom: "1px solid #ECECEC" }}>
-            {[{ label: "Open requests", count: 8 }, { label: "Received", count: 2 }, { label: "Archived", count: 0 }].map((tab, i) => (
-              <button key={tab.label} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 14px", border: "none", borderBottom: i === 0 ? "1px solid #ECECEC" : "none", marginBottom: i === 0 ? -1 : 0, borderRadius: "8px 8px 0 0", background: i === 0 ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: i === 0 ? 600 : 400, color: i === 0 ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}
-                onMouseEnter={e => { if (i !== 0) e.currentTarget.style.color = "#080908"; }}
-                onMouseLeave={e => { if (i !== 0) e.currentTarget.style.color = "#7C7C7C"; }}>
-                {tab.label}
-              </button>
-            ))}
+          <div style={{ display: "flex", alignItems: "flex-end", padding: "8px 0 0", background: "#FFFFFF" }}>
+            {(() => {
+              const baseRows = (isMissing
+                ? [...MISSING_TABLE_DATA].sort((a,b) => (b.dot?1:0)-(a.dot?1:0))
+                : RECURRING_DOCS.map(r => ({ ref: r.account, account: r.account, from: r.contact, date: r.nextDue, amount: "—", status: r.status }))
+              ).filter(r => {
+                const matchSearch = (r.ref||"").toLowerCase().includes(search.toLowerCase()) || (r.from||"").toLowerCase().includes(search.toLowerCase());
+                const matchBank = selectedBankAccounts.size === 0 || selectedBankAccounts.has(r.account);
+                const matchBatch = selectedBatchId === null || rowBatchMap[r.ref] === selectedBatchId;
+                const amtRaw = parseFloat((r.amount||"").replace(/[^0-9.-]/g,"")) || 0;
+                const absAmt = Math.abs(amtRaw);
+                const matchAmount = (!activeAmountMin || absAmt >= parseFloat(activeAmountMin)) && (!activeAmountMax || absAmt <= parseFloat(activeAmountMax));
+                const rowDate = r.date ? new Date(r.date.replace(/(\d+)\s(\w+)\s(\d+)/,(_,d,m,y)=>m+" "+d+" "+y)) : null;
+                const fromDate = activeDateFrom ? new Date(activeDateFrom) : null;
+                const toDate = activeDateTo ? new Date(activeDateTo) : null;
+                const matchDate = (!fromDate||(rowDate&&rowDate>=fromDate))&&(!toDate||(rowDate&&rowDate<=toDate));
+                const rowAssignee = rowFromMap[r.ref] || r.from || "";
+                const matchAssignee = activeAssignees.size === 0 || [...activeAssignees].some(a => rowAssignee.includes(a));
+                return matchSearch && matchBank && matchBatch && matchAmount && matchDate && matchAssignee;
+              });
+              const openCount = baseRows.filter(r => !archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (!r.status || r.status === "Active")).length;
+              const receivedCount = canShowReceived ? baseRows.filter(r => receivedRefs.has(r.ref) && !archivedRefs.has(r.ref)).length : 0;
+              const archivedCount = baseRows.filter(r => archivedRefs.has(r.ref)).length;
+              const excludedCount = isMissing ? baseRows.filter(r => excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)).length : 0;
+              const tabs = [{ label: "Open requests", count: openCount }, { label: "Received", count: receivedCount }];
+              if (isMissing) tabs.push({ label: "Excluded", count: excludedCount });
+              tabs.push({ label: "Archived", count: archivedCount });
+              return tabs;
+            })().map((tab) => {
+              const isActive = tableTab === tab.label;
+              return (
+                <button key={tab.label} onClick={() => { setTableTab(tab.label); setCollectChecked(new Set()); setCollectPage(1); }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 14px", border: "none", borderBottom: isActive ? "1px solid #ECECEC" : "none", marginBottom: isActive ? -1 : 0, borderRadius: "8px 8px 0 0", background: isActive ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: isActive ? 500 : 400, color: isActive ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = "#080908"; }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = "#7C7C7C"; }}>
+                  {tab.label}
+                  {tab.count > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: isActive ? "#545453" : "#8C8C8B", background: isActive ? "#DBDBDB" : "#F0F0F0", borderRadius: 5, padding: "0 6px", lineHeight: "20px", display: "inline-block", height: "20px" }}>{tab.count}</span>}
+                </button>
+              );
+            })}
           </div>
 
           {/* Search + Export row */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderBottom: "1px solid #ECECEC", borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderTop: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderTopRightRadius: 16, gap: 10 }}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167a6.667 6.667 0 1 1-13.333 0 6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
               style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif" }} />
-<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <button style={{ display: "inline-flex", alignItems: "center", gap: 0, height: 36, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif", overflow: "hidden" }}
+<div style={{ position: "relative" }}>
+              {/* Export split button */}
+              <button id="exportBtn" onClick={() => { const el = document.getElementById("exportDropdown"); el.style.display = el.style.display === "none" ? "block" : "none"; }}
+                style={{ display: "inline-flex", alignItems: "center", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", overflow: "hidden", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
                 onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "0 12px" }}>Export CSV</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", padding: "0 12px", display: "flex", alignItems: "center", height: "100%" }}>Export</span>
+                <div style={{ width: 1, height: 22, background: "#E9E9EB" }} />
+                <span style={{ height: "100%", padding: "0 10px", display: "flex", alignItems: "center" }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
               </button>
-              <button style={{ width: 36, height: 36, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1.25" fill="#080908"/><circle cx="8" cy="8" r="1.25" fill="#080908"/><circle cx="8" cy="13" r="1.25" fill="#080908"/></svg>
-              </button>
+              {/* Dropdown */}
+              <div id="exportDropdown" style={{ display: "none", position: "absolute", top: "calc(100% + 4px)", right: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 100, minWidth: 140, overflow: "hidden" }}>
+                {["CSV", "Excel", "PDF"].map(opt => (
+                  <div key={opt} style={{ padding: "12px 16px", fontSize: 14, color: "#080908", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
+                    onClick={() => { document.getElementById("exportDropdown").style.display = "none"; }}>
+                    {opt}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Filter row */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderBottom: "1px solid #ECECEC", borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", gap: 8 }}>
-            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}>
+            <button ref={allFiltersBtnRef} onClick={() => { if (allFiltersBtnRef.current) { const r = allFiltersBtnRef.current.getBoundingClientRect(); setAllFiltersPos({ top: r.bottom + 6, left: r.left }); } setDraftBankAccounts(new Set(selectedBankAccounts)); setDraftAmountMin(activeAmountMin); setDraftAmountMax(activeAmountMax); setDraftDateFrom(activeDateFrom); setDraftDateTo(activeDateTo); setDraftAssignees(new Set(activeAssignees)); setAllFilterTab("Bank account"); setShowAllFilters(v => !v); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2.5 6.666L12.5 6.666M12.5 6.666C12.5 8.047 13.619 9.166 15 9.166C16.381 9.166 17.5 8.047 17.5 6.666C17.5 5.285 16.381 4.166 15 4.166C13.619 4.166 12.5 5.285 12.5 6.666ZM7.5 13.333L17.5 13.333M7.5 13.333C7.5 14.713 6.381 15.833 5 15.833C3.619 15.833 2.5 14.713 2.5 13.333C2.5 11.952 3.619 10.833 5 10.833C6.381 10.833 7.5 11.952 7.5 13.333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
               All filters
             </button>
-            {["Bank account", "Date", "Assignee"].map(f => (
-              <button key={f} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#080908", fontFamily: "'Inter', sans-serif" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                {f}
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {/* Bank account filter */}
+            <button ref={bankBtnRef} onClick={() => { if (bankBtnRef.current) { const r = bankBtnRef.current.getBoundingClientRect(); setBankFilterPos({ top: r.bottom + 6, left: r.left }); } setBankFilterOpen(o => !o); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif", transition: "background 0.15s" }}
+              onMouseEnter={e => { if (!bankFilterOpen) e.currentTarget.style.background = "#F5F5F5"; }}
+              onMouseLeave={e => { if (!bankFilterOpen) e.currentTarget.style.background = "#FFFFFF"; }}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Accounts</span>
+              {selectedBankAccounts.size > 0 && (() => {
+                const sel = [...selectedBankAccounts];
+                return (<>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{sel[0]}</span>
+                  {sel.length > 1 && <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0 }}>+{sel.length - 1}</span>}
+                </>);
+              })()}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: bankFilterOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {bankFilterOpen && (
+              <div ref={bankDropRef} style={{ position: "fixed", top: bankFilterPos.top, left: bankFilterPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 9999, width: 320, paddingTop: 12 }}>
+                <div style={{ margin: "0 12px 10px", display: "flex", alignItems: "center", gap: 10, border: "1.5px solid #E9E9EB", borderRadius: 8, padding: "10px 14px" }}>
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <input value={bankFilterSearch} onChange={e => setBankFilterSearch(e.target.value)} placeholder="Search accounts" style={{ border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif", width: "100%" }} />
+                </div>
+                <div onClick={() => { if (selectedBankAccounts.size === COLLECT_BANK_ACCOUNTS.length) { setSelectedBankAccounts(new Set()); setBankFilterCount(0); } else { setSelectedBankAccounts(new Set(COLLECT_BANK_ACCOUNTS)); setBankFilterCount(COLLECT_BANK_ACCOUNTS.length); } }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${selectedBankAccounts.size === COLLECT_BANK_ACCOUNTS.length ? "#05A105" : "#CFCFD1"}`, background: selectedBankAccounts.size === COLLECT_BANK_ACCOUNTS.length ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {selectedBankAccounts.size === COLLECT_BANK_ACCOUNTS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Select all ({COLLECT_BANK_ACCOUNTS.length})</span>
+                </div>
+                <div style={{ height: 1, background: "#E9E9EB", margin: "6px 0 8px" }} />
+                <div style={{ maxHeight: 280, overflowY: "auto", paddingBottom: 8 }}>
+                  {COLLECT_BANK_ACCOUNTS.filter(a => a.toLowerCase().includes(bankFilterSearch.toLowerCase())).map(acct => {
+                    const checked = selectedBankAccounts.has(acct);
+                    return (
+                      <div key={acct} onClick={() => { const n = new Set(selectedBankAccounts); checked ? n.delete(acct) : n.add(acct); setSelectedBankAccounts(n); setBankFilterCount(n.size); }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${checked ? "#05A105" : "#CFCFD1"}`, background: checked ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                        <span style={{ fontSize: 14, color: "#080908" }}>{acct}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {/* Date filter */}
+            <button ref={dateBtnRef} onClick={() => { if (dateBtnRef.current) { const r = dateBtnRef.current.getBoundingClientRect(); setDateFiltPos({ top: r.bottom + 6, left: r.left }); } setDraftDateFrom(activeDateFrom); setDraftDateTo(activeDateTo); setDateFiltOpen(v => !v); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Date</span>
+              {(activeDateFrom || activeDateTo) && (() => {
+                const fmt = (s) => { if (!s) return ""; const d = new Date(s); return d.toLocaleDateString("en-GB", { day:"numeric", month:"short" }); };
+                const label = activeDateFrom && activeDateTo ? `${fmt(activeDateFrom)} – ${fmt(activeDateTo)}` : activeDateFrom ? `From ${fmt(activeDateFrom)}` : `To ${fmt(activeDateTo)}`;
+                return <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>{label}</span>;
+              })()}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: dateFiltOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {dateFiltOpen && (
+              <div ref={dateDropRef} style={{ position: "fixed", top: dateFiltPos.top, left: dateFiltPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 9999, width: 380, fontFamily: "'Inter', sans-serif", overflow: "hidden" }}>
+                <div style={{ padding: "20px 20px 16px" }}>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 14, fontWeight: 400, color: "#000000", display: "block", marginBottom: 8 }}>From</label>
+                      <div ref={dateFromFieldRef} onClick={() => { if (dateFromFieldRef.current) { const r = dateFromFieldRef.current.getBoundingClientRect(); setDateCalPos({ top: r.bottom + 6, left: r.left }); } if (draftDateFrom) { const d = new Date(draftDateFrom); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); } else { setDateCalMonth(new Date().getMonth()); setDateCalYear(new Date().getFullYear()); } setDateCalField(f => f === "from" ? null : "from"); }}
+                        style={{ border: `1.5px solid ${dateCalField === "from" ? "#05A105" : "#E9E9EB"}`, borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                        <span style={{ fontSize: 14, color: draftDateFrom ? "#080908" : "#8C8C8B" }}>{draftDateFrom ? new Date(draftDateFrom + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Select date"}</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#8C8C8B" strokeWidth="1.25"/><path d="M5 1v3M11 1v3M2 7h12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round"/></svg>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 14, fontWeight: 400, color: "#000000", display: "block", marginBottom: 8 }}>To</label>
+                      <div ref={dateToFieldRef} onClick={() => { if (dateToFieldRef.current) { const r = dateToFieldRef.current.getBoundingClientRect(); setDateCalPos({ top: r.bottom + 6, left: r.left }); } if (draftDateTo) { const d = new Date(draftDateTo); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); } else { setDateCalMonth(new Date().getMonth()); setDateCalYear(new Date().getFullYear()); } setDateCalField(f => f === "to" ? null : "to"); }}
+                        style={{ border: `1.5px solid ${dateCalField === "to" ? "#05A105" : "#E9E9EB"}`, borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                        <span style={{ fontSize: 14, color: draftDateTo ? "#080908" : "#8C8C8B" }}>{draftDateTo ? new Date(draftDateTo + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Select date"}</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#8C8C8B" strokeWidth="1.25"/><path d="M5 1v3M11 1v3M2 7h12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ height: 1, background: "#E9E9EB" }} />
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 16px" }}>
+                  <button onClick={() => { setDraftDateFrom(""); setDraftDateTo(""); setActiveDateFrom(""); setActiveDateTo(""); setDateFiltOpen(false); }}
+                    style={{ height: 40, padding: "0 20px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#F5F5F5", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#EBEBEB"} onMouseLeave={e=>e.currentTarget.style.background="#F5F5F5"}>
+                    Clear
+                  </button>
+                  <button onClick={() => { setActiveDateFrom(draftDateFrom); setActiveDateTo(draftDateTo); setDateFiltOpen(false); }}
+                    style={{ height: 40, padding: "0 20px", border: "none", borderRadius: 8, background: "#05A105", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "'Inter', sans-serif" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Date filter calendar popup */}
+            {dateCalField && (dateFiltOpen || showAllFilters) && (
+              <div ref={dateCalRef} style={{ position:"fixed", top: dateCalPos.top, left: dateCalPos.left, background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", zIndex:10000, width:280, fontFamily:"'Inter',sans-serif", overflow:"hidden" }}>
+                {(() => {
+                  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                  const DAY_LABELS = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+                  const firstDow = new Date(dateCalYear, dateCalMonth, 1).getDay();
+                  const startOffset = (firstDow + 6) % 7;
+                  const daysInMonth = new Date(dateCalYear, dateCalMonth + 1, 0).getDate();
+                  const prevDays = new Date(dateCalYear, dateCalMonth, 0).getDate();
+                  const cells = [];
+                  for (let i = startOffset - 1; i >= 0; i--) cells.push({ d: prevDays - i, type: "prev" });
+                  for (let d = 1; d <= daysInMonth; d++) cells.push({ d, type: "cur" });
+                  while (cells.length % 7 !== 0) cells.push({ d: null, type: "empty" });
+                  const today = new Date();
+                  const pad = n => String(n).padStart(2,"0");
+                  const activeDraftVal = (dateCalField === "from" || dateCalField === "allFrom") ? draftDateFrom : draftDateTo;
+                  const activeParsed = activeDraftVal ? new Date(activeDraftVal + "T00:00:00") : null;
+                  return (<>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 16px 12px" }}>
+                      <button onClick={() => { const d = new Date(dateCalYear, dateCalMonth - 1); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); }}
+                        style={{ width:32, height:32, border:"1px solid #ECECEC", borderRadius:8, background:"#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                      <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{MONTH_NAMES[dateCalMonth]} {dateCalYear}</span>
+                      <button onClick={() => { const d = new Date(dateCalYear, dateCalMonth + 1); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); }}
+                        style={{ width:32, height:32, border:"1px solid #ECECEC", borderRadius:8, background:"#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", padding:"0 12px", marginBottom:4 }}>
+                      {DAY_LABELS.map(d => <div key={d} style={{ textAlign:"center", fontSize:12, fontWeight:500, color:"#8C8C8B", padding:"4px 0" }}>{d}</div>)}
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", padding:"0 12px", marginBottom:12 }}>
+                      {cells.map((cell, i) => {
+                        if (cell.type === "empty") return <div key={i} />;
+                        const isCur = cell.type === "cur";
+                        const isToday = isCur && cell.d === today.getDate() && dateCalMonth === today.getMonth() && dateCalYear === today.getFullYear();
+                        const isSelected = isCur && activeParsed && activeParsed.getDate() === cell.d && activeParsed.getMonth() === dateCalMonth && activeParsed.getFullYear() === dateCalYear;
+                        return (
+                          <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"2px 0" }}>
+                            <div onClick={() => { if (!isCur) return; const formatted = `${dateCalYear}-${pad(dateCalMonth+1)}-${pad(cell.d)}`; if (dateCalField === "from" || dateCalField === "allFrom") setDraftDateFrom(formatted); else setDraftDateTo(formatted); setDateCalField(null); }}
+                              style={{ width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, cursor: isCur ? "pointer" : "default", borderRadius:8, color: isSelected ? "#FFFFFF" : isCur ? (isToday ? "#05A105" : "#1F2024") : "#BCBCBC", background: isSelected ? "#05A105" : "transparent", fontWeight: isSelected || isToday ? 600 : 400 }}
+                              onMouseEnter={e => { if (isCur && !isSelected) e.currentTarget.style.background="#F5F5F5"; }}
+                              onMouseLeave={e => { if (isCur && !isSelected) e.currentTarget.style.background="transparent"; }}>
+                              {cell.d}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>);
+                })()}
+              </div>
+            )}
+            {/* Assignee filter */}
+            <button ref={assigneeBtnRef} onClick={() => { if (assigneeBtnRef.current) { const r = assigneeBtnRef.current.getBoundingClientRect(); setAssigneeFiltPos({ top: r.bottom + 6, left: r.left }); } setAssigneeFilterSearch(""); setAssigneeFiltOpen(v => !v); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Assignee</span>
+              {activeAssignees.size > 0 && (() => {
+                const sel = [...activeAssignees];
+                return (<>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{sel[0]}</span>
+                  {sel.length > 1 && <span style={{ fontSize: 13, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap", flexShrink: 0 }}>+{sel.length - 1}</span>}
+                </>);
+              })()}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: assigneeFiltOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {assigneeFiltOpen && (
+              <div ref={assigneeDropRef} style={{ position: "fixed", top: assigneeFiltPos.top, left: assigneeFiltPos.left, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 9999, width: 320, paddingTop: 12 }}>
+                <div style={{ margin: "0 12px 10px", display: "flex", alignItems: "center", gap: 10, border: "1.5px solid #E9E9EB", borderRadius: 8, padding: "10px 14px" }}>
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <input value={assigneeFilterSearch} onChange={e => setAssigneeFilterSearch(e.target.value)} placeholder="Search assignees" style={{ border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif", width: "100%" }} />
+                </div>
+                <div onClick={() => { if (activeAssignees.size === MEMBER_OPTIONS.length) { setActiveAssignees(new Set()); } else { setActiveAssignees(new Set(MEMBER_OPTIONS)); } }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${activeAssignees.size === MEMBER_OPTIONS.length ? "#05A105" : "#CFCFD1"}`, background: activeAssignees.size === MEMBER_OPTIONS.length ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {activeAssignees.size === MEMBER_OPTIONS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+                </div>
+                <div style={{ height: 1, background: "#E9E9EB", margin: "6px 0 8px" }} />
+                <div style={{ maxHeight: 280, overflowY: "auto", paddingBottom: 8 }}>
+                  {MEMBER_OPTIONS.filter(m => m.toLowerCase().includes(assigneeFilterSearch.toLowerCase())).map(member => {
+                    const checked = activeAssignees.has(member);
+                    return (
+                      <div key={member} onClick={() => { const n = new Set(activeAssignees); checked ? n.delete(member) : n.add(member); setActiveAssignees(n); }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ width: 20, height: 20, borderRadius: 5, border: `1.5px solid ${checked ? "#05A105" : "#CFCFD1"}`, background: checked ? "#05A105" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                        <span style={{ fontSize: 14, color: "#080908" }}>{member}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {(selectedBankAccounts.size > 0 || activeDateFrom || activeDateTo || activeAssignees.size > 0) && (
+              <button onClick={() => { setSelectedBankAccounts(new Set()); setBankFilterCount(0); setActiveDateFrom(""); setActiveDateTo(""); setDraftDateFrom(""); setDraftDateTo(""); setActiveAssignees(new Set()); setDraftAssignees(new Set()); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                Reset
               </button>
-            ))}
+            )}
           </div>
 
           {/* Table */}
           {(() => {
-            const TABLE_ROWS = [
-              { ref: "Maple Leaf Services", date: "17 Mar 2026", amount: "-£450.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business Account", dot: true },
-              { ref: "Gas Service Ltd.", date: "17 Mar 2026", amount: "-£324.87", batch: null, from: null, account: "HSBC - Transaction Account", dot: true },
-              { ref: "Thames Water Ltd. A918", date: "16 Mar 2026", amount: "-£987.65", batch: "Draft", from: "Sara Thompson, Ol...", account: "Lloyds Bank - Business Account", dot: false },
-              { ref: "British Gas PLC", date: "15 Mar 2026", amount: "-£432.10", batch: null, from: null, account: "Lloyds Bank - Business Account", dot: false },
-              { ref: "Highland Energy 455GBP", date: "15 Mar 2026", amount: "-£765.00", batch: "Draft", from: "Sara Thompson, Ol...", account: "Barclays - Credit Account", dot: false },
-              { ref: "Maple Leaf Services AVT7710p", date: "14 Mar 2026", amount: "-£320.50", batch: "Draft", from: "Sara Thompson, Ol...", account: "Barclays - Business", dot: false },
-            ].filter(r => r.ref.toLowerCase().includes(search.toLowerCase()));
+            const MISSING_TABLE = [...MISSING_TABLE_DATA].sort((a, b) => (b.dot ? 1 : 0) - (a.dot ? 1 : 0));
+            const RECURRING_TABLE = RECURRING_DOCS.map(r => ({
+              ref: r.account, date: r.nextDue, amount: "—", batch: r.frequency, from: r.contact, account: r.account, dot: false, _isRecurring: true, status: r.status,
+            }));
+            const TABLE_ROWS = (isMissing ? MISSING_TABLE : RECURRING_TABLE).filter(r => {
+              const matchSearch = (r.ref || "").toLowerCase().includes(search.toLowerCase()) || (r.from || "").toLowerCase().includes(search.toLowerCase());
+              const matchBank = selectedBankAccounts.size === 0 || selectedBankAccounts.has(r.account);
+              const matchBatch = selectedBatchId === null || rowBatchMap[r.ref] === selectedBatchId;
+              const matchTab = tableTab === "Received" ? (canShowReceived && receivedRefs.has(r.ref)) : tableTab === "Open requests" ? (!archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (!r.status || r.status === "Active")) : tableTab === "Archived" ? archivedRefs.has(r.ref) : tableTab === "Excluded" ? (isMissing && excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)) : false;
+              const amtRaw = parseFloat((r.amount || "").replace(/[^0-9.-]/g,"")) || 0;
+              const absAmt = Math.abs(amtRaw);
+              const matchAmount = (!activeAmountMin || absAmt >= parseFloat(activeAmountMin)) && (!activeAmountMax || absAmt <= parseFloat(activeAmountMax));
+              const rowDate = r.date ? new Date(r.date.replace(/(\d+)\s(\w+)\s(\d+)/,(_,d,m,y)=>m+" "+d+" "+y)) : null;
+              const fromDate = activeDateFrom ? new Date(activeDateFrom) : null;
+              const toDate = activeDateTo ? new Date(activeDateTo) : null;
+              const matchDate = (!fromDate || (rowDate && rowDate >= fromDate)) && (!toDate || (rowDate && rowDate <= toDate));
+              const rowAssignee = rowFromMap[r.ref] || r.from || "";
+              const matchAssignee = activeAssignees.size === 0 || [...activeAssignees].some(a => rowAssignee.includes(a));
+              return matchSearch && matchBank && matchBatch && matchTab && matchAmount && matchDate && matchAssignee;
+            });
 
             const cols = [
-              { key: "check",   label: <input type="checkbox" style={{ cursor: "pointer" }} />, width: "40px",  render: () => <input type="checkbox" style={{ cursor: "pointer" }} /> },
-              { key: "status",  label: "Status",         width: "90px",  render: () => <span style={{ fontSize: 12, fontWeight: 500, color: "#4C71DF", background: "#EEF2FF", border: "1px solid #C7D4F7", borderRadius: 6, padding: "2px 8px" }}>Open</span> },
-              { key: "ref",     label: "Reference",      width: "1fr",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#05A105", flexShrink: 0 }} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
-              { key: "date",    label: "Date",           width: "120px" },
-              { key: "amount",  label: "Amount",         width: "110px" },
-              { key: "batch",   label: "Email batch",    width: "130px", render: v => v ? <span style={{ fontSize: 12, fontWeight: 500, color: "#545453", background: "#F0F0F0", borderRadius: 6, padding: "2px 8px" }}>{v}</span> : <span style={{ fontSize: 14, color: "#BCBCBC" }}>No Batch</span> },
-              { key: "from",    label: "Requested from", width: "180px", render: v => <span style={{ color: v ? "#545453" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v || "Not assigned"}</span> },
-              { key: "account", label: "Bank account",   width: "180px" },
-              { key: "upload",  label: "Upload file",    width: "150px", render: () => <button style={{ height: 32, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 6, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="#FFFFFF"}>Upload file</button> },
-              { key: "actions", label: "Actions",        width: "80px",  render: () => <div style={{ display: "flex", gap: 4 }}><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 7.667a6.723 6.723 0 0 1-.6 2.533C12.93 11.141 12.206 11.933 11.311 12.486c-.894.554-1.926.847-2.978.847a6.584 6.584 0 0 1-2.533-.534L2 14l1.267-3.8a6.723 6.723 0 0 1-.6-2.533 6.584 6.584 0 0 1 .847-3.143A6.41 6.41 0 0 1 5.8 2.027a6.39 6.39 0 0 1 2.533-.694h.334A6.66 6.66 0 0 1 14 7.333v.334Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3.5" r="1.25" fill="#8C8C8B"/><circle cx="8" cy="8" r="1.25" fill="#8C8C8B"/><circle cx="8" cy="12.5" r="1.25" fill="#8C8C8B"/></svg></button></div> },
+              { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setCollectChecked(new Set(TABLE_ROWS.map(r=>r.ref)));else setCollectChecked(new Set());}} checked={TABLE_ROWS.length>0&&TABLE_ROWS.every(r=>collectChecked.has(r.ref))} />, width: "48px", cellPadding:"14px 16px", render: (_,row)=>{
+                const isInSelectedBatch = selectedBatchId !== null && rowBatchMap[row.ref] === selectedBatchId;
+                if (isInSelectedBatch) {
+                  return <input type="checkbox" className="mimo-cb" checked={!batchUncheckedRefs.has(row.ref)} onChange={e=>{e.stopPropagation();const n=new Set(batchUncheckedRefs);e.target.checked?n.delete(row.ref):n.add(row.ref);setBatchUncheckedRefs(n);}} onClick={e=>e.stopPropagation()} />;
+                }
+                return <input type="checkbox" className="mimo-cb" checked={!!collectChecked.has(row.ref)} onChange={e=>{e.stopPropagation();const n=new Set(collectChecked);e.target.checked?n.add(row.ref):n.delete(row.ref);setCollectChecked(n);}} onClick={e=>e.stopPropagation()} />;
+              } },
+              ...(tableTab !== "Excluded" ? [{ key: "status",  label: "Status",         width: "110px",  render: (v, r) => {
+                const STATUS_CFG = {
+                  Review:   { color: "#D5A750", bg: "#FDF8EE" },
+                  Ready:    { color: "#6B4EE6", bg: "#EDE9FB" },
+                  Open:     { color: "#4C71DF", bg: "#EEF2FF" },
+                  Archived: { color: "#8C8C8B", bg: "#F0F0F0" },
+                  Closed:   { color: "#05A105", bg: "#F1F8F0" },
+                  Received: { color: "#05A105", bg: "#F1F8F0" },
+                };
+                const rowBatch = rowBatchMap[r.ref] != null ? batches.find(b => b.id === rowBatchMap[r.ref]) : null;
+                const batchIsPending = rowBatch && rowBatch.status !== "Sent";
+                const inReceived = canShowReceived && receivedRefs.has(r.ref);
+                const isArchived = archivedRefs.has(r.ref);
+                const s = isArchived
+                  ? (closedRefs.has(r.ref) ? "Closed" : "Archived")
+                  : inReceived
+                    ? (rowStatusMap[r.ref] || "Review")
+                    : "Open";
+                const cfg = STATUS_CFG[s];
+                const STATUS_TIPS = { Open: "Request is pending documents", Review: "Documents require review", Ready: "Document ready for publish", Archived: "Request has been archived", Closed: "Request has been closed", Received: "Document received" };
+                return <Tooltip text={STATUS_TIPS[s] || s}><span style={{ fontSize: 12, fontWeight: 500, color: cfg.color, background: cfg.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", cursor: "default" }}>{s}</span></Tooltip>;
+              }}] : []),
+              { key: "ref",     label: "Request title",  width: "1fr",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && !archivedRefs.has(r.ref) && tableTab !== "Received" && tableTab !== "Excluded" && <Tooltip text="New request since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
+              ...(!isMissing && tableTab === "Received" ? [{ key: "resolved", label: "Resolved", width: "120px", render: () => <span style={{ fontSize: 14, color: "#BCBCBC" }}>—</span> }] : []),
+              { key: "date",    label: isMissing ? "Date" : "Closing period", width: tableTab === "Excluded" ? "140px" : "120px", render: (v) => {
+                if (!isMissing && v) { const m = String(v).match(/\d+\s+(\w+)\s+(\d{4})/); if (m) return <span style={{ fontSize:14, color:"#1F2024" }}>{m[1]} {m[2]}</span>; }
+                return <span style={{ fontSize:14, color: v ? "#1F2024" : "#BCBCBC" }}>{v || "—"}</span>;
+              }},
+              ...(isMissing ? [{ key: "amount", label: "Amount", width: tableTab === "Excluded" ? "130px" : "110px" }] : []),
+              ...(tableTab !== "Excluded" ? [{ key: "batch",   label: "Email batch",    width: "160px", render: (v, r) => { const bid = rowBatchMap[r.ref]; const b = bid != null ? batches.find(x => x.id === bid) : null; if (!b) {
+                  if (receivedRefs.has(r.ref)) {
+                    const SHORT_M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                    const sentBatch = batches.find(x => x.status === "Sent" && x.sentDate);
+                    const d = sentBatch?.sentDate || new Date(2026, 2, 15, 9, 0);
+                    const label = `${d.getDate()} ${SHORT_M[d.getMonth()]}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+                    return <Tooltip text={`${sentBatch ? sentBatch.title + " · " : ""}Sent ${label}`}><span style={{ fontSize: 12, fontWeight: 500, color: "#05A105", background: "#F1F8F0", borderRadius: 6, padding: "0 8px 0 6px", height: 25, minHeight: 25, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", cursor: "default", flexShrink: 0 }}><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C12 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>{label}</span></Tooltip>;
+                  }
+                  return <span style={{ fontSize: 14, color: "#BCBCBC" }}>No Batch</span>;
+                } const SC = { Draft: { color: "#545453", bg: "#F0F0F0" }, Scheduled: { color: "#4C71DF", bg: "#EEF2FF" }, Sent: { color: "#05A105", bg: "#F1F8F0" } }; const s = SC[b.status] || SC.Draft; const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; const SHORT_MONTHS_B = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                const tip = b.status === "Scheduled" && b.scheduledDate ? `${b.title} · Will be sent: ${b.scheduledDate.d} ${SHORT_MONTHS_B[b.scheduledDate.m]}, 09:00` : b.status === "Sent" && b.sentDate ? `${b.title} · Sent ${b.sentDate.getDate()} ${SHORT_MONTHS_B[b.sentDate.getMonth()]}, ${String(b.sentDate.getHours()).padStart(2,"0")}:${String(b.sentDate.getMinutes()).padStart(2,"0")}` : b.title;
+                if (b.status === "Sent" && b.sentDate) {
+                  const d = b.sentDate;
+                  const label = `${d.getDate()} ${SHORT_MONTHS_B[d.getMonth()]}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+                  return <Tooltip text={tip}><span style={{ fontSize: 12, fontWeight: 500, color: s.color, background: s.bg, borderRadius: 6, padding: "0 8px 0 6px", height: 25, minHeight: 25, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", cursor: "default", flexShrink: 0 }}>
+                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C12 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    {label}
+                  </span></Tooltip>;
+                }
+                return <Tooltip text={tip}><span style={{ fontSize: 12, fontWeight: 500, color: s.color, background: s.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{b.status}</span></Tooltip>; } }] : []),
+              ...(tableTab !== "Excluded" ? [{ key: "from",    label: isMissing ? "Requested from" : "Assigned to client member", width: isMissing ? "180px" : "1fr", render: (v, r) => { const fromVal = rowFromMap[r.ref] || v; return <span style={{ color: fromVal ? "#000000" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fromVal || "Not assigned"}</span>; } }] : []),
+              ...(isMissing ? [{ key: "account", label: "Bank account", width: tableTab === "Excluded" ? "1fr" : "180px", render: (v) => <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 14, color: v ? "#080908" : "#BCBCBC" }}>{v || "—"}</span> }] : []),
+              ...(tableTab !== "Excluded" ? [{ key: "upload",  label: tableTab === "Received" ? "Uploaded document" : "Upload file", width: tableTab === "Received" ? "220px" : "150px", render: (v, r) => {
+                const RECEIVED_DOCS = {
+                  "Maple Leaf Services": "maple-leaf-services-invoice-mar2026.pdf",
+                  "Thames Water Ltd. A918": "thames-water-credit-note-a918.pdf",
+                  "Ashford Consulting Group": "ashford-consulting-invoice-mar2026.pdf",
+                  "Blackstone Logistics": "blackstone-logistics-invoice-mar2026.pdf",
+                  "Cedar Lane Properties": "cedar-lane-credit-note-mar2026.pdf",
+                  "Dawson & Partners LLP": "dawson-partners-invoice-mar2026.pdf",
+                  "Eastbrook Supplies Ltd": "eastbrook-supplies-invoice-mar2026.pdf",
+                  "Finsbury Capital Group": "finsbury-capital-credit-note-mar2026.pdf",
+                  "Greystone Media Ltd": "greystone-media-invoice-mar2026.pdf",
+                  "Harrow Building Services": "harrow-building-invoice-mar2026.pdf",
+                  "Ironbridge Technologies": "ironbridge-tech-invoice-mar2026.pdf",
+                  "Jasper Retail Group": "jasper-retail-credit-note-mar2026.pdf",
+                  "Kingston Software Ltd": "kingston-software-invoice-feb2026.pdf",
+                  "Langley Print Services": "langley-print-invoice-feb2026.pdf",
+                  "Mercer Freight Ltd": "mercer-freight-credit-note-feb2026.pdf",
+                  "Newgate Advisory LLP": "newgate-advisory-invoice-feb2026.pdf",
+                  "Oakhill Energy PLC": "oakhill-energy-invoice-feb2026.pdf",
+                  "Preston Utilities Ltd": "preston-utilities-credit-note-feb2026.pdf",
+                  "Quantex Systems Ltd": "quantex-systems-invoice-feb2026.pdf",
+                  "Regent Street Holdings": "regent-street-invoice-feb2026.pdf",
+                  "Silverstone Recruitment": "silverstone-recruitment-invoice-feb2026.pdf",
+                  "Thornbury Estates Ltd": "thornbury-estates-credit-note-feb2026.pdf",
+                  "Underhill Engineering": "underhill-engineering-invoice-feb2026.pdf",
+                  "Vantage Solutions Group": "vantage-solutions-invoice-feb2026.pdf",
+                  "Westfield Contractors Ltd": "westfield-contractors-invoice-feb2026.pdf",
+                  "Highland Energy 455GBP": "highland-energy-invoice-mar2026.pdf",
+                  "Apex Consulting Ltd": "apex-consulting-invoice-mar2026.pdf",
+                  "Greenwood Partners": "greenwood-partners-credit-note-mar2026.pdf",
+                  "Falcon Tech Solutions": "falcon-tech-invoice-mar2026.pdf",
+                  "Gas Service Ltd.": "gas-service-invoice-apr2026.pdf",
+                  "Clearwater Services": "clearwater-services-invoice-apr2026.pdf",
+                  "Redwood Advisory": "redwood-advisory-invoice-apr2026.pdf",
+                };
+                if (tableTab === "Received" && bankStatements[r.account]) {
+                  const stmt = bankStatements[r.account];
+                  return (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, overflow:"hidden", minWidth:0 }}>
+                      <CsvIcon width={16} height={20} />
+                      <span style={{ fontSize:14, color:"#1F2024", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0 }}>{stmt.fileName}</span>
+                      <span style={{ fontSize:11, fontWeight:500, color:"#7C7C7C", background:"#ECECEC", borderRadius:4, padding:"0 6px", height:25, display:"inline-flex", alignItems:"center", whiteSpace:"nowrap", flexShrink:0 }}>{stmt.date}</span>
+                    </div>
+                  );
+                }
+                if (tableTab === "Received" && RECEIVED_DOCS[r.ref]) {
+                  return (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, overflow:"hidden" }}>
+                      <CsvIcon width={16} height={20} />
+                      <span style={{ fontSize:14, color:"#1F2024", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{RECEIVED_DOCS[r.ref]}</span>
+                    </div>
+                  );
+                }
+                return <button onClick={e=>e.stopPropagation()} style={{ height: 40, width: "100%", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#05A105", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => { e.currentTarget.style.background="#EAF2E2"; }} onMouseLeave={e => { e.currentTarget.style.background="#FFFFFF"; }}>Upload file</button>;
+              }}] : []),
+              { key: "actions", label: "Actions",        width: "80px",  render: () => <div onClick={e=>e.stopPropagation()} style={{ display: "flex", gap: 4 }}><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2.5 6.5C2.5 5.09987 2.5 4.3998 2.77248 3.86502C3.01217 3.39462 3.39462 3.01217 3.86502 2.77248C4.3998 2.5 5.09987 2.5 6.5 2.5H13.5C14.9001 2.5 15.6002 2.5 16.135 2.77248C16.6054 3.01217 16.9878 3.39462 17.2275 3.86502C17.5 4.3998 17.5 5.09987 17.5 6.5V11C17.5 12.4001 17.5 13.1002 17.2275 13.635C16.9878 14.1054 16.6054 14.4878 16.135 14.7275C15.6002 15 14.9001 15 13.5 15H11.4031C10.8831 15 10.6231 15 10.3743 15.051C10.1537 15.0963 9.94017 15.1712 9.73957 15.2737C9.51347 15.3892 9.31043 15.5517 8.90434 15.8765L6.91646 17.4668C6.56973 17.7442 6.39636 17.8829 6.25045 17.8831C6.12356 17.8832 6.00352 17.8255 5.92436 17.7263C5.83333 17.6123 5.83333 17.3903 5.83333 16.9463V15C5.05836 15 4.67087 15 4.35295 14.9148C3.49022 14.6836 2.81635 14.0098 2.58519 13.147C2.5 12.8291 2.5 12.4416 2.5 11.6667V6.5Z" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button><button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.99984 10.834C10.4601 10.834 10.8332 10.4609 10.8332 10.0007C10.8332 9.54041 10.4601 9.16732 9.99984 9.16732C9.5396 9.16732 9.1665 9.54041 9.1665 10.0007C9.1665 10.4609 9.5396 10.834 9.99984 10.834Z" fill="#000000" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.99984 5.00065C10.4601 5.00065 10.8332 4.62755 10.8332 4.16732C10.8332 3.70708 10.4601 3.33398 9.99984 3.33398C9.5396 3.33398 9.1665 3.70708 9.1665 4.16732C9.1665 4.62755 9.5396 5.00065 9.99984 5.00065Z" fill="#000000" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.99984 16.6673C10.4601 16.6673 10.8332 16.2942 10.8332 15.834C10.8332 15.3737 10.4601 15.0007 9.99984 15.0007C9.5396 15.0007 9.1665 15.3737 9.1665 15.834C9.1665 16.2942 9.5396 16.6673 9.99984 16.6673Z" fill="#000000" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button></div> },
             ];
             const gridTemplate = cols.map(c => c.width).join(" ");
-            const rows = TABLE_ROWS.map(r => ({ check: null, status: null, ref: r.ref, date: r.date, amount: r.amount, batch: r.batch, from: r.from, account: r.account, upload: null, actions: null, _raw: r }));
+            const SORT_STATUS_ORDER = { Open: 0, Review: 1, Ready: 2, Archived: 3 };
+            const sortedRows = sortKey ? [...TABLE_ROWS].sort((a, b) => {
+              let av, bv;
+              if (sortKey === "status") {
+                const getS = r => { const inRec = canShowReceived && receivedRefs.has(r.ref); const isArch = archivedRefs.has(r.ref); return isArch ? "Archived" : inRec ? (rowStatusMap[r.ref] || "Review") : "Open"; };
+                av = SORT_STATUS_ORDER[getS(a)] ?? 99; bv = SORT_STATUS_ORDER[getS(b)] ?? 99;
+              } else if (sortKey === "ref") {
+                av = (a.ref || "").toLowerCase(); bv = (b.ref || "").toLowerCase();
+              } else if (sortKey === "date") {
+                const parse = s => s ? new Date(s.replace(/(\d+)\s(\w+)\s(\d+)/, (_, d, m, y) => m + " " + d + " " + y)) : new Date(0);
+                av = parse(a.date); bv = parse(b.date);
+              } else if (sortKey === "amount") {
+                av = Math.abs(parseFloat((a.amount || "").replace(/[^0-9.-]/g, "")) || 0);
+                bv = Math.abs(parseFloat((b.amount || "").replace(/[^0-9.-]/g, "")) || 0);
+              } else if (sortKey === "account") {
+                av = (a.account || "").toLowerCase(); bv = (b.account || "").toLowerCase();
+              }
+              if (av < bv) return sortDir === "asc" ? -1 : 1;
+              if (av > bv) return sortDir === "asc" ? 1 : -1;
+              return 0;
+            }) : TABLE_ROWS;
+            collectTableRowsRef.current = sortedRows;
+            const totalRows = sortedRows.length;
+            const totalPages = Math.max(1, Math.ceil(totalRows / collectPageSize));
+            const safePage = Math.min(collectPage, totalPages);
+            const pagedRows = sortedRows.slice((safePage - 1) * collectPageSize, safePage * collectPageSize);
+            const rows = pagedRows.map(r => ({ check: null, status: null, ref: r.ref, date: r.date, amount: r.amount, batch: r.batch, from: r.from, account: r.account, upload: null, actions: null, _raw: r }));
 
+            const gridTplC = cols.map(c => c.width).join(" ");
+            const lastIC = cols.length - 1;
+            const isScrollableC = collectScrollable;
+            const stickyCStyle = (i, bg) => i === lastIC && isScrollableC ? { position:"sticky", right:0, background: bg, zIndex:2 } : {};
             return (
-              <DataTable
-                columns={cols.map(c => ({ ...c, render: c.render ? (v, row) => c.render(v, row._raw || row) : undefined }))}
-                rows={rows}
-                footerLabel={`${TABLE_ROWS.length} requests`}
-                containerStyle={{ borderRadius: "0 0 8px 8px", borderTop: "none" }}
-              />
+              <div ref={collectScrollRef} style={{ overflowX:"auto", border:"1px solid #E9E9EB", borderRadius:"0 0 16px 16px", borderTop:"none", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
+                <div style={{ minWidth: 1260 }}>
+                  <div style={{ display:"grid", gridTemplateColumns: gridTplC, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF" }}>
+                    {cols.map((col, ci) => {
+                      const SORTABLE = ["status","ref","date","amount","account"];
+                      const isSortable = SORTABLE.includes(col.key);
+                      const isActive = sortKey === col.key;
+                      return (
+                        <div key={col.key} data-collect-sticky={ci===lastIC||undefined}
+                          onClick={() => { if (!isSortable) return; if (sortKey === col.key) { setSortDir(d => d === "asc" ? "desc" : "asc"); } else { setSortKey(col.key); setSortDir("asc"); } }}
+                          style={{ display:"flex", alignItems:"center", justifyContent: col.key==="check" ? "center" : (col.align==="right"?"flex-end":"flex-start"), gap:4, fontSize:14, fontWeight:400, color: isActive ? "#080908" : "#7c7c7c", padding: col.cellPadding ? col.cellPadding.replace("14px","11px") : "11px 16px", borderRight: ci<lastIC?"1px solid #E9E9EB":"none", cursor: isSortable ? "pointer" : "default", userSelect:"none", ...stickyCStyle(ci,"#FFFFFF") }}
+                          onMouseEnter={e => { if (isSortable) { e.currentTarget.style.color = "#080908"; e.currentTarget.style.background = "#F5F5F5"; const hint = e.currentTarget.querySelector(".sort-hint"); if (hint) hint.style.opacity = "1"; } }}
+                          onMouseLeave={e => { if (isSortable) { if (!isActive) e.currentTarget.style.color = "#7c7c7c"; e.currentTarget.style.background = "transparent"; const hint = e.currentTarget.querySelector(".sort-hint"); if (hint) hint.style.opacity = "0"; } }}>
+                          {col.label}
+                          {isSortable && (isActive ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink:0, marginLeft:2, transform: sortDir === "desc" ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                              <path d="M12 19V5M19 12L12 5L5 12" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink:0, marginLeft:2, opacity:0 }} className="sort-hint">
+                              <path d="M12 19V5M19 12L12 5L5 12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {totalRows === 0 ? (
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"64px 24px", gap:12 }}>
+                      <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d={PATHS.fileQuestion} stroke="#7C7C7C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontSize:14, color:"#7C7C7C", fontWeight:400 }}>
+                        {tableTab === "Open requests" ? "No open requests" : tableTab === "Received" ? "No documents have been received for this batch" : tableTab === "Excluded" ? "No excluded requests found" : "No archived requests found"}
+                      </span>
+                    </div>
+                  ) : rows.map((row, ri) => (
+                    <div key={ri} style={{ display:"grid", gridTemplateColumns: gridTplC, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF", cursor:"pointer" }}
+                      onMouseEnter={e => e.currentTarget.querySelectorAll("[data-collect-sticky]").forEach(el => el.style.background="#FAFAFA") || (e.currentTarget.style.background="#FAFAFA")}
+                      onMouseLeave={e => e.currentTarget.querySelectorAll("[data-collect-sticky]").forEach(el => el.style.background="#FFFFFF") || (e.currentTarget.style.background="#FFFFFF")}>
+                      {cols.map((col, ci) => (
+                        <div key={col.key} data-collect-sticky={ci===lastIC||undefined}
+                          onClick={col.key === "check"
+                            ? () => { const isInSelectedBatch = selectedBatchId !== null && rowBatchMap[row.ref] === selectedBatchId; if (isInSelectedBatch) { const n=new Set(batchUncheckedRefs); batchUncheckedRefs.has(row.ref)?n.delete(row.ref):n.add(row.ref); setBatchUncheckedRefs(n); } else { const n=new Set(collectChecked); collectChecked.has(row.ref)?n.delete(row.ref):n.add(row.ref); setCollectChecked(n); } }
+                            : col.key === "actions" ? undefined
+                            : () => {
+                                const _batchId = rowBatchMap[row.ref] || null;
+                                const _batch = _batchId ? batches.find(b => b.id === _batchId) : null;
+                                const _batchRows = _batchId ? MISSING_TABLE_DATA.filter(r => rowBatchMap[r.ref] === _batchId) : [];
+                                const _acct = CB_ACCOUNTS.find(a => a.name === row.account);
+                                setOpenRequestSidebar({
+                                  contact: row.ref,
+                                  amount: row.amount,
+                                  date: row.date,
+                                  account: row.account,
+                                  accountNumber: _acct?.number || "—",
+                                  fileAction: row.ref.replace(/\s+/g, "-").toLowerCase() + "-doc.pdf",
+                                  batchInfo: _batch ? {
+                                    title: _batch.title,
+                                    status: _batch.status,
+                                    requestCount: _batchRows.length,
+                                    accountCount: _batch.accountCount ?? new Set(_batchRows.map(r => r.account)).size,
+                                    assignees: _batch.assignees || [],
+                                    sentDate: _batch.sentDate || null,
+                                    scheduledDate: _batch.scheduledDate || null,
+                                  } : null,
+                                });
+                              }
+                          }
+                          style={{ display:"flex", alignItems:"center", justifyContent: col.key==="check" ? "center" : (col.align==="right"?"flex-end":"flex-start"), fontSize:14, color:"#080908", padding: col.cellPadding||"14px 16px", borderRight: ci<lastIC?"1px solid #E9E9EB":"none", overflow:"hidden", whiteSpace:"nowrap", maxHeight:56, ...stickyCStyle(ci,"#FFFFFF") }}>
+                          {col.render ? col.render(row[col.key], row._raw||row, ri) : row[col.key]}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 16px", height:64, borderTop:"1px solid #E9E9EB" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:14, color:"#8C8C8B" }}>{TABLE_ROWS.length} requests</span>
+                      <div style={{ position:"relative" }} ref={pageSizeDropRef}>
+                        <button onClick={()=>setShowPageSizeDrop(v=>!v)} style={{ height:36, padding:"0 10px 0 12px", border:"1px solid #DBDBDB", borderRadius:8, fontSize:14, color:"#1F2024", background:"#FFFFFF", cursor:"pointer", fontFamily:"'Inter',sans-serif", display:"flex", alignItems:"center", gap:6, outline:"none" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                          {collectPageSize}
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0, transform: showPageSizeDrop?"rotate(180deg)":"none", transition:"transform 0.15s" }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                        {showPageSizeDrop && <>
+                          <div onClick={()=>setShowPageSizeDrop(false)} style={{ position:"fixed", inset:0, zIndex:9998 }} />
+                          <div style={{ position:"absolute", bottom:"calc(100% + 4px)", left:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:9999, minWidth:80, padding:"4px", overflow:"hidden" }}>
+                            {[10,20,50,100].map(n=>(
+                              <button key={n} onClick={()=>{setCollectPageSize(n);setCollectPage(1);setShowPageSizeDrop(false);}} style={{ width:"100%", display:"flex", alignItems:"center", padding:"8px 12px", fontSize:14, color:"#000000", fontWeight: n===collectPageSize?500:400, background: n===collectPageSize?"#F5F5F5":"transparent", border:"none", cursor:"pointer", borderRadius:8, fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>{ if(n!==collectPageSize) e.currentTarget.style.background="#F5F5F5"; }} onMouseLeave={e=>{ e.currentTarget.style.background=n===collectPageSize?"#F5F5F5":"transparent"; }}>
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        </>}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <span style={{ fontSize:14, color:"#7C7C7C" }}>{totalRows === 0 ? "0" : `${(safePage-1)*collectPageSize+1} – ${Math.min(safePage*collectPageSize,totalRows)}`} of {totalRows}</span>
+                      <div style={{ display:"flex", gap:4 }}>
+                        <button onClick={()=>setCollectPage(p=>Math.max(1,p-1))} disabled={safePage<=1} style={{ width:32, height:32, border:"1px solid #DBDBDB", borderRadius:8, background:"#FFFFFF", cursor:safePage<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:safePage<=1?0.4:1 }} onMouseEnter={e=>{if(safePage>1)e.currentTarget.style.background="#F5F5F5";}} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button onClick={()=>setCollectPage(p=>Math.min(totalPages,p+1))} disabled={safePage>=totalPages} style={{ width:32, height:32, border:"1px solid #DBDBDB", borderRadius:8, background:"#FFFFFF", cursor:safePage>=totalPages?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:safePage>=totalPages?0.4:1 }} onMouseEnter={e=>{if(safePage<totalPages)e.currentTarget.style.background="#F5F5F5";}} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             );
           })()}
         </div>
       </div>
+    </div>
+        {showMembersDropdown && (
+          <div ref={membersDropRef} style={{ position:"fixed", bottom: memberDropPos.bottom, left: memberDropPos.left, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:300, width: memberDropPos.width || 328, paddingTop:12 }}>
+            <div style={{ margin:"0 12px 10px", display:"flex", alignItems:"center", gap:10, border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 14px" }}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Search members" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }} />
+            </div>
+            <div onClick={() => { if (selectedMembers.size === MEMBER_OPTIONS.length) setSelectedMembers(new Set()); else setSelectedMembers(new Set(MEMBER_OPTIONS)); }}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+              onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${selectedMembers.size===MEMBER_OPTIONS.length?"#05A105":"#CFCFD1"}`, background:selectedMembers.size===MEMBER_OPTIONS.length?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {selectedMembers.size===MEMBER_OPTIONS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+            </div>
+            <div style={{ height:1, background:"#E9E9EB", margin:"6px 0 8px" }} />
+            <div style={{ maxHeight:240, overflowY:"auto", paddingBottom:8 }}>
+              {MEMBER_OPTIONS.filter(m => m.toLowerCase().includes(memberSearch.toLowerCase())).map(m => {
+                const checked = selectedMembers.has(m);
+                return (
+                  <div key={m} onClick={() => { const n = new Set(selectedMembers); checked ? n.delete(m) : n.add(m); setSelectedMembers(n); }}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${checked?"#05A105":"#CFCFD1"}`, background:checked?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <span style={{ fontSize:14, color:"#080908" }}>{m}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {collectChecked.size > 0 && showBatchPanel && (
+          <div ref={batchPanelRef} style={{ position:"fixed", bottom: batchPanelPos.bottom, left: batchPanelPos.left, transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", width:360, zIndex:201, fontFamily:"'Inter',sans-serif" }}>
+            {/* Title */}
+            <div style={{ padding:"16px 16px 12px", display:"flex", flexDirection:"column", gap:6 }}>
+              <label style={{ fontSize:14, fontWeight:500, color:"#2A2A2A" }}>Title</label>
+              <input
+                value={batchTitle}
+                onChange={e => setBatchTitle(e.target.value)}
+                placeholder="Add batch title"
+                style={{ height:48, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 16px", fontSize:14, color:"#1F2024", outline:"none", fontFamily:"'Inter',sans-serif", width:"100%", boxSizing:"border-box" }}
+                onFocus={e => e.target.style.borderColor="#05A105"}
+                onBlur={e => e.target.style.borderColor="#DBDBDB"}
+              />
+            </div>
+            {/* Assignees */}
+            <div style={{ padding:"0 16px 16px", display:"flex", flexDirection:"column", gap:8 }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:2 }}>Assignees</div>
+                <div style={{ fontSize:13, color:"#7C7C7C" }}>The client members that will receive the email notification</div>
+              </div>
+              <button ref={membersBtnRef} onClick={() => setShowMembersDropdown(o => !o)} style={{ height:48, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 12px 0 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", width:"100%", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }}>
+                {selectedMembers.size === 0
+                  ? <span style={{ fontSize:14, color:"#A5A5A5" }}>Select client members</span>
+                  : <span style={{ fontSize:14, color:"#1F2024", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{[...selectedMembers].join(", ")}</span>
+                }
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ transform: showMembersDropdown ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M5 7.5l5 5 5-5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            {/* Actions */}
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:8, borderTop:"1px solid #ECECEC", padding:"12px 16px" }}>
+              <button onClick={() => { setShowBatchPanel(false); setBatchTitle(""); setSelectedMembers(new Set()); setMemberSearch(""); setShowMembersDropdown(false); }} style={{ height:40, border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px", fontSize:14, fontWeight:500, color:"#2A2A2A", background:"none", cursor:"pointer", fontFamily:"'Inter',sans-serif", letterSpacing:"0.15px", lineHeight:"22px" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>Cancel</button>
+              {(() => {
+                const active = batchTitle.trim().length > 0 && selectedMembers.size > 0;
+                const handleCreate = () => {
+                  if (!active) return;
+                  const newId = Date.now();
+                  const tRows = collectTableRowsRef.current;
+                  const newMap = { ...rowBatchMap };
+                  const newFromMap = { ...rowFromMap };
+                  const fromLabel = [...selectedMembers].join(", ");
+                  [...collectChecked].forEach(ref => { newMap[ref] = newId; newFromMap[ref] = fromLabel; });
+                  setRowBatchMap(newMap);
+                  setRowFromMap(newFromMap);
+                  const _checkedAccounts = new Set([...collectChecked].map(ref => { const r = (collectTableRowsRef.current || MISSING_TABLE_DATA).find(row => row.ref === ref); return r ? r.account : null; }).filter(Boolean));
+                  setBatches(bs => [...bs, {
+                    id: newId,
+                    title: batchTitle.trim(),
+                    status: "Draft",
+                    requestCount: collectChecked.size,
+                    accountCount: _checkedAccounts.size,
+                    assigneeCount: selectedMembers.size,
+                    assignees: [...selectedMembers]
+                  }]);
+                  setShowBatchPanel(false);
+                  setBatchTitle("");
+                  setSelectedMembers(new Set());
+                  setMemberSearch("");
+                  setShowMembersDropdown(false);
+                  setCollectChecked(new Set());
+                  showToast("Batch created successfully");
+                };
+                return <button onClick={handleCreate} style={{ height:40, border:"none", borderRadius:8, padding:"8px 16px", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", fontFamily:"'Inter',sans-serif", cursor: active ? "pointer" : "default", background: active ? "#05A105" : "#ECECEC", color: active ? "#FFFFFF" : "#A5A5A5" }} onMouseEnter={e=>{ if(active) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(active) e.currentTarget.style.background="#05A105"; }}>Create draft batch</button>;
+              })()}
+            </div>
+          </div>
+        )}
+        {showSchedulePanel && selectedBatchId !== null && (
+          <div ref={schedulePanelRef} style={{ position:"fixed", bottom: schedulePos.bottom, left: schedulePos.left, transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", zIndex:300, width:280, fontFamily:"'Inter',sans-serif", overflow:"hidden" }}>
+            {(() => {
+              const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+              const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const DAY_LABELS = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+              const firstDow = new Date(scheduleYear, scheduleMonth, 1).getDay(); // 0=Sun
+              const startOffset = (firstDow + 6) % 7; // Mon=0
+              const daysInMonth = new Date(scheduleYear, scheduleMonth + 1, 0).getDate();
+              const prevDays = new Date(scheduleYear, scheduleMonth, 0).getDate();
+              const cells = [];
+              for (let i = startOffset - 1; i >= 0; i--) cells.push({ d: prevDays - i, type: "prev" });
+              for (let d = 1; d <= daysInMonth; d++) cells.push({ d, type: "cur" });
+              // No next-month trailing days — pad last row with empty slots to maintain grid alignment
+              while (cells.length % 7 !== 0) cells.push({ d: null, type: "empty" });
+              const today = new Date();
+              const handleSchedule = () => {
+                if (!selectedScheduleDate) return;
+                const SHORT_MONTHS_T = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, status: "Scheduled", scheduledDate: selectedScheduleDate } : b));
+                setShowSchedulePanel(false);
+                setSelectedScheduleDate(null);
+                setSelectedBatchId(null); setCollectChecked(new Set());
+                showToast(`Batch scheduled for ${selectedScheduleDate.d} ${SHORT_MONTHS_T[selectedScheduleDate.m]}`);
+              };
+              const isCurrentMonth = scheduleYear === today.getFullYear() && scheduleMonth === today.getMonth();
+              return (<>
+                {/* Header */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 16px 12px" }}>
+                  <button onClick={() => { if (isCurrentMonth) return; const d = new Date(scheduleYear, scheduleMonth - 1); setScheduleMonth(d.getMonth()); setScheduleYear(d.getFullYear()); }}
+                    style={{ width:32, height:32, border:"1px solid #ECECEC", borderRadius:8, background:"#FFFFFF", cursor: isCurrentMonth ? "default" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity: isCurrentMonth ? 0.3 : 1 }}
+                    onMouseEnter={e=>{ if (!isCurrentMonth) e.currentTarget.style.background="#F5F5F5"; }}
+                    onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{MONTH_NAMES[scheduleMonth]} {scheduleYear}</span>
+                  <button onClick={() => { const d = new Date(scheduleYear, scheduleMonth + 1); setScheduleMonth(d.getMonth()); setScheduleYear(d.getFullYear()); }} style={{ width:32, height:32, border:"1px solid #ECECEC", borderRadius:8, background:"#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+                {/* Day labels */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", padding:"0 12px", marginBottom:4 }}>
+                  {DAY_LABELS.map(d => <div key={d} style={{ textAlign:"center", fontSize:12, fontWeight:500, color:"#8C8C8B", padding:"4px 0" }}>{d}</div>)}
+                </div>
+                {/* Date grid */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", padding:"0 12px", marginBottom:12 }}>
+                  {cells.map((cell, i) => {
+                    if (cell.type === "empty") return <div key={i} />;
+                    const isCur = cell.type === "cur";
+                    const cellDate = new Date(scheduleYear, scheduleMonth, cell.d);
+                    const isPast = isCur && cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    const isSelectable = isCur && !isPast;
+                    const isSelected = isSelectable && selectedScheduleDate && selectedScheduleDate.d === cell.d && selectedScheduleDate.m === scheduleMonth && selectedScheduleDate.y === scheduleYear;
+                    const isToday = isCur && cell.d === today.getDate() && scheduleMonth === today.getMonth() && scheduleYear === today.getFullYear();
+                    return (
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"2px 0" }}>
+                        <div onClick={() => isSelectable && setSelectedScheduleDate({ d: cell.d, m: scheduleMonth, y: scheduleYear })}
+                          style={{ width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, cursor: isSelectable ? "pointer" : "default", borderRadius:8,
+                            color: isSelected ? "#FFFFFF" : isPast ? "#DBDBDB" : isCur ? (isToday ? "#05A105" : "#1F2024") : "#BCBCBC",
+                            background: isSelected ? "#05A105" : "transparent", fontWeight: isSelected || isToday ? 600 : 400 }}
+                          onMouseEnter={e => { if (isSelectable && !isSelected) e.currentTarget.style.background="#F5F5F5"; }}
+                          onMouseLeave={e => { if (isSelectable && !isSelected) e.currentTarget.style.background="transparent"; }}>
+                          {cell.d}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Footer */}
+                <div style={{ display:"flex", gap:10, padding:"12px 16px", borderTop:"1px solid #ECECEC" }}>
+                  <button onClick={() => setShowSchedulePanel(false)} style={{ flex:1, height:40, border:"1px solid #DBDBDB", borderRadius:8, background:"none", fontSize:14, fontWeight:500, color:"#2A2A2A", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>Cancel</button>
+                  <button onClick={handleSchedule} disabled={!selectedScheduleDate} style={{ flex:2, height:40, border:"none", borderRadius:8, fontSize:14, fontWeight:500, fontFamily:"'Inter',sans-serif", cursor: selectedScheduleDate ? "pointer" : "default", background: selectedScheduleDate ? "#05A105" : "#ECECEC", color: selectedScheduleDate ? "#FFFFFF" : "#A5A5A5" }} onMouseEnter={e=>{ if(selectedScheduleDate) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(selectedScheduleDate) e.currentTarget.style.background="#05A105"; }}>Schedule one time</button>
+                </div>
+              </>);
+            })()}
+          </div>
+        )}
+        {selectedBatchId !== null && batchUncheckedRefs.size === 0 && (
+          <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:16, padding:"12px 16px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
+            {/* Close + count */}
+            <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+              <button onClick={() => { setSelectedBatchId(null); setCollectChecked(new Set()); }} style={{ width:24, height:24, minWidth:24, minHeight:24, background:"#F5F5F5", border:"none", borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {(() => {
+                const ab = batches.find(b => b.id === selectedBatchId);
+                const isSent = ab && ab.status === "Sent";
+                return <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap" }}>
+                  {(() => {
+                    const fmtSum = refs => { const t = refs.reduce((a, ref) => { const row = MISSING_TABLE_DATA.find(r => r.ref === ref); return row ? a + parseFloat(row.amount.replace(/[£,]/g, "")) : a; }, 0); return (t < 0 ? "-" : "") + "£" + Math.abs(t).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+                    if (isSent) {
+                      const refs = Object.entries(rowBatchMap).filter(([ref, id]) => id === ab.id && (tableTab === "Received" ? receivedRefs.has(ref) : !receivedRefs.has(ref))).map(([ref]) => ref);
+                      return `${refs.length} request${refs.length !== 1 ? "s" : ""} (${fmtSum(refs)})`;
+                    }
+                    const refs = Object.entries(rowBatchMap).filter(([,id]) => id === ab.id).map(([ref]) => ref);
+                    return `${refs.length} request${refs.length !== 1 ? "s" : ""} (${fmtSum(refs)})`;
+                  })()}
+                </span>;
+              })()}
+            </div>
+            {/* Sent-state buttons */}
+            {(() => {
+              const ab = batches.find(b => b.id === selectedBatchId);
+              const receivedCount = ab ? Object.entries(rowBatchMap).filter(([ref, id]) => id === ab.id && receivedRefs.has(ref)).length : 0;
+              const openCount = ab ? (ab.requestCount - receivedCount) : 0;
+              if (ab && ab.status === "Sent") return (<>
+                {/* Send again */}
+                <Tooltip text="Send email again for open requests only"><button onClick={() => showToast("Notification emails sent successfully")} style={{ height:40, background:"#05A105", border:"none", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"white", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.74952 11.2501L17.4995 2.50014M8.85584 11.5235L11.0459 17.1552C11.2389 17.6513 11.3353 17.8994 11.4743 17.9718C11.5948 18.0346 11.7384 18.0347 11.859 17.972C11.998 17.8998 12.0948 17.6518 12.2883 17.1559L17.7803 3.08281C17.955 2.63516 18.0423 2.41133 17.9945 2.26831C17.953 2.1441 17.8556 2.04663 17.7314 2.00514C17.5883 1.95736 17.3645 2.0447 16.9169 2.21939L2.84373 7.71134C2.34784 7.90486 2.09989 8.00163 2.02763 8.14071C1.96499 8.26129 1.96508 8.40483 2.02786 8.52533C2.10028 8.66433 2.34834 8.7608 2.84446 8.95373L8.47613 11.1438C8.57684 11.183 8.62719 11.2026 8.66959 11.2328C8.70717 11.2596 8.74004 11.2925 8.76685 11.3301C8.79709 11.3725 8.81667 11.4228 8.85584 11.5235Z" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Send again
+                </button></Tooltip>
+                {/* Received documents / Open requests toggle */}
+                {tableTab === "Received"
+                  ? <Tooltip text="View all outstanding requests"><button onClick={() => { setTableTab("Open requests"); }} style={{ height:40, background:"none", border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6668 7.91797V5.66797C16.6668 4.26784 16.6668 3.56777 16.3943 3.03299C16.1547 2.56259 15.7722 2.18014 15.3018 1.94045C14.767 1.66797 14.067 1.66797 12.6668 1.66797H7.3335C5.93336 1.66797 5.2333 1.66797 4.69852 1.94045C4.22811 2.18014 3.84566 2.56259 3.60598 3.03299C3.3335 3.56777 3.3335 4.26784 3.3335 5.66797V14.3346C3.3335 15.7348 3.3335 16.4348 3.60598 16.9696C3.84566 17.44 4.22811 17.8225 4.69852 18.0622C5.2333 18.3346 5.93336 18.3346 7.3335 18.3346H11.6668M11.6668 9.16797H6.66683M8.3335 12.5013H6.66683M13.3335 5.83464H6.66683M13.7502 12.5032C13.897 12.0858 14.1868 11.7338 14.5683 11.5096C14.9497 11.2854 15.3982 11.2035 15.8343 11.2783C16.2704 11.3531 16.666 11.5798 16.9509 11.9183C17.2359 12.2568 17.3919 12.6852 17.3912 13.1277C17.3912 14.3768 15.5176 15.0013 15.5176 15.0013M15.5417 17.5013H15.5501" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      {openCount} open request{openCount !== 1 ? "s" : ""}
+                    </button></Tooltip>
+                  : receivedCount === 0
+                    ? <Tooltip text="This batch has not received any documents yet"><button onClick={() => { setTableTab("Received"); }} style={{ height:40, background:"none", border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6668 8.75008V5.66675C16.6668 4.26662 16.6668 3.56655 16.3943 3.03177C16.1547 2.56137 15.7722 2.17892 15.3018 1.93923C14.767 1.66675 14.067 1.66675 12.6668 1.66675H7.3335C5.93336 1.66675 5.2333 1.66675 4.69852 1.93923C4.22811 2.17892 3.84566 2.56137 3.60598 3.03177C3.3335 3.56655 3.3335 4.26662 3.3335 5.66675V14.3334C3.3335 15.7335 3.3335 16.4336 3.60598 16.9684C3.84566 17.4388 4.22811 17.8212 4.69852 18.0609C5.2333 18.3334 5.93336 18.3334 7.3335 18.3334H10.0002M11.6668 9.16675H6.66683M8.3335 12.5001H6.66683M13.3335 5.83341H6.66683M15.0002 17.5001V12.5001M12.5002 15.0001H17.5002" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        No documents received
+                      </button></Tooltip>
+                    : <Tooltip text="View all received documents for this batch"><button onClick={() => { setTableTab("Received"); }} style={{ height:40, background:"none", border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6668 8.75008V5.66675C16.6668 4.26662 16.6668 3.56655 16.3943 3.03177C16.1547 2.56137 15.7722 2.17892 15.3018 1.93923C14.767 1.66675 14.067 1.66675 12.6668 1.66675H7.3335C5.93336 1.66675 5.2333 1.66675 4.69852 1.93923C4.22811 2.17892 3.84566 2.56137 3.60598 3.03177C3.3335 3.56655 3.3335 4.26662 3.3335 5.66675V14.3334C3.3335 15.7335 3.3335 16.4336 3.60598 16.9684C3.84566 17.4388 4.22811 17.8212 4.69852 18.0609C5.2333 18.3334 5.93336 18.3334 7.3335 18.3334H10.0002M11.6668 9.16675H6.66683M8.3335 12.5001H6.66683M13.3335 5.83341H6.66683M15.0002 17.5001V12.5001M12.5002 15.0001H17.5002" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        {receivedCount} received document{receivedCount !== 1 ? "s" : ""}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg>
+                      </button></Tooltip>
+                }
+                {/* Dots */}
+                <button ref={fabDotsBtnRef} onClick={() => setShowFabDots(v => !v)} style={{ border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:40, height:40, borderRadius:8, padding:0, flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="5" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="15" r="1.5" fill="#2A2A2A"/></svg>
+                </button>
+              </>);
+              return null;
+            })()}
+            {/* Non-sent state buttons (hidden when Sent) */}
+            {(() => { const ab = batches.find(b => b.id === selectedBatchId); if (ab && ab.status === "Sent") return null; return (<>
+            {/* Send batch */}
+            <Tooltip text="Send notification emails for marked requests">
+            <button onClick={() => { if(isSending) return; setIsSending(true); setTimeout(() => { const now = new Date(); setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, status: "Sent", sentDate: now } : b));
+              const batchRefs = Object.entries(rowBatchMap).filter(([, id]) => id === selectedBatchId).map(([ref]) => ref);
+              const shuffled = batchRefs.sort(() => Math.random() - 0.5);
+              const count = Math.max(1, Math.floor(shuffled.length * (0.3 + Math.random() * 0.5)));
+              const toReceive = shuffled.slice(0, count);
+              if (toReceive.length > 0) { setReceivedRefs(prev => new Set([...prev, ...toReceive])); setRowStatusMap(prev => { const n = { ...prev }; toReceive.forEach(ref => { n[ref] = Math.random() < 0.5 ? "Review" : "Ready"; }); return n; }); }
+              if (selectedBatchId === 1) {
+                setReceivedRefs(prev => new Set([...prev, "Highland Energy 455GBP", "Apex Consulting Ltd", "Greenwood Partners"]));
+              }
+              setIsSending(false); showToast("Notification emails sent successfully"); setSelectedBatchId(null); setCollectChecked(new Set()); }, 2000); }} style={{ height:40, background:"#05A105", border:"none", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:8, position:"relative", cursor: isSending ? "default" : "pointer", color:"white", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>{ if(!isSending) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+              <span style={{ display:"flex", alignItems:"center", gap:8, visibility: isSending ? "hidden" : "visible" }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.74952 11.2501L17.4995 2.50014M8.85584 11.5235L11.0459 17.1552C11.2389 17.6513 11.3353 17.8994 11.4743 17.9718C11.5948 18.0346 11.7384 18.0347 11.859 17.972C11.998 17.8998 12.0948 17.6518 12.2883 17.1559L17.7803 3.08281C17.955 2.63516 18.0423 2.41133 17.9945 2.26831C17.953 2.1441 17.8556 2.04663 17.7314 2.00514C17.5883 1.95736 17.3645 2.0447 16.9169 2.21939L2.84373 7.71134C2.34784 7.90486 2.09989 8.00163 2.02763 8.14071C1.96499 8.26129 1.96508 8.40483 2.02786 8.52533C2.10028 8.66433 2.34834 8.7608 2.84446 8.95373L8.47613 11.1438C8.57684 11.183 8.62719 11.2026 8.66959 11.2328C8.70717 11.2596 8.74004 11.2925 8.76685 11.3301C8.79709 11.3725 8.81667 11.4228 8.85584 11.5235Z" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Send batch
+              </span>
+              {isSending && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="white" strokeWidth="3.5" strokeLinecap="round"/></svg>}
+            </button>
+            </Tooltip>
+            {/* Preview */}
+            <Tooltip text="Preview email before sending">
+            <button onClick={() => { setShowPreviewPanel(true); setPreviewAssigneeIdx(0); setPreviewVisible(false); requestAnimationFrame(() => requestAnimationFrame(() => setPreviewVisible(true))); }} style={{ height:40, background:"none", border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M16.6666 8.74935V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H9.58325M18.3333 18.3327L17.0833 17.0827M17.9166 14.9993C17.9166 16.6102 16.6107 17.916 14.9999 17.916C13.3891 17.916 12.0833 16.6102 12.0833 14.9993C12.0833 13.3885 13.3891 12.0827 14.9999 12.0827C16.6107 12.0827 17.9166 13.3885 17.9166 14.9993Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Preview
+            </button>
+            </Tooltip>
+            {/* Calendar / pencil button */}
+            {(() => {
+              const activeBatch = batches.find(b => b.id === selectedBatchId);
+              const isScheduled = activeBatch && activeBatch.status === "Scheduled";
+              if (isScheduled) {
+                return (
+                  <Tooltip text="Mark batch as draft">
+                  <button onClick={() => { setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, status: "Draft", scheduledDate: null } : b)); showToast("Batch moved back to Draft"); setSelectedBatchId(null); setCollectChecked(new Set()); }}
+                    style={{ width:40, height:40, background:"none", border:"none", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M14.9998 1.66699L18.3332 5.00033M1.6665 18.3337L2.73017 14.4335C2.79957 14.1791 2.83426 14.0519 2.88753 13.9332C2.93482 13.8279 2.99294 13.7277 3.06093 13.6344C3.13752 13.5293 3.23076 13.4361 3.41726 13.2496L12.0284 4.6384C12.1934 4.47339 12.2759 4.39089 12.3711 4.35997C12.4548 4.33278 12.5449 4.33278 12.6286 4.35997C12.7237 4.39089 12.8062 4.47339 12.9712 4.6384L15.3618 7.02892C15.5268 7.19393 15.6093 7.27643 15.6402 7.37157C15.6674 7.45525 15.6674 7.5454 15.6402 7.62908C15.6093 7.72422 15.5268 7.80672 15.3618 7.97173L6.75059 16.5829C6.5641 16.7694 6.47085 16.8626 6.36574 16.9392C6.27241 17.0072 6.17227 17.0653 6.06693 17.1126C5.94829 17.1659 5.82107 17.2006 5.56662 17.27L1.6665 18.3337Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  </Tooltip>
+                );
+              }
+              return (
+                <Tooltip text="Schedule batch">
+                <button ref={calendarBtnRef} onClick={() => { setShowSchedulePanel(v => !v); setSelectedScheduleDate(null); }}
+                  style={{ width:40, height:40, background: showSchedulePanel ? "#F5F5F5" : "none", border:"none", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>{ if(!showSchedulePanel) e.currentTarget.style.background="none"; }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M17.5 9.58268V7.33268C17.5 5.93255 17.5 5.23249 17.2275 4.69771C16.9878 4.2273 16.6054 3.84485 16.135 3.60517C15.6002 3.33268 14.9001 3.33268 13.5 3.33268H6.5C5.09987 3.33268 4.3998 3.33268 3.86502 3.60517C3.39462 3.84485 3.01217 4.2273 2.77248 4.69771C2.5 5.23249 2.5 5.93255 2.5 7.33268V14.3327C2.5 15.7328 2.5 16.4329 2.77248 16.9677C3.01217 17.4381 3.39462 17.8205 3.86502 18.0602C4.3998 18.3327 5.09987 18.3327 6.5 18.3327H10.4167M17.5 8.33268H2.5M13.3333 1.66602V4.99935M6.66667 1.66602V4.99935M15 17.4993V12.4993M12.5 14.9993H17.5" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                </Tooltip>
+              );
+            })()}
+            {/* Dots vertical */}
+            <button ref={fabDotsBtnRef} onClick={() => setShowFabDots(v => !v)} style={{ border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:40, height:40, borderRadius:8, padding:0, flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="5" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="15" r="1.5" fill="#2A2A2A"/></svg>
+            </button>
+          </>); })()}
+          </div>
+        )}
+        {showFabDots && (
+          <div ref={fabDotsMenuRef} style={{ position:"fixed", bottom: fabDotsPos.bottom, left: fabDotsPos.left, transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", zIndex:300, width:240, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+            <div style={{ paddingTop:8 }}>
+            {[
+              { label:"Edit assignees", color:"#1F2024", onClick: () => { setShowFabDots(false); openEditAssigneesSidebar(); } },
+              { label:"Download all documents", color:"#1F2024", onClick: () => setShowFabDots(false) },
+              { label:"Mark as closed", color:"#1F2024", onClick: () => setShowFabDots(false) },
+            ].map((item, i) => (
+              <div key={i} onClick={item.onClick} style={{ height:30, padding:"0 20px", fontSize:14, color:item.color, cursor:"pointer", display:"flex", alignItems:"center" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                {item.label}
+              </div>
+            ))}
+            </div>
+            <div style={{ height:1, background:"#ECECEC", margin:"6px 0" }}/>
+            <div style={{ paddingBottom:8 }}>
+            {[
+              { label:"Delete batch", color:"#C8543A", onClick: () => { setBatches(bs => bs.filter(b => b.id !== selectedBatchId)); setRowBatchMap(prev => { const next = { ...prev }; Object.keys(next).forEach(ref => { if (next[ref] === selectedBatchId) delete next[ref]; }); return next; }); setSelectedBatchId(null); setCollectChecked(new Set()); setShowFabDots(false); showToast("Batch deleted"); } },
+              { label:"Archive requests", color:"#C8543A", onClick: () => setShowFabDots(false) },
+            ].map((item, i) => (
+              <div key={i} onClick={item.onClick} style={{ height:30, padding:"0 20px", fontSize:14, color:item.color, cursor:"pointer", display:"flex", alignItems:"center" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#FFF8F7"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                {item.label}
+              </div>
+            ))}
+            </div>
+          </div>
+        )}
+        {showAddToBatch && batches.length > 0 && (
+          <div ref={addToBatchDropRef} style={{ position:"fixed", bottom: addToBatchPos.bottom, left: addToBatchPos.left, transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", zIndex:300, width:300, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+            <div style={{ padding:"12px 16px 8px", fontSize:12, fontWeight:500, color:"#8C8C8B", letterSpacing:"0.15px" }}>Add {collectChecked.size} request{collectChecked.size !== 1 ? "s" : ""} to batch</div>
+            {batches.map((batch, bi) => {
+              const ICON_BG    = { Draft: "#F5F5F5", Scheduled: "#EEF2FF", Sent: "#F1F8F0" };
+              const ICON_COLOR = { Draft: "#545453",  Scheduled: "#4C71DF", Sent: "#05A105"  };
+              const batchCount = Object.values(rowBatchMap).filter(id => id === batch.id).length;
+              const icon = batch.status === "Scheduled"
+                ? <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M17.5 9.58V7.33C17.5 5.93 17.5 5.23 17.23 4.7C16.99 4.23 16.61 3.84 16.14 3.61C15.6 3.33 14.9 3.33 13.5 3.33H6.5C5.1 3.33 4.4 3.33 3.87 3.61C3.39 3.84 3.01 4.23 2.77 4.7C2.5 5.23 2.5 5.93 2.5 7.33V14.33C2.5 15.73 2.5 16.43 2.77 16.97C3.01 17.44 3.39 17.82 3.87 18.06C4.4 18.33 5.1 18.33 6.5 18.33H10.42M17.5 8.33H2.5M13.33 1.67v3.33M6.67 1.67v3.33M15 17.5v-5M12.5 15H17.5" stroke={ICON_COLOR.Scheduled} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                : batch.status === "Sent"
+                ? <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C11.998 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke={ICON_COLOR.Sent} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 22 22" fill="none"><path d="M16.36 1.82L20 5.45M1.82 20l1.16-4.25c.08-.28.12-.42.18-.55.05-.11.12-.22.2-.32.08-.11.19-.22.39-.42L13.12 5.06c.18-.18.27-.27.37-.3.09-.03.19-.03.28 0 .1.03.19.12.37.3l2.61 2.61c.18.18.27.27.3.37.03.09.03.19 0 .28-.03.1-.12.19-.3.37L7.36 18.09c-.2.2-.31.31-.43.39-.1.07-.21.13-.33.18-.13.06-.27.1-.55.17L1.82 20Z" stroke={ICON_COLOR.Draft} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+              return (
+                <div key={batch.id} onClick={() => {
+                  const sorted = [...MISSING_TABLE_DATA].sort((a,b)=>(b.dot?1:0)-(a.dot?1:0));
+                  const tRows = (isMissing ? sorted : RECURRING_DOCS.map(r=>({ref:r.account,account:r.account,from:r.contact}))).filter(r=>{
+                    return ((r.ref||"").toLowerCase().includes(search.toLowerCase())||(r.from||"").toLowerCase().includes(search.toLowerCase())) && (selectedBankAccounts.size===0||selectedBankAccounts.has(r.account));
+                  });
+                  const newMap = { ...rowBatchMap };
+                  const newFromMap = { ...rowFromMap };
+                  const batchAssignees = Object.entries(rowFromMap).find(([ref]) => rowBatchMap[ref] === batch.id)?.[1] || "";
+                  [...collectChecked].forEach(ref => { newMap[ref] = batch.id; if (batchAssignees) newFromMap[ref] = batchAssignees; });
+                  setRowBatchMap(newMap);
+                  setRowFromMap(newFromMap);
+                  setBatches(bs => bs.map(b => b.id === batch.id ? { ...b, requestCount: Object.values(newMap).filter(id => id === batch.id).length } : b));
+                  setCollectChecked(new Set());
+                  setShowAddToBatch(false);
+                  showToast(`${[...collectChecked].length} request${[...collectChecked].length !== 1 ? "s" : ""} added to "${batch.title}"`);
+                }}
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", cursor:"pointer", borderTop: bi === 0 ? "1px solid #F0F0F0" : "none" }}
+                  onMouseEnter={e => e.currentTarget.style.background="#FAFAFA"}
+                  onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                  <div style={{ width:36, height:36, background: ICON_BG[batch.status]||"#F5F5F5", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    {icon}
+                  </div>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{batch.title}</div>
+                    <div style={{ fontSize:12, color:"#8C8C8B", marginTop:2 }}>{batch.status} · {batchCount} request{batchCount !== 1 ? "s" : ""}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ height:8 }} />
+          </div>
+        )}
+        {showPreviewPanel && selectedBatchId !== null && (() => {
+          const previewBatch = batches.find(b => b.id === selectedBatchId);
+          const previewAssignees = previewBatch?.assignees || [];
+          const activeAssigneeName = previewAssignees[previewAssigneeIdx] || "";
+          const activeAssigneeFirstName = activeAssigneeName.split(" ")[0] || activeAssigneeName;
+          const previewRows = MISSING_TABLE_DATA.filter(r => rowBatchMap[r.ref] === selectedBatchId).slice(0, 3);
+          const batchRequestCount = Object.values(rowBatchMap).filter(id => id === selectedBatchId).length;
+          const SHORT_MONTHS_P = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const STATUS_CFG_P = { Draft: { color: "#7C7C7C", bg: "#F5F5F5" }, Scheduled: { color: "#4C71DF", bg: "#EEF2FF" }, Sent: { color: "#05A105", bg: "#F1F8F0" } };
+          const scfg = STATUS_CFG_P[previewBatch?.status] || STATUS_CFG_P.Draft;
+          return (<>
+            {/* Grey full-screen backdrop (email preview area) */}
+            <div style={{ position:"fixed", inset:0, background:"#F5F5F5", zIndex:500, overflowY:"auto", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"48px 648px 48px 48px", boxSizing:"border-box", transform: previewVisible ? "translateX(0)" : "translateX(-100%)", transition:"transform 0.38s cubic-bezier(0.4,0,0.2,1)" }}>
+              {/* Email card */}
+              <div style={{ width:"100%", maxWidth:600, background:"#FFFFFF", borderRadius:12, border:"1px solid #ECECEC", overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+                {/* Email top header */}
+                <div style={{ background:"#FFFFFF", padding:"0 32px", minHeight:110, display:"flex", alignItems:"center", borderBottom:"1px solid #ECECEC" }}>
+                  <svg width="131" height="28" viewBox="0 0 98 21" fill="none"><g><path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/><path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/><path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/><path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/><path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/><path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/><path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/></g></svg>
+                </div>
+                {/* Email body */}
+                <div style={{ padding:"32px 32px 24px" }}>
+                  <div style={{ fontSize:26, fontWeight:700, color:"#1F2024", marginBottom:20 }}>Hi {activeAssigneeFirstName || "there"},</div>
+                  <p style={{ fontSize:14, color:"#000000", lineHeight:"22px", margin:"0 0 12px" }}>Just a quick reminder to upload the documents below to help ensure a smooth month-end.</p>
+                  <p style={{ fontSize:14, color:"#000000", lineHeight:"22px", margin:"0 0 24px" }}>Thanks so much for taking care of it.</p>
+                  {/* Sender card */}
+                  <div style={{ border:"1px solid #ECECEC", borderRadius:8, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
+                    <div style={{ width:36, height:36, background:"#ACD394", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <svg width="16" height="15" viewBox="0 0 22 20" fill="none"><path d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z" fill="#003324"/><path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#003324"/><path d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z" fill="#003324"/></svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:600, color:"#1F2024" }}>Laura Bennett</div>
+                      <div style={{ fontSize:14, color:"#8C8C8B" }}>laura.bennett@mimohq.com</div>
+                    </div>
+                  </div>
+                  {/* CTA */}
+                  <button style={{ width:"100%", height:48, background:"#05A105", border:"none", borderRadius:8, color:"white", fontSize:14, fontWeight:600, cursor:"pointer", marginBottom:20, fontFamily:"'Inter',sans-serif" }}>Sign in to view all requests</button>
+                  {/* Forward address */}
+                  <p style={{ fontSize:13, color:"#000000", lineHeight:"20px", textAlign:"center", margin:"0 0 24px" }}>You can reply to this email with attachments, or forward attachments to<br/><span style={{ fontWeight:600, color:"#1F2024" }}>associatetesting@dev.platform.mimohq.com</span></p>
+                  {/* Divider */}
+                  <div style={{ height:1, background:"#ECECEC", marginBottom:20 }} />
+                  {/* Transactions */}
+                  {previewRows.map((r, i) => (
+                    <div key={i}>
+                      {i > 0 && <div style={{ height:1, background:"#F0F0F0", margin:"12px 0" }}/>}
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <div>
+                          <div style={{ fontSize:12, color:"#8C8C8B", marginBottom:2 }}>{r.date}</div>
+                          <div style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{r.ref}</div>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                          <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{r.amount}</span>
+                          <button style={{ height:30, padding:"0 12px", border:"1px solid #ECECEC", borderRadius:6, background:"#FFFFFF", fontSize:13, fontWeight:500, color:"#1F2024", cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>Upload</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Email footer */}
+                <div style={{ background:"#FFFFFF", padding:"0 32px", minHeight:160, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", borderTop:"1px solid #ECECEC" }}>
+                  <div style={{ marginBottom:8, display:"flex", justifyContent:"center" }}><svg width="93" height="20" viewBox="0 0 98 21" fill="none"><g><path d="M21.2948 0.316406H16.2686V19.8237H21.2948V0.316406Z" fill="#1F2024"/><path d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z" fill="#1F2024"/><path d="M5.56185 10.7422H0.535645V19.8197H5.56185V10.7422Z" fill="#1F2024"/><path d="M32.0013 19.8173V0.316406H36.4094L41.4536 12.2309C41.7614 12.9701 42.0807 13.7995 42.4143 14.7189H42.4684C42.7929 13.7995 43.1084 12.9701 43.4162 12.2309L48.4449 0.316406H52.826V19.816H49.4314V5.84742H49.3773C49.215 6.2711 49.0373 6.73857 48.8429 7.24724C48.6497 7.7572 48.4437 8.2736 48.2273 8.79515L43.5488 19.816H41.29L36.5974 8.78099C36.381 8.25815 36.1763 7.74045 35.9818 7.22534C35.7886 6.71151 35.6109 6.24277 35.4474 5.81909H35.3933V19.8147H32L32.0013 19.8173Z" fill="#1F2024"/><path d="M54.7979 3.35338V0H58.3135V3.35338H54.7979ZM54.8519 19.8151V5.38678H58.2594V19.8163H54.8519V19.8151Z" fill="#1F2024"/><path d="M60.729 19.8153V5.38573H64.1365V7.31998H64.1777C64.4018 6.85123 64.7198 6.44815 65.1306 6.10946C65.5414 5.77207 66.0231 5.51193 66.5781 5.33293C67.1318 5.15264 67.7384 5.0625 68.3964 5.0625C69.4151 5.0625 70.2702 5.26726 70.9591 5.67677C71.6481 6.08757 72.1696 6.67995 72.5212 7.45519H72.5611C72.9938 6.67995 73.5888 6.08628 74.3473 5.67677C75.1045 5.26726 76.0008 5.0625 77.0387 5.0625C78.0767 5.0625 78.9227 5.26726 79.6619 5.67677C80.4011 6.08757 80.9677 6.69283 81.3592 7.49511C81.7507 8.2974 81.9477 9.27611 81.9477 10.43V19.814H78.5532V10.9296C78.5532 10.0282 78.3188 9.3199 77.85 8.80607C77.3813 8.29225 76.7271 8.03598 75.8887 8.03598C75.2938 8.03598 74.7838 8.16862 74.3614 8.43519C73.9378 8.70048 73.6107 9.07522 73.3801 9.55814C73.1509 10.0411 73.0363 10.6051 73.0363 11.2554V19.8153H69.6559V10.9039C69.6559 10.0114 69.4241 9.30831 68.9592 8.79448C68.4943 8.28066 67.8478 8.02439 67.0185 8.02439C66.4403 8.02439 65.9342 8.1609 65.4964 8.43648C65.0598 8.71207 64.7237 9.09196 64.4893 9.57874C64.2537 10.0655 64.1378 10.6244 64.1378 11.2554V19.8153H60.7303H60.729Z" fill="#1F2024"/><path d="M90.6726 20.1284C89.2843 20.1284 88.0403 19.8193 86.9393 19.2012C85.8395 18.5844 84.9806 17.7048 84.3624 16.5651C83.7443 15.4254 83.4365 14.1106 83.4365 12.6232C83.4365 11.1358 83.7404 9.8223 84.3483 8.68133C84.9574 7.54036 85.8138 6.65566 86.9174 6.02464C88.021 5.39363 89.2766 5.07812 90.6829 5.07812C92.0891 5.07812 93.3408 5.39106 94.4355 6.0182C95.5301 6.64535 96.3826 7.52619 96.9917 8.66202C97.5995 9.79784 97.9034 11.1191 97.9034 12.6245C97.9034 14.1299 97.5918 15.437 96.9711 16.5728C96.3491 17.7087 95.4901 18.5856 94.3942 19.2025C93.2996 19.8206 92.0569 20.1297 90.6687 20.1297L90.6726 20.1284ZM90.6726 17.3159C91.4014 17.3159 92.0556 17.1317 92.6338 16.7621C93.2108 16.3926 93.6615 15.8556 93.986 15.1524C94.3105 14.4493 94.4728 13.6058 94.4728 12.6232C94.4728 11.6406 94.3118 10.7959 93.9925 10.0876C93.6731 9.37931 93.2236 8.83844 92.648 8.46499C92.0698 8.09024 91.4117 7.90223 90.6738 7.90223C89.9359 7.90223 89.265 8.09024 88.6932 8.46499C88.1202 8.83844 87.672 9.37931 87.3475 10.0876C87.023 10.7959 86.8607 11.6406 86.8607 12.6232C86.8607 13.6058 87.0256 14.4467 87.354 15.1447C87.6823 15.844 88.1343 16.3797 88.7061 16.7544C89.2792 17.1279 89.9347 17.3159 90.6751 17.3159H90.6726Z" fill="#1F2024"/></g></svg></div>
+                  <div style={{ fontSize:12, color:"#000000", marginBottom:4 }}>Automated accounting powered by Mimo</div>
+                  <div style={{ fontSize:11, color:"#7C7C7C" }}>Mindspace · 9 Appold Street, London, England, EC2A 2AP</div>
+                  <div style={{ fontSize:11, color:"#7C7C7C" }}>© 2025 Omim Technology Ltd. All rights reserved.</div>
+                </div>
+              </div>
+            </div>
+            {/* Right sidebar — same pattern as BatchDraftSidebar */}
+            <div style={{ position:"fixed", top:0, right:0, bottom:0, width:600, background:"#FFFFFF", display:"flex", flexDirection:"column", zIndex:501, fontFamily:"'Inter',sans-serif", transform: previewVisible ? "translateX(0)" : "translateX(100%)", transition:"transform 0.38s cubic-bezier(0.4,0,0.2,1)" }}>
+              {/* Header */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:112, borderBottom:"1px solid #ECECEC", flexShrink:0 }}>
+                <span style={{ fontSize:24, fontWeight:500, color:"#1F2024" }}>Batch email preview</span>
+                <button onClick={() => closePreview()} style={{ border:"none", background:"none", cursor:"pointer", display:"flex", padding:0, flexShrink:0 }}>
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              </div>
+              {/* Scrollable body */}
+              <div style={{ flex:1, overflowY:"auto", padding:"20px 28px", display:"flex", flexDirection:"column", gap:16 }}>
+                {/* Batch card — matches table batch widget exactly */}
+                {(() => {
+                  const batchRows = MISSING_TABLE_DATA.filter(r => rowBatchMap[r.ref] === selectedBatchId);
+                  const accountCount = new Set(batchRows.map(r => r.account)).size;
+                  const iconBg = previewBatch?.status === "Scheduled" ? "#EEF2FF" : previewBatch?.status === "Sent" ? "#F1F8F0" : "#F5F5F5";
+                  const subtitle = previewBatch?.status === "Scheduled" && previewBatch?.scheduledDate
+                    ? `Will be sent: ${previewBatch.scheduledDate.d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][previewBatch.scheduledDate.m]}, 09:00`
+                    : previewBatch?.status === "Sent" && previewBatch?.sentDate
+                    ? `Sent ${formatSentDate(previewBatch.sentDate)}`
+                    : previewBatch?.status;
+                  return (
+                    <div style={{ background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:8, padding:16 }}>
+                      <div style={{ display:"flex", alignItems:"center", marginBottom:16 }}>
+                        <div style={{ width:40, height:40, background:iconBg, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginRight:12 }}>
+                          {previewBatch?.status === "Scheduled"
+                            ? <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M19.0909 9.09109H2.72729M19.0909 11.3638V8.00018C19.0909 6.47276 19.0909 5.70905 18.7937 5.12566C18.5322 4.61249 18.115 4.19527 17.6018 3.9338C17.0184 3.63654 16.2547 3.63654 14.7273 3.63654H7.09093C5.56352 3.63654 4.79981 3.63654 4.21641 3.9338C3.70324 4.19527 3.28602 4.61249 3.02455 5.12566C2.72729 5.70905 2.72729 6.47276 2.72729 8.00018V15.6365C2.72729 17.164 2.72729 17.9277 3.02455 18.5111C3.28602 19.0242 3.70324 19.4414 4.21641 19.7029C4.79981 20.0002 5.56352 20.0002 7.09093 20.0002H10.9091M14.5455 1.81836V5.45472M7.27275 1.81836V5.45472M13.1818 17.2729L15 19.0911L19.0909 15.0002" stroke="#4C71DF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : previewBatch?.status === "Sent"
+                            ? <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.74952 11.2501L17.4995 2.50014M8.85584 11.5235L11.0459 17.1552C11.2389 17.6513 11.3353 17.8994 11.4743 17.9718C11.5948 18.0346 11.7384 18.0347 11.859 17.972C11.998 17.8998 12.0948 17.6518 12.2883 17.1559L17.7803 3.08281C17.955 2.63516 18.0423 2.41133 17.9945 2.26831C17.953 2.1441 17.8556 2.04663 17.7314 2.00514C17.5883 1.95736 17.3645 2.0447 16.9169 2.21939L2.84373 7.71134C2.34784 7.90486 2.09989 8.00163 2.02763 8.14071C1.96499 8.26129 1.96508 8.40483 2.02786 8.52533C2.10028 8.66433 2.34834 8.7608 2.84446 8.95373L8.47613 11.1438C8.57684 11.183 8.62719 11.2026 8.66959 11.2328C8.70717 11.2596 8.74004 11.2925 8.76685 11.3301C8.79709 11.3725 8.81667 11.4228 8.85584 11.5235Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M16.3636 1.81836L19.9999 5.45472M1.81812 20.0002L2.97848 15.7455C3.05418 15.4679 3.09204 15.3291 3.15014 15.1997C3.20174 15.0848 3.26513 14.9755 3.33931 14.8737C3.42286 14.7591 3.52458 14.6573 3.72803 14.4539L13.122 5.05989C13.302 4.87988 13.392 4.78988 13.4958 4.75616C13.5871 4.7265 13.6855 4.7265 13.7768 4.75616C13.8805 4.78988 13.9705 4.87988 14.1506 5.05989L16.7584 7.66774C16.9384 7.84774 17.0284 7.93775 17.0621 8.04153C17.0918 8.13283 17.0918 8.23117 17.0621 8.32246C17.0284 8.42624 16.9384 8.51625 16.7584 8.69626L7.36439 18.0903C7.16094 18.2937 7.05922 18.3954 6.94455 18.479C6.84274 18.5532 6.7335 18.6166 6.61858 18.6681C6.48916 18.7263 6.35037 18.7641 6.07279 18.8398L1.81812 20.0002Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          }
+                        </div>
+                        <div>
+                          <p style={{ fontSize:14, fontWeight:500, color:"#1F2024", margin:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:440 }}>{previewBatch?.title}</p>
+                          <span style={{ fontSize:14, color:"#7C7C7C", marginTop:4, display:"block" }}>{subtitle}</span>
+                        </div>
+                      </div>
+                      <div style={{ border:"1px solid #ECECEC", borderRadius:8, padding:"0 12px", height:42, display:"flex", alignItems:"center" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, flex:1 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6666 7.91602V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H11.6666M11.6666 9.16602H6.66659M8.3335 12.4993H6.66659M13.3333 5.83268H6.66659" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <span style={{ fontSize:14, color:"#1F2024" }}>{batchRequestCount} request{batchRequestCount !== 1 ? "s" : ""}</span>
+                        </div>
+                        <div style={{ width:1, height:20, background:"#E9E9EB", flexShrink:0, margin:"0 12px" }}/>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, flex:1 }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 8.99904V16.999M9.5 8.99904V16.999M14.5 8.99904V16.999M19 8.99904V16.999M3 18.599L3 19.399C3 19.9591 3 20.2391 3.10899 20.453C3.20487 20.6412 3.35785 20.7942 3.54601 20.89C3.75992 20.999 4.03995 20.999 4.6 20.999H19.4C19.9601 20.999 20.2401 20.999 20.454 20.8901C20.6422 20.7942 20.7951 20.6412 20.891 20.453C21 20.2391 21 19.9591 21 19.399V18.599C21 18.039 21 17.759 20.891 17.5451C20.7951 17.3569 20.6422 17.2039 20.454 17.108C20.2401 16.999 19.9601 16.999 19.4 16.999H4.6C4.03995 16.999 3.75992 16.999 3.54601 17.108C3.35785 17.2039 3.20487 17.3569 3.10899 17.5451C3 17.759 3 18.039 3 18.599ZM11.6529 3.07617L4.25291 4.72062C3.80585 4.81997 3.58232 4.86964 3.41546 4.98985C3.26829 5.09588 3.15273 5.23994 3.08115 5.40661C3 5.59557 3 5.82455 3 6.28252L3 7.39904C3 7.9591 3 8.23912 3.10899 8.45303C3.20487 8.6412 3.35785 8.79418 3.54601 8.89005C3.75992 8.99904 4.03995 8.99904 4.6 8.99904H19.4C19.9601 8.99904 20.2401 8.99904 20.454 8.89005C20.6422 8.79418 20.7951 8.6412 20.891 8.45303C21 8.23912 21 7.9591 21 7.39904V6.28252C21 5.82455 21 5.59557 20.9188 5.40661C20.8473 5.23994 20.7317 5.09588 20.5845 4.98985C20.4177 4.86964 20.1942 4.81997 19.7471 4.72062L12.3471 3.07617C12.2176 3.04739 12.1528 3.033 12.0874 3.02726C12.0292 3.02216 11.9708 3.02216 11.9126 3.02726C11.8472 3.033 11.7824 3.04739 11.6529 3.07617Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <span style={{ fontSize:14, color:"#1F2024" }}>{accountCount} account{accountCount !== 1 ? "s" : ""}</span>
+                        </div>
+                        <div style={{ width:1, height:20, background:"#E9E9EB", flexShrink:0, margin:"0 12px" }}/>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, flex:1 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.3333 15L15 16.6667L18.3333 13.3333M9.99996 12.5H6.66663C5.11349 12.5 4.33692 12.5 3.72435 12.7537C2.90759 13.092 2.25867 13.741 1.92036 14.5577C1.66663 15.1703 1.66663 15.9469 1.66663 17.5M12.9166 2.7423C14.1382 3.23679 15 4.43443 15 5.83333C15 7.23224 14.1382 8.42988 12.9166 8.92437M11.25 5.83333C11.25 7.67428 9.75757 9.16667 7.91663 9.16667C6.07568 9.16667 4.58329 7.67428 4.58329 5.83333C4.58329 3.99238 6.07568 2.5 7.91663 2.5C9.75757 2.5 11.25 3.99238 11.25 5.83333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <span style={{ fontSize:14, color:"#1F2024" }}>{previewAssignees.length} assignee{previewAssignees.length !== 1 ? "s" : ""}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Assignee section */}
+                <div>
+                  <div style={{ fontSize:16, fontWeight:500, color:"#000000", marginBottom:12, marginTop:16 }}>Preview email for assigned client members</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {previewAssignees.map((name, idx) => {
+                      const isActive = idx === previewAssigneeIdx;
+                      const initial = name.charAt(0).toUpperCase();
+                      return (
+                        <div key={idx} onClick={() => setPreviewAssigneeIdx(idx)}
+                          style={{ border:`${isActive ? "1.5px" : "1px"} solid ${isActive ? "#05A105" : "#ECECEC"}`, borderRadius:10, padding:"0 16px", height:78, display:"flex", alignItems:"center", gap:12, cursor:"pointer", background:"#FFFFFF", transition:"border-color 0.15s", boxSizing:"border-box" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor="#DBDBDB"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor="#ECECEC"; }}>
+                          <div style={{ width:44, height:44, background:"#EEF2FF", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:600, color:"#4C71DF", flexShrink:0 }}>{initial}</div>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{name}</div>
+                            <div style={{ fontSize:12, color:"#8C8C8B", marginTop:2 }}>{batchRequestCount} request{batchRequestCount !== 1 ? "s" : ""}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              {/* Footer */}
+              <div style={{ borderTop:"1px solid #ECECEC", padding:"16px 28px", display:"flex", gap:12, flexShrink:0 }}>
+                <button onClick={() => closePreview()} style={{ flex:1, height:40, border:"1px solid #DBDBDB", borderRadius:8, background:"none", fontSize:14, fontWeight:500, color:"#2A2A2A", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>Close</button>
+                <button onClick={() => { if(isSending) return; setIsSending(true); setTimeout(() => { const now = new Date(); setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, status:"Sent", sentDate:now } : b)); const batchRefs2 = Object.entries(rowBatchMap).filter(([,id]) => id === selectedBatchId).map(([ref]) => ref); const shuffled2 = batchRefs2.sort(() => Math.random() - 0.5); const count2 = Math.max(1, Math.floor(shuffled2.length * (0.3 + Math.random() * 0.5))); const toReceive2 = shuffled2.slice(0, count2); if(toReceive2.length > 0) { setReceivedRefs(prev => new Set([...prev, ...toReceive2])); setRowStatusMap(prev => { const n = { ...prev }; toReceive2.forEach(ref => { n[ref] = Math.random() < 0.5 ? "Review" : "Ready"; }); return n; }); } if(selectedBatchId===1) setReceivedRefs(prev => new Set([...prev,"Highland Energy 455GBP","Apex Consulting Ltd","Greenwood Partners"])); setIsSending(false); closePreview(); setTimeout(() => { showToast("Notification emails sent successfully"); setSelectedBatchId(null); setCollectChecked(new Set()); }, 480); }, 2000); }} style={{ flex:2, height:40, background:"#05A105", border:"none", borderRadius:8, fontSize:14, fontWeight:500, color:"white", cursor: isSending ? "default" : "pointer", fontFamily:"'Inter',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }} onMouseEnter={e=>{ if(!isSending) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+                  <span style={{ display:"flex", alignItems:"center", gap:8, visibility: isSending ? "hidden" : "visible" }}>Send batch now</span>
+                  {isSending && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="white" strokeWidth="3.5" strokeLinecap="round"/></svg>}
+                </button>
+              </div>
+            </div>
+          </>);
+        })()}
+        {/* FAB: "Update with selected" — shown when a batch is selected and the user unchecks batch rows */}
+        {selectedBatchId !== null && batchUncheckedRefs.size > 0 && (
+          <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:16, padding:"12px 16px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
+            {/* Left: close + count */}
+            <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+              <button onClick={() => setBatchUncheckedRefs(new Set())} style={{ width:24, height:24, minWidth:24, minHeight:24, background:"#F5F5F5", border:"none", borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap" }}>{(() => { const refs = [...batchUncheckedRefs]; const t = refs.reduce((a, ref) => { const row = MISSING_TABLE_DATA.find(r => r.ref === ref); return row ? a + parseFloat(row.amount.replace(/[£,]/g, "")) : a; }, 0); const s = (t < 0 ? "-" : "") + "£" + Math.abs(t).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return `${refs.length} request${refs.length !== 1 ? "s" : ""} (${s})`; })()}</span>
+            </div>
+            {/* Update with selected (green) */}
+            <button onClick={() => {
+              const newMap = { ...rowBatchMap };
+              [...batchUncheckedRefs].forEach(ref => { delete newMap[ref]; });
+              setRowBatchMap(newMap);
+              setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, requestCount: Object.values(newMap).filter(v => v === selectedBatchId).length } : b));
+              setBatchUncheckedRefs(new Set());
+              showToast("Batch updated successfully");
+            }} style={{ height:40, background:"#05A105", border:"none", borderRadius:8, padding:"0 16px", display:"flex", alignItems:"center", cursor:"pointer", color:"white", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+              Update with selected
+            </button>
+            {/* Dots */}
+            <button style={{ border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:6, padding:0, flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="5" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="15" r="1.5" fill="#2A2A2A"/></svg>
+            </button>
+          </div>
+        )}
+        {/* FAB: normal selection — shown when no batch is active and rows are checked */}
+        {collectChecked.size > 0 && selectedBatchId === null && (
+          <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:16, padding:"12px 16px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
+            {/* Left: close + count */}
+            <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+              <button onClick={() => setCollectChecked(new Set())} style={{ width:24, height:24, minWidth:24, minHeight:24, background:"#F5F5F5", border:"none", borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap" }}>{(() => { const refs = [...collectChecked]; const t = refs.reduce((a, ref) => { const row = MISSING_TABLE_DATA.find(r => r.ref === ref); return row ? a + parseFloat(row.amount.replace(/[£,]/g, "")) : a; }, 0); const s = (t < 0 ? "-" : "") + "£" + Math.abs(t).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return `${refs.length} request${refs.length !== 1 ? "s" : ""} (${s})`; })()}</span>
+            </div>
+            {/* Add requests to batch (green) — only when batches exist */}
+            {batches.length > 0 && <button ref={addToBatchBtnRef} onClick={() => setShowAddToBatch(v => !v)} style={{ height:40, background:"#05A105", border:"none", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"white", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6668 8.75033V5.66699C16.6668 4.26686 16.6668 3.5668 16.3943 3.03202C16.1547 2.56161 15.7722 2.17916 15.3018 1.93948C14.767 1.66699 14.067 1.66699 12.6668 1.66699H7.3335C5.93336 1.66699 5.2333 1.66699 4.69852 1.93948C4.22811 2.17916 3.84566 2.56161 3.60598 3.03202C3.3335 3.5668 3.3335 4.26686 3.3335 5.66699V14.3337C3.3335 15.7338 3.3335 16.4339 3.60598 16.9686C3.84542 17.439 4.22811 17.8215 4.69852 18.0612C5.2333 18.3337 5.93336 18.3337 7.3335 18.3337H10.0002M11.6668 9.16699H6.66683M8.3335 12.5003H6.66683M13.3335 5.83366H6.66683M15.0002 17.5003V12.5003M12.5002 15.0003H17.5002" stroke="white" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Add requests to batch
+            </button>}
+            {/* Create batch (bordered) */}
+            <button ref={createBatchBtnRef} onClick={() => setShowBatchPanel(v => !v)} style={{ height:40, background:"none", border:"1px solid #DBDBDB", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4.167v11.666M4.167 10h11.666" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Create batch
+            </button>
+            {/* Dots */}
+            <button style={{ border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:6, padding:0, flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="5" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="15" r="1.5" fill="#2A2A2A"/></svg>
+            </button>
+          </div>
+        )}
+        {showCreateBatchSidebar && (<>
+          <div onClick={closeCreateBatchSidebar} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:500, opacity: createBatchSidebarVisible ? 1 : 0, transition:"opacity 0.32s cubic-bezier(0.4,0,0.2,1)" }} />
+          <div style={{ position:"fixed", top:0, right:0, bottom:0, width:600, background:"#FFFFFF", display:"flex", flexDirection:"column", zIndex:501, fontFamily:"'Inter',sans-serif", transform: createBatchSidebarVisible ? "translateX(0)" : "translateX(100%)", transition:"transform 0.32s cubic-bezier(0.4,0,0.2,1)" }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:112, borderBottom:"1px solid #ECECEC", flexShrink:0 }}>
+              <span style={{ fontSize:24, fontWeight:500, color:"#1F2024" }}>Create batch</span>
+              <button onClick={closeCreateBatchSidebar} style={{ border:"none", background:"none", cursor:"pointer", display:"flex", padding:0, flexShrink:0 }}>
+                <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            {/* Scrollable body */}
+            <div style={{ flex:1, overflowY:"auto", padding:"28px" }}>
+              {cbStep === 2 && (() => {
+                const selectedAccts = [...cbSelectedAccounts];
+                return (<>
+                  {/* Title */}
+                  <div style={{ marginBottom:24 }}>
+                    <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Title</div>
+                    <input value={cbBatchTitle} onChange={e => setCbBatchTitle(e.target.value)} style={{ width:"100%", height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 14px", fontSize:14, color:"#1F2024", outline:"none", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }} onFocus={e=>e.target.style.borderColor="#05A105"} onBlur={e=>e.target.style.borderColor="#DBDBDB"}/>
+                  </div>
+                  {/* One account results card per selected account */}
+                  {selectedAccts.map(acct => {
+                    const allRows = MISSING_TABLE_DATA.filter(r => r.account === acct && !archivedRefs.has(r.ref) && !excludedRefs.has(r.ref) && !receivedRefs.has(r.ref) && rowBatchMap[r.ref] == null);
+                    const showAllThisAcct = cbShowAll.has(acct);
+                    const totalCount = allRows.length;
+                    return (
+                      <div key={acct} style={{ border:"1px solid #ECECEC", borderRadius:8, marginBottom:16, overflow:"hidden" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderBottom:"1px solid #ECECEC" }}>
+                          <div style={{ width:36, height:36, background:"#F5F5F5", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 8.99904V16.999M9.5 8.99904V16.999M14.5 8.99904V16.999M19 8.99904V16.999M3 18.599L3 19.399C3 19.9591 3 20.2391 3.10899 20.453C3.20487 20.6412 3.35785 20.7942 3.54601 20.89C3.75992 20.999 4.03995 20.999 4.6 20.999H19.4C19.9601 20.999 20.2401 20.999 20.454 20.8901C20.6422 20.7942 20.7951 20.6412 20.891 20.453C21 20.2391 21 19.9591 21 19.399V18.599C21 18.039 21 17.759 20.891 17.5451C20.7951 17.3569 20.6422 17.2039 20.454 17.108C20.2401 16.999 19.9601 16.999 19.4 16.999H4.6C4.03995 16.999 3.75992 16.999 3.54601 17.108C3.35785 17.2039 3.20487 17.3569 3.10899 17.5451C3 17.759 3 18.039 3 18.599ZM11.6529 3.07617L4.25291 4.72062C3.80585 4.81997 3.58232 4.86964 3.41546 4.98985C3.26829 5.09588 3.15273 5.23994 3.08115 5.40661C3 5.59557 3 5.82455 3 6.28252L3 7.39904C3 7.9591 3 8.23912 3.10899 8.45303C3.20487 8.6412 3.35785 8.79418 3.54601 8.89005C3.75992 8.99904 4.03995 8.99904 4.6 8.99904H19.4C19.9601 8.99904 20.2401 8.99904 20.454 8.89005C20.6422 8.79418 20.7951 8.6412 20.891 8.45303C21 8.23912 21 7.9591 21 7.39904V6.28252C21 5.82455 21 5.59557 20.9188 5.40661C20.8473 5.23994 20.7317 5.09588 20.5845 4.98985C20.4177 4.86964 20.1942 4.81997 19.7471 4.72062L12.3471 3.07617C12.2176 3.04739 12.1528 3.033 12.0874 3.02726C12.0292 3.02216 11.9708 3.02216 11.9126 3.02726C11.8472 3.033 11.7824 3.04739 11.6529 3.07617Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </div>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{acct}</div>
+                            <div style={{ fontSize:13, color:"#8C8C8B", marginTop:2 }}>{totalCount} requests found</div>
+                          </div>
+                        </div>
+                        <div style={{ maxHeight: showAllThisAcct ? allRows.length * 56 + 4 : 5 * 56, overflow:"hidden", transition:"max-height 0.4s cubic-bezier(0.4,0,0.2,1)" }}>
+                          {allRows.map((r, i) => {
+                            const checked = cbCheckedRows.has(r.ref);
+                            return (
+                              <div key={r.ref} style={{ display:"flex", alignItems:"center", height:56, borderTop: i > 0 ? "1px solid #F0F0F0" : "none", paddingLeft:16, cursor:"pointer" }}
+                                onClick={() => { const n = new Set(cbCheckedRows); checked ? n.delete(r.ref) : n.add(r.ref); setCbCheckedRows(n); }}>
+                                <input type="checkbox" className="mimo-cb" checked={checked} onChange={()=>{}} onClick={e=>e.stopPropagation()} style={{ pointerEvents:"none", marginRight:10 }}/>
+                                <span style={{ flex:"1 1 0", fontSize:14, color:"#1F2024", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", paddingRight:12 }}>{r.ref}</span>
+                                <div style={{ width:1, alignSelf:"stretch", background:"#E9E9EB", flexShrink:0 }}/>
+                                <span style={{ width:112, fontSize:14, color:"#8C8C8B", paddingLeft:12, paddingRight:8, flexShrink:0, whiteSpace:"nowrap" }}>{r.date}</span>
+                                <div style={{ width:1, alignSelf:"stretch", background:"#E9E9EB", flexShrink:0 }}/>
+                                <span style={{ minWidth:100, fontSize:14, fontWeight:500, color:"#1F2024", textAlign:"right", paddingRight:16, paddingLeft:8, flexShrink:0, whiteSpace:"nowrap" }}>{r.amount}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {totalCount > 5 && (
+                          <div style={{ height:60, borderTop:"1px solid #F0F0F0", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <button onClick={() => { const n = new Set(cbShowAll); showAllThisAcct ? n.delete(acct) : n.add(acct); setCbShowAll(n); }} style={{ border:"none", background:"none", cursor:"pointer", fontSize:14, color:"#000000", fontFamily:"'Inter',sans-serif", display:"inline-flex", alignItems:"center", gap:6 }}>
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: showAllThisAcct ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }}><path d="M7 2v10M2 7l5 5 5-5" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              {showAllThisAcct ? "Show less" : `View all ${totalCount} requests`}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div style={{ height:1, background:"#ECECEC", margin:"0 0 28px" }} />
+                  {/* Assignees */}
+                  <div style={{ marginBottom:28 }}>
+                    <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Assignees</div>
+                    <div style={{ fontSize:13, color:"#8C8C8B", marginBottom:10 }}>The client members that will receive the email notification</div>
+                    <div style={{ position:"relative" }}>
+                    <button ref={cbAssigneeBtnRef} onClick={() => setCbAssigneeDropOpen(v => !v)} style={{ width:"100%", height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 12px 0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
+                      <span style={{ fontSize:14, color: cbStep2Assignees.size > 0 ? "#1F2024" : "#A5A5A5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {cbStep2Assignees.size > 0 ? [...cbStep2Assignees].join(", ") : `Selected (0)`}
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: cbAssigneeDropOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    {cbAssigneeDropOpen && (
+                      <div ref={cbAssigneeDropRef} style={{ position:"absolute", bottom:"calc(100% + 4px)", left:0, right:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:50, paddingTop:12 }}>
+                        <div style={{ margin:"0 12px 10px", display:"flex", alignItems:"center", gap:10, border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 14px" }}>
+                          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <input value={cbAssigneeSearch} onChange={e => setCbAssigneeSearch(e.target.value)} placeholder="Search members" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }}/>
+                        </div>
+                        <div onClick={() => { if (cbStep2Assignees.size === MEMBER_OPTIONS.length) setCbStep2Assignees(new Set()); else setCbStep2Assignees(new Set(MEMBER_OPTIONS)); }}
+                          style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${cbStep2Assignees.size===MEMBER_OPTIONS.length?"#05A105":"#CFCFD1"}`, background:cbStep2Assignees.size===MEMBER_OPTIONS.length?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            {cbStep2Assignees.size===MEMBER_OPTIONS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </div>
+                          <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+                        </div>
+                        <div style={{ height:1, background:"#E9E9EB", margin:"6px 0 8px" }}/>
+                        <div style={{ maxHeight:240, overflowY:"auto", paddingBottom:8 }}>
+                          {MEMBER_OPTIONS.filter(m => m.toLowerCase().includes(cbAssigneeSearch.toLowerCase())).map(m => {
+                            const sel = cbStep2Assignees.has(m);
+                            return (
+                              <div key={m} onClick={() => { const n = new Set(cbStep2Assignees); sel ? n.delete(m) : n.add(m); setCbStep2Assignees(n); }}
+                                style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                                <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${sel?"#05A105":"#CFCFD1"}`, background:sel?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                  {sel && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                </div>
+                                <span style={{ fontSize:14, color:"#080908" }}>{m}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    </div>
+                  </div>
+                  {/* Custom message toggle */}
+                  <div style={{ height:1, background:"#ECECEC", margin:"0 0 28px" }} />
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+                      <div style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>Add a custom message</div>
+                      <div onClick={() => setCbCustomMessage(v => !v)} style={{ width:44, height:24, borderRadius:12, background: cbCustomMessage ? "#05A105" : "#DBDBDB", cursor:"pointer", flexShrink:0, position:"relative", transition:"background 0.2s" }}>
+                        <div style={{ width:20, height:20, borderRadius:"50%", background:"#FFFFFF", position:"absolute", top:2, left: cbCustomMessage ? 22 : 2, transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }}/>
+                      </div>
+                    </div>
+                    {cbCustomMessage && (
+                      <textarea value={cbCustomText} onChange={e => setCbCustomText(e.target.value)} placeholder="Write a custom message to include in the email..." rows={4}
+                        style={{ width:"100%", marginTop:12, border:"1px solid #DBDBDB", borderRadius:8, padding:"12px 14px", fontSize:14, color:"#1F2024", outline:"none", fontFamily:"'Inter',sans-serif", resize:"vertical", boxSizing:"border-box" }}
+                        onFocus={e=>e.target.style.borderColor="#05A105"} onBlur={e=>e.target.style.borderColor="#DBDBDB"}/>
+                    )}
+                  </div>
+                </>);
+              })()}
+              {cbStep === 1 && (<>
+              {/* Bank account section */}
+              <div style={{ marginBottom:32 }}>
+                <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:12 }}>Bank account</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {CB_ACCOUNTS.map((acct, i) => {
+                    const checked = cbSelectedAccounts.has(acct.name);
+                    return (
+                      <div key={i} onClick={() => { const n = new Set(cbSelectedAccounts); checked ? n.delete(acct.name) : n.add(acct.name); setCbSelectedAccounts(n); }}
+                        style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor:"pointer", borderRadius:8, border:`1px solid ${checked ? "transparent" : "#ECECEC"}`, outline: checked ? "1.5px solid #05A105" : "none", background:"#FFFFFF", boxSizing:"border-box" }}
+                        onMouseEnter={e => { if (!checked) e.currentTarget.style.borderColor="#DBDBDB"; }}
+                        onMouseLeave={e => { if (!checked) { e.currentTarget.style.borderColor="#ECECEC"; } }}>
+                        <div style={{ width:36, height:36, background:"#F5F5F5", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 8.99904V16.999M9.5 8.99904V16.999M14.5 8.99904V16.999M19 8.99904V16.999M3 18.599L3 19.399C3 19.9591 3 20.2391 3.10899 20.453C3.20487 20.6412 3.35785 20.7942 3.54601 20.89C3.75992 20.999 4.03995 20.999 4.6 20.999H19.4C19.9601 20.999 20.2401 20.999 20.454 20.8901C20.6422 20.7942 20.7951 20.6412 20.891 20.453C21 20.2391 21 19.9591 21 19.399V18.599C21 18.039 21 17.759 20.891 17.5451C20.7951 17.3569 20.6422 17.2039 20.454 17.108C20.2401 16.999 19.9601 16.999 19.4 16.999H4.6C4.03995 16.999 3.75992 16.999 3.54601 17.108C3.35785 17.2039 3.20487 17.3569 3.10899 17.5451C3 17.759 3 18.039 3 18.599ZM11.6529 3.07617L4.25291 4.72062C3.80585 4.81997 3.58232 4.86964 3.41546 4.98985C3.26829 5.09588 3.15273 5.23994 3.08115 5.40661C3 5.59557 3 5.82455 3 6.28252L3 7.39904C3 7.9591 3 8.23912 3.10899 8.45303C3.20487 8.6412 3.35785 8.79418 3.54601 8.89005C3.75992 8.99904 4.03995 8.99904 4.6 8.99904H19.4C19.9601 8.99904 20.2401 8.99904 20.454 8.89005C20.6422 8.79418 20.7951 8.6412 20.891 8.45303C21 8.23912 21 7.9591 21 7.39904V6.28252C21 5.82455 21 5.59557 20.9188 5.40661C20.8473 5.23994 20.7317 5.09588 20.5845 4.98985C20.4177 4.86964 20.1942 4.81997 19.7471 4.72062L12.3471 3.07617C12.2176 3.04739 12.1528 3.033 12.0874 3.02726C12.0292 3.02216 11.9708 3.02216 11.9126 3.02726C11.8472 3.033 11.7824 3.04739 11.6529 3.07617Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{acct.name}</div>
+                          <div style={{ fontSize:13, color:"#8C8C8B", marginTop:2 }}>{acct.number}</div>
+                        </div>
+                        <input type="checkbox" className="mimo-cb" checked={checked} onChange={() => {}} onClick={e => e.stopPropagation()} style={{ pointerEvents:"none" }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ height:1, background:"#ECECEC", margin:"0 0 32px" }} />
+              {/* Reference section */}
+              <div style={{ marginBottom:32 }}>
+                <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Reference</div>
+                <div style={{ fontSize:13, color:"#8C8C8B", marginBottom:10 }}>Curate the requests on specific references</div>
+                <input value={cbReference} onChange={e => setCbReference(e.target.value)} placeholder="Enter a reference"
+                  style={{ width:"100%", height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 14px", fontSize:14, color:"#1F2024", outline:"none", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }}
+                  onFocus={e => e.target.style.borderColor="#05A105"} onBlur={e => e.target.style.borderColor="#DBDBDB"} />
+              </div>
+              <div style={{ height:1, background:"#ECECEC", margin:"0 0 32px" }} />
+              {/* Request range section */}
+              <div>
+                <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Request range</div>
+                <div style={{ fontSize:13, color:"#8C8C8B", marginBottom:12 }}>If no date range is specified, all requests within the month will be selected.</div>
+                <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                  {["Current month", "Last month"].map(label => {
+                    const active = cbActiveRange === label;
+                    return <button key={label} onClick={() => {
+                      const newActive = active ? "" : label;
+                      setCbActiveRange(newActive);
+                      if (newActive) {
+                        const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                        const now = new Date();
+                        let y = now.getFullYear(), m = now.getMonth();
+                        if (newActive === "Last month") { m--; if (m < 0) { m = 11; y--; } }
+                        const firstDay = 1;
+                        const lastDay = new Date(y, m + 1, 0).getDate();
+                        setCbFromDate(`${firstDay} ${MONTHS[m]}, ${y}`);
+                        setCbToDate(`${lastDay} ${MONTHS[m]}, ${y}`);
+                      } else { setCbFromDate(""); setCbToDate(""); }
+                    }} style={{ height:36, padding:"0 16px", border: active ? "1px solid #05A105" : "1px solid #DBDBDB", borderRadius:8, background: active ? "#05A105" : "#FFFFFF", fontSize:14, fontWeight:500, color: active ? "#FFFFFF" : "#1F2024", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>{ if(!active) e.currentTarget.style.background="#F5F5F5"; }} onMouseLeave={e=>{ if(!active) e.currentTarget.style.background="#FFFFFF"; }}>{label}</button>;
+                  })}
+                </div>
+                <div style={{ display:"flex", gap:12 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:"#1F2024", marginBottom:6 }}>From</div>
+                    <div style={{ height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 12px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+                      <span style={{ fontSize:14, color: cbFromDate ? "#000000" : "#A5A5A5" }}>{cbFromDate || "Select date"}</span>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:"#1F2024", marginBottom:6 }}>To</div>
+                    <div style={{ height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 12px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+                      <span style={{ fontSize:14, color: cbToDate ? "#000000" : "#A5A5A5" }}>{cbToDate || "Select date"}</span>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </>)
+              }
+            </div>
+            {/* Footer */}
+            <div style={{ borderTop:"1px solid #ECECEC", padding:"16px 28px", display:"flex", gap:12, flexShrink:0 }}>
+              <button onClick={closeCreateBatchSidebar} style={{ flex: cbStep === 2 ? "0 0 20%" : 1, height:40, border:"1px solid #DBDBDB", borderRadius:8, background:"none", fontSize:14, fontWeight:500, color:"#2A2A2A", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>Cancel</button>
+              {cbStep === 1 && (() => {
+                const active = cbSelectedAccounts.size > 0;
+                return <button onClick={() => { if(!active || cbGenerating) return; setCbGenerating(true); const firstAcct = [...cbSelectedAccounts][0] || ""; setCbBatchTitle(firstAcct); setTimeout(() => { setCbGenerating(false); setCbStep(2); setCbShowAll(new Set()); const allRefs = new Set(); [...cbSelectedAccounts].forEach(acct => { MISSING_TABLE_DATA.filter(r => r.account === acct && !archivedRefs.has(r.ref) && !excludedRefs.has(r.ref) && !receivedRefs.has(r.ref) && rowBatchMap[r.ref] == null).forEach(r => allRefs.add(r.ref)); }); setCbCheckedRows(allRefs); }, 1500); }} style={{ flex:2, height:40, border:"none", borderRadius:8, fontSize:14, fontWeight:500, fontFamily:"'Inter',sans-serif", cursor: active ? "pointer" : "default", background: active ? "#05A105" : "#ECECEC", color: active ? "#FFFFFF" : "#A5A5A5", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }} onMouseEnter={e=>{ if(active && !cbGenerating) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(active) e.currentTarget.style.background="#05A105"; }}>
+                  <span style={{ visibility: cbGenerating ? "hidden" : "visible" }}>Generate request batch</span>
+                  {cbGenerating && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="white" strokeWidth="3.5" strokeLinecap="round"/></svg>}
+                </button>;
+              })()}
+              {cbStep === 2 && (() => {
+                const canCreate = cbStep2Assignees.size > 0;
+                return <button onClick={() => {
+                  if(!canCreate || cbCreating) return;
+                  setCbCreating(true);
+                  setTimeout(() => {
+                    const newId = Date.now();
+                    const allRows = MISSING_TABLE_DATA.filter(r => cbSelectedAccounts.has(r.account) && !archivedRefs.has(r.ref) && !excludedRefs.has(r.ref) && !receivedRefs.has(r.ref) && rowBatchMap[r.ref] == null);
+                    const selectedRows = allRows.filter(r => cbCheckedRows.has(r.ref));
+                    const newMap = { ...rowBatchMap };
+                    const newFromMap = { ...rowFromMap };
+                    const fromLabel = [...cbStep2Assignees].join(", ");
+                    selectedRows.forEach(r => { newMap[r.ref] = newId; newFromMap[r.ref] = fromLabel; });
+                    setRowBatchMap(newMap);
+                    setRowFromMap(newFromMap);
+                    setBatches(bs => [...bs, { id: newId, title: cbBatchTitle || acct, status: "Draft", requestCount: selectedRows.length, accountCount: cbSelectedAccounts.size, assigneeCount: cbStep2Assignees.size, assignees: [...cbStep2Assignees] }]);
+                    setCbCreating(false);
+                    closeCreateBatchSidebar();
+                    showToast("Batch created successfully");
+                  }, 2000);
+                }} style={{ flex:"0 0 80%", height:40, border:"none", borderRadius:8, fontSize:14, fontWeight:500, fontFamily:"'Inter',sans-serif", cursor: canCreate && !cbCreating ? "pointer" : "default", background: canCreate ? "#05A105" : "#ECECEC", color: canCreate ? "#FFFFFF" : "#A5A5A5", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }} onMouseEnter={e=>{ if(canCreate && !cbCreating) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(canCreate) e.currentTarget.style.background="#05A105"; }}>
+                  <span style={{ visibility: cbCreating ? "hidden" : "visible" }}>Create draft batch</span>
+                  {cbCreating && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="white" strokeWidth="3.5" strokeLinecap="round"/></svg>}
+                </button>;
+              })()}
+            </div>
+          </div>
+        </>)}
+
+        {/* Edit Assignees Sidebar */}
+        {showEditAssigneesSidebar && (<>
+          <div onClick={closeEditAssigneesSidebar} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:500, opacity: editAssigneesVisible ? 1 : 0, transition:"opacity 0.32s cubic-bezier(0.4,0,0.2,1)" }} />
+          <div style={{ position:"fixed", top:0, right:0, bottom:0, width:600, background:"#FFFFFF", display:"flex", flexDirection:"column", zIndex:501, fontFamily:"'Inter',sans-serif", transform: editAssigneesVisible ? "translateX(0)" : "translateX(100%)", transition:"transform 0.32s cubic-bezier(0.4,0,0.2,1)" }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:112, borderBottom:"1px solid #ECECEC", flexShrink:0 }}>
+              <span style={{ fontSize:24, fontWeight:500, color:"#1F2024" }}>Edit assignees</span>
+              <button onClick={closeEditAssigneesSidebar} style={{ border:"none", background:"none", cursor:"pointer", display:"flex", padding:0, flexShrink:0 }}>
+                <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            {/* Body */}
+            <div style={{ flex:1, overflowY:"auto", padding:"28px" }}>
+              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Assignees</div>
+              <div style={{ fontSize:13, color:"#8C8C8B", marginBottom:10 }}>The client members that will receive the email notification</div>
+              <div style={{ position:"relative" }}>
+                <button ref={editAssigneeBtnRef} onClick={() => setEditAssigneeDropOpen(v => !v)} style={{ width:"100%", height:44, border:"1px solid #DBDBDB", borderRadius:8, padding:"0 12px 0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
+                  <span style={{ fontSize:14, color: editAssigneesSelected.size > 0 ? "#1F2024" : "#A5A5A5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {editAssigneesSelected.size > 0 ? [...editAssigneesSelected].join(", ") : "Select (0)"}
+                  </span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: editAssigneeDropOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                {editAssigneeDropOpen && (
+                  <div ref={editAssigneeDropRef} style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:50, paddingTop:12 }}>
+                    <div style={{ margin:"0 12px 10px", display:"flex", alignItems:"center", gap:10, border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 14px" }}>
+                      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <input value={editAssigneeSearch} onChange={e => setEditAssigneeSearch(e.target.value)} placeholder="Search members" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }}/>
+                    </div>
+                    <div onClick={() => { if (editAssigneesSelected.size === MEMBER_OPTIONS.length) setEditAssigneesSelected(new Set()); else setEditAssigneesSelected(new Set(MEMBER_OPTIONS)); }}
+                      style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${editAssigneesSelected.size===MEMBER_OPTIONS.length?"#05A105":"#CFCFD1"}`, background:editAssigneesSelected.size===MEMBER_OPTIONS.length?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        {editAssigneesSelected.size===MEMBER_OPTIONS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+                    </div>
+                    <div style={{ height:1, background:"#E9E9EB", margin:"6px 0 8px" }}/>
+                    <div style={{ maxHeight:240, overflowY:"auto", paddingBottom:8 }}>
+                      {MEMBER_OPTIONS.filter(m => m.toLowerCase().includes(editAssigneeSearch.toLowerCase())).map(m => {
+                        const sel = editAssigneesSelected.has(m);
+                        return (
+                          <div key={m} onClick={() => { const n = new Set(editAssigneesSelected); sel ? n.delete(m) : n.add(m); setEditAssigneesSelected(n); }}
+                            style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                            onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                            <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${sel?"#05A105":"#CFCFD1"}`, background:sel?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                              {sel && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                            </div>
+                            <span style={{ fontSize:14, color:"#080908" }}>{m}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ display:"flex", gap:12, padding:"20px 28px", borderTop:"1px solid #ECECEC", flexShrink:0 }}>
+              <button onClick={closeEditAssigneesSidebar} style={{ flex:1, height:44, border:"1px solid #DBDBDB", borderRadius:8, background:"none", fontSize:14, fontWeight:500, color:"#2A2A2A", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>Cancel</button>
+              <button onClick={() => { const newAssignees = [...editAssigneesSelected]; setBatches(bs => bs.map(b => b.id === selectedBatchId ? { ...b, assignees: newAssignees, assigneeCount: newAssignees.length } : b)); const fromLabel = newAssignees.join(", "); setRowFromMap(prev => { const next = { ...prev }; Object.keys(rowBatchMap).forEach(ref => { if (rowBatchMap[ref] === selectedBatchId) next[ref] = fromLabel; }); return next; }); closeEditAssigneesSidebar(); showToast("Assignees updated"); }} style={{ flex:2, height:44, border:"none", borderRadius:8, background:"#05A105", fontSize:14, fontWeight:500, color:"#FFFFFF", cursor:"pointer", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>Update</button>
+            </div>
+          </div>
+        </>)}
+
+        {toast && (
+          <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", background:"#05A105", color:"#FFFFFF", padding:"12px 20px", borderRadius:10, fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:10, zIndex:9999, animation: toastLeaving ? "toastOut 0.35s ease forwards" : "toastIn 0.35s ease", fontFamily:"'Inter',sans-serif", whiteSpace:"nowrap" }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {toast}
+          </div>
+        )}
+
+        {/* All Filters Dropdown */}
+        {showAllFilters && (
+          <div ref={allFiltersDropRef} style={{ position:"fixed", top: allFiltersPos.top, left: allFiltersPos.left, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:9999, width:640, maxHeight:"80vh", display:"flex", flexDirection:"row", overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
+            {/* Left nav — flush to top, no shared header */}
+            <div style={{ width:190, borderRight:"1px solid #ECECEC", display:"flex", flexDirection:"column", flexShrink:0, paddingTop:8, paddingBottom:8 }}>
+              {["Bank account","Amount","Date","Assignee"].map(tab => (
+                <button key={tab} onClick={()=>setAllFilterTab(tab)}
+                  style={{ display:"block", width:"100%", textAlign:"left", padding:"11px 20px", border:"none", background: allFilterTab===tab ? "#F0F0F0" : "transparent", cursor:"pointer", fontSize:14, fontWeight: allFilterTab===tab ? 500 : 400, color: allFilterTab===tab ? "#080908" : "#545453", fontFamily:"'Inter',sans-serif", borderRadius:0 }}
+                  onMouseEnter={e=>{ if(allFilterTab!==tab) e.currentTarget.style.background="#FAFAFA"; }}
+                  onMouseLeave={e=>{ if(allFilterTab!==tab) e.currentTarget.style.background="transparent"; }}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {/* Right panel */}
+            <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+              {/* Right header: title + X */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 14px", borderBottom:"1px solid #ECECEC", flexShrink:0 }}>
+                <span style={{ fontSize:15, fontWeight:500, color:"#080908" }}>
+                  {{ "Bank account":"Filter by bank account", "Amount":"Filter by amount", "Date":"Filter by date", "Assignee":"Filter by assignee" }[allFilterTab]}
+                </span>
+                <button onClick={()=>setShowAllFilters(false)} style={{ border:"none", background:"none", cursor:"pointer", padding:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="14" fill="#F5F5F5"/><path d="M18 10L10 18M10 10L18 18" stroke="#2A2A2A" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+              </div>
+              {/* Right body */}
+              <div style={{ flex:1, padding:"16px 20px", overflowY:"auto" }}>
+                {allFilterTab === "Bank account" && (
+                  <div>
+                    {COLLECT_BANK_ACCOUNTS.map(acct => {
+                      const checked = draftBankAccounts.has(acct);
+                      return (
+                        <div key={acct} onClick={()=>{ const n=new Set(draftBankAccounts); checked?n.delete(acct):n.add(acct); setDraftBankAccounts(n); }}
+                          style={{ display:"flex", alignItems:"center", gap:14, padding:"10px 12px", cursor:"pointer", borderRadius:8 }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${checked?"#05A105":"#CFCFD1"}`, background:checked?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </div>
+                          <span style={{ fontSize:14, color:"#1F2024" }}>{acct}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {allFilterTab === "Amount" && (
+                  <div>
+                    <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                      <div style={{ flex:1 }}>
+                        <label style={{ fontSize:14, color:"#000000", display:"block", marginBottom:6 }}>Min amount</label>
+                        <div style={{ display:"flex", alignItems:"center", border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 12px", gap:6 }}>
+                          <span style={{ fontSize:14, color:"#8C8C8B" }}>£</span>
+                          <input value={draftAmountMin} onChange={e=>setDraftAmountMin(e.target.value)} placeholder="0.00" type="number" min="0" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }}/>
+                        </div>
+                      </div>
+                      <span style={{ fontSize:14, color:"#8C8C8B", marginTop:20 }}>—</span>
+                      <div style={{ flex:1 }}>
+                        <label style={{ fontSize:14, color:"#000000", display:"block", marginBottom:6 }}>Max amount</label>
+                        <div style={{ display:"flex", alignItems:"center", border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 12px", gap:6 }}>
+                          <span style={{ fontSize:14, color:"#8C8C8B" }}>£</span>
+                          <input value={draftAmountMax} onChange={e=>setDraftAmountMax(e.target.value)} placeholder="No limit" type="number" min="0" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }}/>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {allFilterTab === "Date" && (
+                  <div style={{ display:"flex", gap:12 }}>
+                    <div style={{ flex:1 }}>
+                      <label style={{ fontSize:14, fontWeight:400, color:"#000000", display:"block", marginBottom:8 }}>From</label>
+                      <div ref={allDateFromFieldRef}
+                        onClick={() => { if (allDateFromFieldRef.current) { const r = allDateFromFieldRef.current.getBoundingClientRect(); setDateCalPos({ top: r.bottom + 6, left: r.left }); } if (draftDateFrom) { const d = new Date(draftDateFrom); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); } else { setDateCalMonth(new Date().getMonth()); setDateCalYear(new Date().getFullYear()); } setDateCalField(f => f === "allFrom" ? null : "allFrom"); }}
+                        style={{ border:`1.5px solid ${dateCalField==="allFrom"?"#05A105":"#E9E9EB"}`, borderRadius:8, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+                        <span style={{ fontSize:14, color: draftDateFrom ? "#080908" : "#8C8C8B" }}>{draftDateFrom ? new Date(draftDateFrom + "T00:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "Select date"}</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#8C8C8B" strokeWidth="1.25"/><path d="M5 1v3M11 1v3M2 7h12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round"/></svg>
+                      </div>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <label style={{ fontSize:14, fontWeight:400, color:"#000000", display:"block", marginBottom:8 }}>To</label>
+                      <div ref={allDateToFieldRef}
+                        onClick={() => { if (allDateToFieldRef.current) { const r = allDateToFieldRef.current.getBoundingClientRect(); setDateCalPos({ top: r.bottom + 6, left: r.left }); } if (draftDateTo) { const d = new Date(draftDateTo); setDateCalMonth(d.getMonth()); setDateCalYear(d.getFullYear()); } else { setDateCalMonth(new Date().getMonth()); setDateCalYear(new Date().getFullYear()); } setDateCalField(f => f === "allTo" ? null : "allTo"); }}
+                        style={{ border:`1.5px solid ${dateCalField==="allTo"?"#05A105":"#E9E9EB"}`, borderRadius:8, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+                        <span style={{ fontSize:14, color: draftDateTo ? "#080908" : "#8C8C8B" }}>{draftDateTo ? new Date(draftDateTo + "T00:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "Select date"}</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#8C8C8B" strokeWidth="1.25"/><path d="M5 1v3M11 1v3M2 7h12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {allFilterTab === "Assignee" && (
+                  <div>
+                    {MEMBER_OPTIONS.map(member => {
+                      const checked = draftAssignees.has(member);
+                      return (
+                        <div key={member} onClick={()=>{ const n=new Set(draftAssignees); checked?n.delete(member):n.add(member); setDraftAssignees(n); }}
+                          style={{ display:"flex", alignItems:"center", gap:14, padding:"10px 12px", cursor:"pointer", borderRadius:8 }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${checked?"#05A105":"#CFCFD1"}`, background:checked?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            {checked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </div>
+                          <span style={{ fontSize:14, color:"#1F2024" }}>{member}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {/* Footer */}
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:8, padding:"14px 20px", borderTop:"1px solid #ECECEC", flexShrink:0 }}>
+                <button onClick={()=>setShowAllFilters(false)} style={{ height:40, padding:"0 20px", border:"1px solid #E9E9EB", borderRadius:8, background:"#F5F5F5", cursor:"pointer", fontSize:14, fontWeight:500, color:"#080908", fontFamily:"'Inter',sans-serif" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#EBEBEB"} onMouseLeave={e=>e.currentTarget.style.background="#F5F5F5"}>
+                  Cancel
+                </button>
+                <button onClick={()=>{ setSelectedBankAccounts(new Set(draftBankAccounts)); setBankFilterCount(draftBankAccounts.size); setActiveAmountMin(draftAmountMin); setActiveAmountMax(draftAmountMax); setActiveDateFrom(draftDateFrom); setActiveDateTo(draftDateTo); setActiveAssignees(new Set(draftAssignees)); setShowAllFilters(false); }} style={{ height:40, padding:"0 20px", border:"none", borderRadius:8, background:"#05A105", cursor:"pointer", fontSize:14, fontWeight:500, color:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Preview client portal dropdown */}
+        {previewDropOpen && (
+          <div ref={previewDropRef} style={{ position:"fixed", top: previewDropPos.top, left: previewDropPos.left, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:9999, width:220, padding:"6px 0", fontFamily:"'Inter',sans-serif" }}>
+            <div style={{ padding:"8px 14px 6px", fontSize:12, fontWeight:400, color:"#8C8C8B", letterSpacing:"0.15px", textTransform:"none" }}>Client members</div>
+            {MEMBER_OPTIONS.map(name => (
+              <div key={name} onClick={()=>setPreviewDropOpen(false)} style={{ display:"flex", alignItems:"center", padding:"9px 14px", cursor:"pointer", fontSize:14, color:"#1F2024" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                {name}
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Settings sidebar */}
+        {settingsOpen && (<>
+          <div onClick={closeSettingsSidebar} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:500, opacity: settingsVisible ? 1 : 0, transition:"opacity 0.32s cubic-bezier(0.4,0,0.2,1)" }} />
+          <div style={{ position:"fixed", top:0, right:0, bottom:0, width:600, background:"#FFFFFF", display:"flex", flexDirection:"column", zIndex:501, fontFamily:"'Inter',sans-serif", transform: settingsVisible ? "translateX(0)" : "translateX(100%)", transition:"transform 0.32s cubic-bezier(0.4,0,0.2,1)" }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 36px", borderBottom:"1px solid #ECECEC", flexShrink:0, height:112, boxSizing:"border-box" }}>
+              <span style={{ fontSize:24, fontWeight:500, color:"#080908" }}>Settings</span>
+              <button onClick={closeSettingsSidebar} style={{ width:32, height:32, border:"1px solid #E9E9EB", borderRadius:"50%", background:"#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            {/* Tabs */}
+            <div style={{ padding:"0 36px", marginTop:16, paddingBottom:4, flexShrink:0 }}>
+              <div style={{ display:"flex", gap:0, borderBottom:"1px solid #ECECEC" }}>
+                {["Email notifications","Templates"].map(tab => (
+                  <button key={tab} onClick={()=>setSettingsTab(tab)} style={{ padding:"0 4px", marginRight:20, height:40, border:"none", borderBottom: settingsTab===tab ? "2px solid #05A105" : "2px solid transparent", background:"transparent", cursor:"pointer", fontSize:14, fontWeight: settingsTab===tab ? 500 : 400, color: settingsTab===tab ? "#1F2024" : "#7C7C7C", fontFamily:"'Inter',sans-serif", flexShrink:0 }}>
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Scrollable body */}
+            <div style={{ flex:1, overflowY:"auto", padding:"0 0 24px" }}>
+              {settingsTab === "Email notifications" && (<>
+                {/* General section */}
+                {(() => {
+                  const SettingToggle = ({on, onToggle}) => (
+                    <div onClick={onToggle} style={{ width:44, height:24, borderRadius:12, background: on ? "#05A105" : "#DBDBDB", cursor:"pointer", position:"relative", flexShrink:0, transition:"background 0.2s" }}>
+                      <div style={{ position:"absolute", top:2, left: on ? 22 : 2, width:20, height:20, borderRadius:"50%", background:"#FFFFFF", boxShadow:"0 1px 3px rgba(0,0,0,0.2)", transition:"left 0.2s" }} />
+                    </div>
+                  );
+                  const SettingSelect = ({value, options}) => (
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 14px", height:44, border:"1px solid #E9E9EB", borderRadius:8, background:"#FFFFFF", cursor:"pointer", fontSize:14, color:"#1F2024", gap:8 }} onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{value}</span>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0 }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                  );
+                  return (<>
+                    {/* General */}
+                    <div style={{ margin:"24px 36px 0" }}>
+                      <button onClick={()=>setSettingsGeneralOpen(v=>!v)} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#F5F5F5", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>General</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: settingsGeneralOpen?"rotate(0deg)":"rotate(180deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 10l4-4 4 4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                      {settingsGeneralOpen && (
+                        <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:16 }}>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Preparer</div>
+                            <SettingSelect value="Daniel Victorin   daniel.victorin@mimohq.com" />
+                            <div style={{ fontSize:12, color:"#8C8C8B", marginTop:6 }}>Members of the practice team who will be included in client notifications</div>
+                          </div>
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Auto forward your documents</div>
+                              <div style={{ fontSize:12, color:"#8C8C8B" }}>Provide the email where Mimo should send all uploaded files</div>
+                            </div>
+                            <SettingToggle on={settingAutoForward} onToggle={()=>setSettingAutoForward(v=>!v)} />
+                          </div>
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Missing documents custom message</div>
+                              <div style={{ fontSize:12, color:"#8C8C8B" }}>Default message unless changed in the batch</div>
+                            </div>
+                            <SettingToggle on={settingCustomMessage} onToggle={()=>setSettingCustomMessage(v=>!v)} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Recurring request notifications */}
+                    <div style={{ margin:"12px 36px 0" }}>
+                      <button onClick={()=>setSettingsRecurringOpen(v=>!v)} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#F5F5F5", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>Recurring request notifications</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: settingsRecurringOpen?"rotate(0deg)":"rotate(180deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 10l4-4 4 4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                      {settingsRecurringOpen && (
+                        <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:16 }}>
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Send recurring request notifications</div>
+                              <div style={{ fontSize:12, color:"#8C8C8B" }}>Toggle off to pause notifications</div>
+                            </div>
+                            <SettingToggle on={settingRecurringEnabled} onToggle={()=>setSettingRecurringEnabled(v=>!v)} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Default requestee</div>
+                            <SettingSelect value="Eskil Fogelström" />
+                          </div>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>When to send</div>
+                            <SettingSelect value="First working day of the month" />
+                          </div>
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Custom message</div>
+                              <div style={{ fontSize:12, color:"#8C8C8B" }}>Include custom message in the notification email</div>
+                            </div>
+                            <SettingToggle on={settingRecurringCustomMsg} onToggle={()=>setSettingRecurringCustomMsg(v=>!v)} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Accounting team notifications */}
+                    <div style={{ margin:"12px 36px 0" }}>
+                      <button onClick={()=>setSettingsAccountingOpen(v=>!v)} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#F5F5F5", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>Accounting team notifications</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: settingsAccountingOpen?"rotate(0deg)":"rotate(180deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 10l4-4 4 4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                      {settingsAccountingOpen && (
+                        <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:16 }}>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Email CC recipients</div>
+                            <div style={{ fontSize:12, color:"#8C8C8B", marginBottom:8 }}>These team members will be automatically copied on all client emails.</div>
+                            <SettingSelect value="" />
+                          </div>
+                          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Completed request notifications</div>
+                              <div style={{ fontSize:12, color:"#8C8C8B" }}>Receive daily notifications for client updates</div>
+                            </div>
+                            <SettingToggle on={settingCompletedNotif} onToggle={()=>setSettingCompletedNotif(v=>!v)} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Frequency</div>
+                            <SettingSelect value="Daily aggregation" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>);
+                })()}
+              </>)}
+              {settingsTab === "Templates" && (() => {
+                const TemplateSection = ({ title, cycleLabel, open, onToggle, items, setItems, checked, setChecked, addLabel, onAdd }) => {
+                  const allChecked = items.length > 0 && items.every((_, i) => checked.has(i));
+                  const toggleAll = () => setChecked(allChecked ? new Set() : new Set(items.map((_, i) => i)));
+                  const toggleOne = (i) => setChecked(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+                  const toggleVisible = (i) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, visible: !it.visible } : it));
+                  return (
+                    <div style={{ margin:"24px 24px 0" }}>
+                      {/* Section header */}
+                      <button onClick={onToggle} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", background:"#F5F5F5", border:"none", borderRadius:10, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        <span style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{title}</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0, transition:"transform 0.2s", transform: open ? "none" : "rotate(180deg)" }}>
+                          <path d="M5 12.5L10 7.5L15 12.5" stroke="#4F4F4F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      {open && (
+                        <div>
+                          {/* Cycle label */}
+                          {cycleLabel && <div style={{ padding:"14px 12px" }}>
+                            <span style={{ fontSize:14, color:"#8C8C8B" }}>{cycleLabel}</span>
+                          </div>}
+                          {/* Inner table */}
+                          <div style={{ border:"1px solid #E9E9EB", borderRadius:8, margin: cycleLabel ? "0 12px" : "12px 12px 0", overflow:"hidden" }}>
+                            {/* Count + icons row */}
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:"1px solid #E9E9EB", height:70, boxSizing:"border-box" }}>
+                              <span style={{ fontSize:14, color:"#8C8C8B" }}>{checked.size} template{checked.size !== 1 ? "s" : ""} selected</span>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <button style={{ width:32, height:32, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, padding:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10.7429 5.09232C11.1494 5.03223 11.5686 5 12.0004 5C17.1054 5 20.4553 9.50484 21.5807 11.2868C21.7169 11.5025 21.785 11.6103 21.8231 11.7767C21.8518 11.9016 21.8517 12.0987 21.8231 12.2236C21.7849 12.3899 21.7164 12.4985 21.5792 12.7156C21.2793 13.1901 20.8222 13.8571 20.2165 14.5805M6.72432 6.71504C4.56225 8.1817 3.09445 10.2194 2.42111 11.2853C2.28428 11.5019 2.21587 11.6102 2.17774 11.7765C2.1491 11.9014 2.14909 12.0984 2.17771 12.2234C2.21583 12.3897 2.28393 12.4975 2.42013 12.7132C3.54554 14.4952 6.89541 19 12.0004 19C14.0588 19 15.8319 18.2676 17.2888 17.2766M3.00042 3L21.0004 21M9.8791 9.87868C9.3362 10.4216 9.00042 11.1716 9.00042 12C9.00042 13.6569 10.3436 15 12.0004 15C12.8288 15 13.5788 14.6642 14.1217 14.1213" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </button>
+                                <button style={{ width:32, height:32, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, padding:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="#8C8C8B"/><circle cx="10" cy="10" r="1.5" fill="#8C8C8B"/><circle cx="10" cy="16" r="1.5" fill="#8C8C8B"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                            {/* Column headers */}
+                            <div style={{ display:"flex", alignItems:"stretch", borderBottom:"1px solid #E9E9EB", background:"#FFFFFF", height:47, boxSizing:"border-box" }}>
+                              <div style={{ width:48, padding:"0 14px", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                <div onClick={toggleAll} style={{ width:16, height:16, border:"1.5px solid #D0D0D0", borderRadius:4, background: allChecked ? "#05A105" : "#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                  {allChecked && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                </div>
+                              </div>
+                              <div style={{ flex:1, padding:"0 14px", fontSize:14, color:"#8C8C8B", fontWeight:400, borderLeft:"1px solid #E9E9EB", display:"flex", alignItems:"center" }}>Template</div>
+                              <div style={{ width:100, padding:"0 14px", fontSize:14, color:"#8C8C8B", fontWeight:400, borderLeft:"1px solid #E9E9EB", flexShrink:0, textAlign:"right", display:"flex", alignItems:"center", justifyContent:"flex-end" }}>Actions</div>
+                            </div>
+                            {/* Rows */}
+                            {items.map((item, i) => (
+                              <div key={i} style={{ display:"flex", alignItems:"stretch", borderBottom: i < items.length - 1 ? "1px solid #E9E9EB" : "none", background:"#FFFFFF", minHeight:47, boxSizing:"border-box" }}
+                                onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                                <div style={{ width:48, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", borderRight:"1px solid #E9E9EB" }}>
+                                  <div onClick={()=>toggleOne(i)} style={{ width:16, height:16, border:"1.5px solid #D0D0D0", borderRadius:4, background: checked.has(i) ? "#05A105" : "#FFFFFF", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                    {checked.has(i) && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                  </div>
+                                </div>
+                                <div style={{ flex:1, padding:"10px 14px", borderRight:"1px solid #E9E9EB", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                                  <div style={{ fontSize:14, fontWeight:500, color:"#1F2024" }}>{item.name}</div>
+                                  {item.people && <div style={{ fontSize:14, color:"#8C8C8B", marginTop:4 }}>{item.people}</div>}
+                                </div>
+                                <div style={{ width:100, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4, padding:"0 10px" }}>
+                                  <button onClick={()=>toggleVisible(i)} style={{ width:28, height:28, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, padding:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                                    {item.visible
+                                      ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M2.42012 12.7132C2.28394 12.4975 2.21584 12.3897 2.17772 12.2234C2.14909 12.0985 2.14909 11.9015 2.17772 11.7766C2.21584 11.6103 2.28394 11.5025 2.42012 11.2868C3.54553 9.50484 6.8954 5 12.0004 5C17.1054 5 20.4553 9.50484 21.5807 11.2868C21.7169 11.5025 21.785 11.6103 21.8231 11.7766C21.8517 11.9015 21.8517 12.0985 21.8231 12.2234C21.785 12.3897 21.7169 12.4975 21.5807 12.7132C20.4553 14.4952 17.1054 19 12.0004 19C6.8954 19 3.54553 14.4952 2.42012 12.7132Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M12.0004 15C13.6573 15 15.0004 13.6569 15.0004 12C15.0004 10.3431 13.6573 9 12.0004 9C10.3435 9 9.0004 10.3431 9.0004 12C9.0004 13.6569 10.3435 15 12.0004 15Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                      : <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10.7429 5.09232C11.1494 5.03223 11.5686 5 12.0004 5C17.1054 5 20.4553 9.50484 21.5807 11.2868C21.7169 11.5025 21.785 11.6103 21.8231 11.7767C21.8518 11.9016 21.8517 12.0987 21.8231 12.2236C21.7849 12.3899 21.7164 12.4985 21.5792 12.7156C21.2793 13.1901 20.8222 13.8571 20.2165 14.5805M6.72432 6.71504C4.56225 8.1817 3.09445 10.2194 2.42111 11.2853C2.28428 11.5019 2.21587 11.6102 2.17774 11.7765C2.1491 11.9014 2.14909 12.0984 2.17771 12.2234C2.21583 12.3897 2.28393 12.4975 2.42013 12.7132C3.54554 14.4952 6.89541 19 12.0004 19C14.0588 19 15.8319 18.2676 17.2888 17.2766M3.00042 3L21.0004 21M9.8791 9.87868C9.3362 10.4216 9.00042 11.1716 9.00042 12C9.00042 13.6569 10.3436 15 12.0004 15C12.8288 15 13.5788 14.6642 14.1217 14.1213" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    }
+                                  </button>
+                                  <button style={{ width:28, height:28, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, padding:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="#000000"/><circle cx="10" cy="10" r="1.5" fill="#000000"/><circle cx="10" cy="16" r="1.5" fill="#000000"/></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Add button */}
+                          <div style={{ padding:"12px 12px 0" }}>
+                            <button onClick={onAdd} style={{ width:"100%", height:40, border:"1px solid #E9E9EB", borderRadius:8, background:"#FFFFFF", cursor:"pointer", fontSize:14, fontWeight:500, color:"#1F2024", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                              + {addLabel}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+                return (<>
+                  <TemplateSection title="Monthly request templates" cycleLabel="" open={tmplMonthlyOpen} onToggle={()=>setTmplMonthlyOpen(v=>!v)} items={tmplMonthlyItems} setItems={setTmplMonthlyItems} checked={tmplMonthlyChecked} setChecked={setTmplMonthlyChecked} addLabel="Add new monthly request" onAdd={()=>openAddRequestSidebar("Monthly")} />
+                  <TemplateSection title="Quarterly request templates" cycleLabel="Quarterly cycle 1: Mar/Jun/Sep/Dec" open={tmplQuarterlyOpen} onToggle={()=>setTmplQuarterlyOpen(v=>!v)} items={tmplQuarterlyItems} setItems={setTmplQuarterlyItems} checked={tmplQuarterlyChecked} setChecked={setTmplQuarterlyChecked} addLabel="Add new quarterly request" onAdd={()=>openAddRequestSidebar("Quarterly")} />
+                  <TemplateSection title="Yearly request templates" cycleLabel="Financial year start: April" open={tmplYearlyOpen} onToggle={()=>setTmplYearlyOpen(v=>!v)} items={tmplYearlyItems} setItems={setTmplYearlyItems} checked={tmplYearlyChecked} setChecked={setTmplYearlyChecked} addLabel="Add new yearly request" onAdd={()=>openAddRequestSidebar("Yearly")} />
+                  <div style={{ height:24 }} />
+                </>);
+              })()}
+            </div>
+            {/* Footer */}
+            <div style={{ display:"flex", gap:10, padding:"16px 36px", borderTop:"1px solid #ECECEC", flexShrink:0 }}>
+              <button onClick={closeSettingsSidebar} style={{ flex:"0 0 20%", height:40, border:"1px solid #E9E9EB", borderRadius:8, background:"#FFFFFF", cursor:"pointer", fontSize:14, fontWeight:500, color:"#1F2024", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>Cancel</button>
+              <button onClick={closeSettingsSidebar} style={{ flex:"0 0 80%", height:40, border:"none", borderRadius:8, background:"#05A105", cursor:"pointer", fontSize:14, fontWeight:500, color:"#FFFFFF", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>Save changes</button>
+            </div>
+          </div>
+        </>)}
+
+        {/* Add new request sidebar */}
+        {showAddRequestSidebar && (<>
+          <div onClick={closeAddRequestSidebar} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:502, opacity: addRequestSidebarVisible ? 1 : 0, transition:"opacity 0.32s cubic-bezier(0.4,0,0.2,1)" }} />
+          <div style={{ position:"fixed", top:0, right:0, bottom:0, width:600, background:"#FFFFFF", display:"flex", flexDirection:"column", zIndex:503, fontFamily:"'Inter',sans-serif", transform: addRequestSidebarVisible ? "translateX(0)" : "translateX(100%)", transition:"transform 0.32s cubic-bezier(0.4,0,0.2,1)" }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"20px 36px", borderBottom:"1px solid #ECECEC", flexShrink:0, height:112, boxSizing:"border-box" }}>
+              <button onClick={closeAddRequestSidebar} style={{ width:32, height:32, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="#1F2024" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <span style={{ fontSize:24, fontWeight:500, color:"#080908" }}>Add new request</span>
+            </div>
+            {/* Body */}
+            <div style={{ flex:1, overflowY:"auto", padding:"28px 36px" }}>
+              {/* Document type */}
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Document type <span style={{ color:"#C8543A" }}>*</span></label>
+                <div style={{ position:"relative" }}>
+                  <button ref={addReqDocTypeBtnRef} onClick={()=>setAddReqDocTypeOpen(v=>!v)} style={{ width:"100%", height:44, border:"1px solid #E9E9EB", borderRadius:8, padding:"0 12px 0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }}>
+                    <span style={{ fontSize:14, color:"#1F2024" }}>{addReqDocType}</span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: addReqDocTypeOpen ? "rotate(180deg)" : "none", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 6L8 10L12 6" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  {addReqDocTypeOpen && (
+                    <div ref={addReqDocTypeDropRef} style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:60, overflow:"hidden" }}>
+                      {["General file","Bank statement","Invoice","Receipt","Contract","Other"].map(o=>(
+                        <div key={o} onClick={()=>{ setAddReqDocType(o); setAddReqDocTypeOpen(false); }}
+                          style={{ padding:"13px 20px", fontSize:14, color:"#1F2024", cursor:"pointer", background: addReqDocType===o ? "#F5F5F5" : "#FFFFFF" }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background=addReqDocType===o?"#F5F5F5":"#FFFFFF"}>
+                          {o}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Request title */}
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Request title <span style={{ color:"#C8543A" }}>*</span></label>
+                <input value={addReqTitle} onChange={e=>setAddReqTitle(e.target.value)} placeholder="" style={{ width:"100%", height:44, border:"1px solid #E9E9EB", borderRadius:8, padding:"0 14px", fontSize:14, color:"#1F2024", background:"#FFFFFF", outline:"none", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }} onFocus={e=>e.target.style.borderColor="#05A105"} onBlur={e=>e.target.style.borderColor="#E9E9EB"} />
+              </div>
+              {/* Cadence */}
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Cadence</label>
+                <div style={{ position:"relative" }}>
+                  <button ref={addReqCadenceBtnRef} onClick={()=>setAddReqCadenceOpen(v=>!v)} style={{ width:"100%", height:44, border:"1px solid #E9E9EB", borderRadius:8, padding:"0 12px 0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", fontFamily:"'Inter',sans-serif", boxSizing:"border-box" }}>
+                    <span style={{ fontSize:14, color:"#1F2024" }}>{addRequestCadence}</span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: addReqCadenceOpen ? "rotate(180deg)" : "none", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 6L8 10L12 6" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  {addReqCadenceOpen && (
+                    <div ref={addReqCadenceDropRef} style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:60, overflow:"hidden" }}>
+                      {["Monthly","Quarterly","Yearly"].map(o=>(
+                        <div key={o} onClick={()=>{ setAddRequestCadence(o); setAddReqCadenceOpen(false); }}
+                          style={{ padding:"13px 20px", fontSize:14, color:"#1F2024", cursor:"pointer", background: addRequestCadence===o ? "#F5F5F5" : "#FFFFFF" }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background=addRequestCadence===o?"#F5F5F5":"#FFFFFF"}>
+                          {o}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Request from */}
+              <div style={{ marginBottom:28 }}>
+                <label style={{ display:"block", fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:8 }}>Request from</label>
+                <div style={{ position:"relative" }}>
+                  <button ref={addReqFromBtnRef} onClick={()=>setAddReqFromOpen(v=>!v)} style={{ width:"100%", height:44, border:"1px solid #E9E9EB", borderRadius:8, padding:"0 12px 0 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
+                    <span style={{ fontSize:14, color: addReqFrom.size > 0 ? "#1F2024" : "#A5A5A5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {addReqFrom.size > 0 ? [...addReqFrom].join(", ") : "Select members"}
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: addReqFromOpen ? "rotate(180deg)" : "none", transition:"transform 0.2s", flexShrink:0 }}><path d="M4 6L8 10L12 6" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  {addReqFromOpen && (
+                    <div ref={addReqFromDropRef} style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:60, paddingTop:12 }}>
+                      <div style={{ margin:"0 12px 10px", display:"flex", alignItems:"center", gap:10, border:"1.5px solid #E9E9EB", borderRadius:8, padding:"10px 14px" }}>
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <input value={addReqFromSearch} onChange={e=>setAddReqFromSearch(e.target.value)} placeholder="Search members" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }}/>
+                      </div>
+                      <div onClick={()=>{ if(addReqFrom.size===MEMBER_OPTIONS.length) setAddReqFrom(new Set()); else setAddReqFrom(new Set(MEMBER_OPTIONS)); }}
+                        style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${addReqFrom.size===MEMBER_OPTIONS.length?"#05A105":"#CFCFD1"}`, background:addReqFrom.size===MEMBER_OPTIONS.length?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          {addReqFrom.size===MEMBER_OPTIONS.length && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                        <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+                      </div>
+                      <div style={{ height:1, background:"#E9E9EB", margin:"6px 0 8px" }}/>
+                      <div style={{ maxHeight:200, overflowY:"auto", paddingBottom:8 }}>
+                        {MEMBER_OPTIONS.filter(m=>m.toLowerCase().includes(addReqFromSearch.toLowerCase())).map(m=>{
+                          const sel = addReqFrom.has(m);
+                          return (
+                            <div key={m} onClick={()=>{ const n=new Set(addReqFrom); sel?n.delete(m):n.add(m); setAddReqFrom(n); }}
+                              style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 24px", cursor:"pointer" }}
+                              onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                              <div style={{ width:20, height:20, borderRadius:5, border:`1.5px solid ${sel?"#05A105":"#CFCFD1"}`, background:sel?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                {sel && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                              </div>
+                              <span style={{ fontSize:14, color:"#080908" }}>{m}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Divider */}
+              <div style={{ borderTop:"1px solid #ECECEC", margin:"0 0 24px" }} />
+              {/* Send email reminders */}
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:24 }}>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Send email reminders</div>
+                  <div style={{ fontSize:13, color:"#8C8C8B" }}>Include in the {addRequestCadence.toLowerCase()} reminder</div>
+                </div>
+                <div onClick={()=>setAddReqEmailReminders(v=>!v)} style={{ width:44, height:24, borderRadius:12, background: addReqEmailReminders ? "#05A105" : "#D0D0D0", cursor:"pointer", flexShrink:0, position:"relative", transition:"background 0.2s" }}>
+                  <div style={{ position:"absolute", top:2, left: addReqEmailReminders ? 22 : 2, width:20, height:20, borderRadius:"50%", background:"#FFFFFF", transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+                </div>
+              </div>
+              {/* Add note */}
+              <div>
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:500, color:"#1F2024", marginBottom:4 }}>Add note</div>
+                    <div style={{ fontSize:13, color:"#8C8C8B" }}>Add a note to the request</div>
+                  </div>
+                  <div onClick={()=>setAddReqNote(v=>!v)} style={{ width:44, height:24, borderRadius:12, background: addReqNote ? "#05A105" : "#D0D0D0", cursor:"pointer", flexShrink:0, position:"relative", transition:"background 0.2s" }}>
+                    <div style={{ position:"absolute", top:2, left: addReqNote ? 22 : 2, width:20, height:20, borderRadius:"50%", background:"#FFFFFF", transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+                  </div>
+                </div>
+                {addReqNote && (
+                  <textarea value={addReqNoteText} onChange={e=>setAddReqNoteText(e.target.value)} placeholder="Write a note..." rows={4} style={{ width:"100%", marginTop:14, border:"1px solid #E9E9EB", borderRadius:8, padding:"12px 14px", fontSize:14, color:"#1F2024", fontFamily:"'Inter',sans-serif", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:"1.5" }} onFocus={e=>e.target.style.borderColor="#05A105"} onBlur={e=>e.target.style.borderColor="#E9E9EB"} />
+                )}
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ display:"flex", gap:10, padding:"16px 36px", borderTop:"1px solid #ECECEC", flexShrink:0 }}>
+              <button onClick={closeAddRequestSidebar} style={{ flex:"0 0 20%", height:40, border:"1px solid #E9E9EB", borderRadius:8, background:"#FFFFFF", cursor:"pointer", fontSize:14, fontWeight:500, color:"#1F2024", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>Cancel</button>
+              <button onClick={() => {
+                if (!addReqTitle.trim()) return;
+                const newItem = { name: addReqTitle.trim(), people: [...addReqFrom].join(", "), visible: true };
+                if (addRequestCadence === "Monthly") setTmplMonthlyItems(prev => [...prev, newItem]);
+                else if (addRequestCadence === "Quarterly") setTmplQuarterlyItems(prev => [...prev, newItem]);
+                else setTmplYearlyItems(prev => [...prev, newItem]);
+                closeAddRequestSidebar();
+              }} disabled={!addReqTitle.trim()} style={{ flex:"0 0 80%", height:40, border:"none", borderRadius:8, background: addReqTitle.trim() ? "#05A105" : "#ECECEC", cursor: addReqTitle.trim() ? "pointer" : "default", fontSize:14, fontWeight:500, color: addReqTitle.trim() ? "#FFFFFF" : "#A5A5A5", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>{ if(addReqTitle.trim()) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(addReqTitle.trim()) e.currentTarget.style.background="#05A105"; }}>Add new request</button>
+            </div>
+          </div>
+        </>)}
+        {/* Open Request sidebar */}
+        {openRequestSidebar && (<>
+          <div onClick={() => setOpenRequestSidebar(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:200 }} />
+          <BatchDraftSidebar
+            contact={openRequestSidebar.contact}
+            amount={openRequestSidebar.amount}
+            date={openRequestSidebar.date}
+            account={openRequestSidebar.account}
+            accountNumber={openRequestSidebar.accountNumber}
+            batchInfo={openRequestSidebar.batchInfo}
+            fileName={openRequestSidebar.fileAction}
+            onClose={() => setOpenRequestSidebar(null)}
+            onConfirm={() => setOpenRequestSidebar(null)}
+          />
+        </>)}
+        </div>
+  );
+}
+
+
+// ── Inbox Page ────────────────────────────────────────────────────────────────
+function InboxPage() {
+  const [activeTab, setActiveTab] = useState("Received");
+  const [search, setSearch] = useState("");
+  const tableScrollRef = useRef(null);
+  const [tableScrollable, setTableScrollable] = useState(false);
+  const [inboxChecked, setInboxChecked] = useState(new Set());
+  const [tableShadow, setTableShadow] = useState(false);
+  useEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      setTableScrollable(el.scrollWidth > el.clientWidth + 2);
+      const show = el.scrollWidth > el.clientWidth + 2;
+      el.querySelectorAll("[data-sticky-col]").forEach(cell => {
+        cell.style.boxShadow = show ? "-6px 0 12px rgba(0,0,0,0.08)" : "none";
+      });
+    };
+    el.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => { el.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, []);
+
+  const STATUS_STYLE = {
+    "Review": { bg: "#FDF8EE", color: "#D5A750", border: "none" },
+    "Ready":  { bg: "#EDE9FB", color: "#6B4EE6", border: "none" },
+  };
+
+  const ROWS = [
+    { status: "Review", alert: false, contact: null,                    date: "11/05/2026", account: null,                       ref: null,                  type: "Invoice",       tax: "£0.00",        amount: "£0.00"         },
+    { status: "Review", alert: false, contact: "Outback Logistics P...", date: "20/04/2026", account: "Postage, Freight & C...",  ref: "INV-04829",           type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95"    },
+    { status: "Review", alert: false, contact: "ALPENTECH ENGIN...",     date: "16/04/2026", account: "Repairs & Maintenan...",   ref: "R-2026-0392",         type: "Invoice",       tax: "CHF 930.33",   amount: "CHF 12,415.83" },
+    { status: "Ready",  alert: false, contact: "Whitford Mechanica...",  date: "14/04/2026", account: "General Expenses",         ref: "WMS-26-0418",         type: "Invoice",       tax: "£98.40",       amount: "£830.40"       },
+    { status: "Review", alert: true,  contact: "Calendly LLC",           date: "21/03/2026", account: "Subscriptions",            ref: "F7A7C97A-000212...",   type: "Invoice",       tax: "US$0.00",      amount: "US$12.00"      },
+    { status: "Review", alert: false, contact: null,                    date: "20/03/2026", account: null,                       ref: null,                  type: "Invoice",       tax: "£0.92",        amount: "£236.11"       },
+    { status: "Review", alert: false, contact: "Andrews Sykes Hire...",  date: "11/03/2026", account: "Rent",                     ref: "510-81135000",        type: "Invoice",       tax: "£67.44",       amount: "£404.64"       },
+    { status: "Ready",  alert: true,  contact: "Gorgias Inc",            date: "11/03/2026", account: "General Expenses",         ref: "INC-03-2026-634...",  type: "Invoice",       tax: "US$0.00",      amount: "US$3,100.00"   },
+    { status: "Review", alert: false, contact: "Able Plumbing Solut...", date: "10/03/2026", account: "Consulting",               ref: "U005521710dddd",      type: "Invoice",       tax: "£41.23",       amount: "£247.36"       },
+    { status: "Review", alert: false, contact: "Acme Solutions Inc.",    date: "05/03/2026", account: "Consulting",               ref: "INV-2608",            type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00"  },
+    { status: "Review", alert: false, contact: "MM TIMBER WINDO...",     date: "03/03/2026", account: "Repairs & Maintenan...",   ref: "FA/3/03/2026",        type: "Invoice",       tax: "£0.05",        amount: "£1,296.05"     },
+  ];
+
+  const filtered = ROWS.filter(r =>
+    !search || (r.contact || "").toLowerCase().includes(search.toLowerCase()) ||
+    (r.ref || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const rows = filtered.map(r => ({ check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, tax: r.tax, amount: r.amount, actions: null, _raw: r }));
+
+  const cols = [
+    { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
+    { key: "status",  label: "Status",     width: "140px", render: (v, r) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {r.alert && <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#C8543A" strokeWidth="1.25"/><path d="M8 5v3.5M8 11h.01" stroke="#C8543A" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+        <span style={{ fontSize: 12, fontWeight: 500, color: STATUS_STYLE[r.status]?.color, background: STATUS_STYLE[r.status]?.bg, border: STATUS_STYLE[r.status]?.border, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>{r.status}</span>
+      </div>
+    ) },
+    { key: "contact",  label: "Contact",    width: "180px", render: v => <span style={{ fontSize: 14, color: v ? "#1F2024" : "#BCBCBC" }}>{v || "-"}</span> },
+    { key: "date",     label: "Issue Date ↓", width: "130px" },
+    { key: "account",  label: "Account",    width: "180px", render: v => <span style={{ fontSize: 14, color: v ? "#545453" : "#BCBCBC" }}>{v || ""}</span> },
+    { key: "ref",      label: "Reference",  width: "160px", render: v => <span style={{ fontSize: 14, color: v ? "#545453" : "#BCBCBC" }}>{v || "-"}</span> },
+    { key: "type",     label: "Type",       width: "120px", render: v => (
+      <span style={{ fontSize: 14, color: "#545453", display: "flex", alignItems: "center", gap: 6 }}>
+        Invoice
+        {v === "Invoice Split" && <span style={{ fontSize: 11, fontWeight: 500, color: "#4C71DF", background: "#EEF2FF", border: "1px solid #C7D4F7", borderRadius: 4, padding: "1px 5px" }}>Split</span>}
+      </span>
+    ) },
+    { key: "tax",     label: "Tax",        width: "110px", align: "right" },
+    { key: "amount",  label: "Amount",     width: "120px", align: "right", render: v => <span style={{ fontWeight: 500, color: "#1F2024" }}>{v}</span> },
+    { key: "actions", label: "Actions",    width: "72px",  cellPadding: "14px 8px", render: () => <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.99984 10.834C10.4601 10.834 10.8332 10.4609 10.8332 10.0007C10.8332 9.54041 10.4601 9.16732 9.99984 9.16732C9.5396 9.16732 9.1665 9.54041 9.1665 10.0007C9.1665 10.4609 9.5396 10.834 9.99984 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.99984 5.00065C10.4601 5.00065 10.8332 4.62755 10.8332 4.16732C10.8332 3.70708 10.4601 3.33398 9.99984 3.33398C9.5396 3.33398 9.1665 3.70708 9.1665 4.16732C9.1665 4.62755 9.5396 5.00065 9.99984 5.00065Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M9.99984 16.6673C10.4601 16.6673 10.8332 16.2942 10.8332 15.834C10.8332 15.3737 10.4601 15.0007 9.99984 15.0007C9.5396 15.0007 9.1665 15.3737 9.1665 15.834C9.1665 16.2942 9.5396 16.6673 9.99984 16.6673Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button> },
+  ];
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#FFFFFF" }}>
+      {/* Header */}
+      <div style={{ padding: "32px 48px 0", flexShrink: 0, background: "#FFFFFF" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Inbox</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <PrimaryButton style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, marginRight: 6 }}><path d="M3.333 14.167v1.666A1.667 1.667 0 0 0 5 17.5h10a1.667 1.667 0 0 0 1.667-1.667v-1.666M13.333 6.667L10 3.333m0 0L6.667 6.667M10 3.333v8.334" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Upload documents
+            </PrimaryButton>
+            <SecondaryButton style={{ height: 40, padding: "0 14px", fontSize: 14 }}>All documents</SecondaryButton>
+          </div>
+        </div>
+        {/* Tabs */}
+        <div style={{ display: "flex", alignItems: "flex-end", padding: "0", borderBottom: "1px solid #ECECEC" }}>
+          {["Received", "Excluded", "Archived"].map((tab, i) => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              style={{ height: 40, padding: "0 14px", border: activeTab === tab ? "1px solid #ECECEC" : "none", borderBottom: activeTab === tab ? "1px solid #F5F5F5" : "none", marginBottom: activeTab === tab ? -1 : 0, borderRadius: "8px 8px 0 0", background: activeTab === tab ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: activeTab === tab ? 600 : 400, color: activeTab === tab ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
+              {tab}
+            </button>
+          ))}
+        </div>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 48px 48px" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+        <div style={{ background: "#FFFFFF" }}>
+          {/* Search row */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", gap: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167a6.667 6.667 0 1 1-13.333 0 6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif" }} />
+          </div>
+          {/* Filter row */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", gap: 8 }}>
+            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 8h6M7 12h2" stroke="#080908" strokeWidth="1.25" strokeLinecap="round"/></svg>
+              + Add filter
+            </button>
+          </div>
+          {/* Table */}
+          {(() => {
+            const shadow = tableShadow;
+            const isScrollable = tableScrollable;
+            const gridTpl = cols.map(c => c.width || "1fr").join(" ");
+            const lastI = cols.length - 1;
+            const stickyStyle = (i, bg) => i === lastI && isScrollable ? { position:"sticky", right:0, background: bg, zIndex:2 } : {};
+            return (
+              <div ref={tableScrollRef} style={{ overflowX:"auto", border:"1px solid #E9E9EB", borderRadius:"0 0 8px 8px", borderTop:"none", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
+                <div style={{ minWidth: 1260 }}>
+                  {/* Header */}
+                  <div style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF" }}>
+                    {cols.map((col, ci) => (
+                      <div key={col.key} data-sticky-col={ci===lastI||undefined} style={{ display:"flex", alignItems:"center", gap:4, fontSize:14, fontWeight:500, color:"#8C8C8B", padding: col.cellPadding ? col.cellPadding.replace("14px","11px") : "11px 16px", borderRight: ci < lastI ? "1px solid #E9E9EB" : "none", justifyContent: col.align==="right" ? "flex-end" : "flex-start", ...stickyStyle(ci, "#FFFFFF") }}>
+                        {col.label}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Rows */}
+                  {rows.map((row, ri) => (
+                    <div key={ri} style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background: "#FFFFFF" }}
+                      onMouseEnter={e => e.currentTarget.querySelectorAll("[data-sticky]").forEach(el => el.style.background="#FAFAFA") || (e.currentTarget.style.background="#FAFAFA")}
+                      onMouseLeave={e => e.currentTarget.querySelectorAll("[data-sticky]").forEach(el => el.style.background="#FFFFFF") || (e.currentTarget.style.background="#FFFFFF")}>
+                      {cols.map((col, ci) => (
+                        <div key={col.key} data-sticky={ci===lastI||undefined} data-sticky-col={ci===lastI||undefined} style={{ display:"flex", alignItems:"center", justifyContent: col.align==="right"?"flex-end":"flex-start", fontSize:14, color:"#080908", padding: col.cellPadding||"14px 16px", borderRight: ci<lastI?"1px solid #E9E9EB":"none", overflow:"hidden", whiteSpace:"nowrap", maxHeight:56, ...stickyStyle(ci, "#FFFFFF") }}>
+                          {col.render ? col.render(row[col.key], row._raw||row, ri) : row[col.key]}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {/* Footer */}
+                  <div style={{ padding:"12px 16px", fontSize:14, color:"#8C8C8B", borderTop:"1px solid #E9E9EB" }}>{filtered.length} items</div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+    </div>
+    {inboxChecked.size > 0 && (
+      <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:16, padding:"12px 16px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
+        <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+          <button onClick={() => setInboxChecked(new Set())} style={{ width:24, height:24, minWidth:24, minHeight:24, background:"#F5F5F5", border:"none", borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0 }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap" }}>{inboxChecked.size} request{inboxChecked.size !== 1 ? "s" : ""} selected</span>
+        </div>
+        <button style={{ height:40, background:"#05A105", border:"none", borderRadius:8, padding:"8px 16px 8px 12px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", color:"white", fontSize:14, fontWeight:500, lineHeight:"22px", letterSpacing:"0.15px", whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4.167v11.666M4.167 10h11.666" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Create batch
+        </button>
+        <button style={{ border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:6, padding:0, flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="5" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="15" r="1.5" fill="#2A2A2A"/></svg>
+        </button>
+      </div>
+    )}
     </div>
   );
 }
 
 // ── Root component ────────────────────────────────────────────────────────────
 export default function BankReconciliation() {
-  const [activeNav, setActiveNav] = useState("Home");
+  // Nav slugs — defined first so getHashNav can be used in useState initializer
+  const NAV_SLUGS = {
+    "accounting/collect-documents": "Collect documents",
+    "accounting/inbox":             "Inbox",
+    "accounting/bank-reconciliation": "Bank reconciliation",
+  };
+  const NAV_SLUG_FROM_NAME = Object.fromEntries(Object.entries(NAV_SLUGS).map(([s, n]) => [n, s]));
+  const getHashNav = () => {
+    const hash = window.location.hash.replace("#", "");
+    return NAV_SLUGS[hash] || null;
+  };
+
+  const [activeNav, setActiveNav] = useState(() => getHashNav() || "Home");
   const [pageLoading, setPageLoading] = useState(false);
   const contentRef = useRef(null);
   const handleExpandFromHover = () => {
@@ -12598,12 +15512,24 @@ export default function BankReconciliation() {
   const [reconciling, setReconciling] = useState(() => getHashAccount()); // account name or null
   const [showResultsMode, setShowResultsMode] = useState(() => !!getHashAccount()); // true when opening from suggestions button
 
+  // Keep URL in sync when activeNav changes
+  useEffect(() => {
+    try {
+      const slug = NAV_SLUG_FROM_NAME[activeNav];
+      if (slug) {
+        window.location.hash = slug;
+      } else if (activeNav === "Home") {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+    } catch (e) { /* srcdoc iframe */ }
+  }, [activeNav]);
+
   // Keep URL in sync when reconciling changes
   useEffect(() => {
     try {
       if (reconciling && typeof reconciling === "string" && SLUG_FROM_ACCOUNT[reconciling]) {
         window.location.hash = "rec/" + SLUG_FROM_ACCOUNT[reconciling];
-      } else if (!reconciling) {
+      } else if (!reconciling && !NAV_SLUG_FROM_NAME[activeNav]) {
         history.replaceState(null, "", window.location.pathname + window.location.search);
       }
     } catch (e) { /* srcdoc iframe — URL routing not available */ }
@@ -12940,10 +15866,15 @@ export default function BankReconciliation() {
           <HomePage reconciledAccounts={reconciledAccounts} reconciledStatuses={reconciledStatuses} reconciledCounts={reconciledCounts} totalAccounts={bankAccounts.length} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} onNavigate={setActiveNav} onSetBsTab={setBsActiveTab} onRunBankRec={() => setActiveNav("Bank reconciliation")} onRunVatReview={() => setVatReviewActive(true)} onRunAccrual={() => setAccrualActive(true)} vatReviewCompleted={vatReviewCompleted} vatResolvedCount={vatResolvedCards.size + vatIgnoredCards.size} bsReconciledData={bsReconciledData} />
         ) : (activeNav === "Review" || activeNav === "Balance sheet" || activeNav === "Profit & Loss") ? (
           <BalanceSheetReviewPage rowComments={rowComments} onAddComment={handleAddComment} onRunBSReconciliation={handleRunBSReconciliation} onRunAccountReconciliation={handleRunAccountReconciliation} bsReconciledData={bsReconciledData} activeTab={bsActiveTab} onTabChange={setBsActiveTab} savedScrollTop={bsScrollTop} onSaveScroll={setBsScrollTop} selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} hideTabs={activeNav === "Balance sheet" || activeNav === "Profit & Loss"} pageTitle={activeNav === "Balance sheet" ? "Balance sheet" : activeNav === "Profit & Loss" ? "Profit & Loss" : "Review"} />
+        ) : activeNav === "Inbox" ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
+            <InboxPage />
+          </div>
         ) : activeNav === "Collect documents" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
-            <CollectDocumentsPage selectedPeriod={selectedPeriod} />
+            <CollectDocumentsPage selectedPeriod={selectedPeriod} bankStatements={bankStatements} onUploadStatements={openUploadSidebar} onAllStatements={() => setAllStatementsOpen(true)} />
           </div>
         ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -13022,19 +15953,16 @@ export default function BankReconciliation() {
 
       {/* Upload Statements Sidebar */}
       {uploadStatementsSidebarOpen && (
-        <>
-          <div onClick={closeUploadSidebar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, opacity: uploadSidebarVisible ? 1 : 0, transition: "opacity 0.32s ease" }} />
-          <UploadStatementsSidebar
-            onClose={closeUploadSidebar}
-            onUploaded={(files) => setProcessingFiles(files)}
-          />
-        </>
+        <UploadStatementsSidebar
+          onClose={closeUploadSidebar}
+          onUploaded={(files) => setProcessingFiles(files)}
+        />
       )}
 
       {/* All Statements Sidebar */}
       {allStatementsOpen && (
         <>
-          <div onClick={() => setAllStatementsOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200 }} />
+          <div onClick={() => setAllStatementsOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.15)", zIndex: 200 }} />
           <AllDocumentsSidebar onClose={() => setAllStatementsOpen(false)} />
         </>
       )}
