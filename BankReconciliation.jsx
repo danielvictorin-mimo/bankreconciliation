@@ -2464,27 +2464,772 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
   );
 }
 
-// ── Batch Draft Sidebar ───────────────────────────────────────────────────────
-function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.00", date = "23 March 2026", account = "Lloyds Bank - Business", accountNumber = "1048 9418-2251", batchInfo = null, fileName = "yte-invoice172.pdf", onClose, onConfirm }) {
+// ── Custom select dropdown (reused inside ReviewPublishPanel) ─────────────────
+function CustomSelectDropdown({ value, onChange, options, placeholder, withStar = false, style }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const starPath = "M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z";
+  return (
+    <div ref={ref} style={{ position: "relative", ...style }}>
+      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: withStar ? "0 12px 0 32px" : "0 12px", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", position: "relative" }}
+        onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+        {withStar && <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value || placeholder || "Select..."}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </div>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 400, maxHeight: 220, overflowY: "auto" }}>
+          {options.map(o => (
+            <div key={o} onClick={() => { onChange(o); setOpen(false); }} style={{ padding: "10px 14px", fontSize: 14, color: "#1F2024", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>{o}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Review & Publish Panel ────────────────────────────────────────────────────
+function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish }) {
   const [visible, setVisible] = useState(false);
+  const [docTab, setDocTab] = useState("Document");
+  const [whoOpen, setWhoOpen] = useState(true);
+  const [bankOpen, setBankOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const [lineItemsOpen, setLineItemsOpen] = useState(true);
+  const [xeroPrefsOpen, setXeroPrefsOpen] = useState(true);
+  const [adjustOpen, setAdjustOpen] = useState(true);
+  const [publishAs, setPublishAs] = useState("Awaiting payment");
+  const [prepayment, setPrepayment] = useState(true);
+  const [reference, setReference] = useState("INV-04829");
+  const [issueDate, setIssueDate] = useState("20 / 04 / 2026");
+  const [dueDate, setDueDate] = useState("04 / 05 / 2026");
+  const [publishing, setPublishing] = useState(false);
+  const [contactVal, setContactVal] = useState(contact || "Maple Leaf Services");
+  const [contactOpen, setContactOpen] = useState(false);
+  const [docReady, setDocReady] = useState(false);
+  const [docScale, setDocScale] = useState(1);
+  const contactRef = useRef(null);
+  const docCanvasRef = useRef(null);
+
+  const allContacts = ["Maple Leaf Services", "Gas Service Ltd.", "Thames Water Ltd.", "Ashford Consulting Group", "Blackstone Logistics", "Cedar Lane Properties", "Dawson & Partners LLP", "Eastbrook Supplies Ltd", "Finsbury Capital Group", "Greystone Media Ltd", "Harrow Building Services", "Ironbridge Technologies", "Jasper Retail Group", "Kingston Software Ltd", "Langley Print Services", "Mercer Freight Ltd", "Newgate Advisory LLP", "Oakhill Energy PLC", "Preston Utilities Ltd", "Quantex Systems Ltd", "Regent Street Holdings", "Silverstone Recruitment", "Thornbury Estates Ltd", "Underhill Engineering"];
+
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+    const t = setTimeout(() => setDocReady(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (!docCanvasRef.current) return;
+    const BASE_W = 620;
+    const BASE_H = Math.round(620 * 297 / 210); // 877px — A4 height at 620px width
+    const MARGIN = 32;
+    const obs = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      const scaleW = (width  - MARGIN * 2) / BASE_W;
+      const scaleH = (height - MARGIN * 2) / BASE_H;
+      setDocScale(Math.min(scaleW, scaleH));
+    });
+    obs.observe(docCanvasRef.current);
+    return () => obs.disconnect();
+  }, []);
+  useEffect(() => {
+    const h = (e) => { if (contactRef.current && !contactRef.current.contains(e.target)) setContactOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const chevronUp = <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 12.5L10 7.5L15 12.5" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+  const chevronDown = <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+  const chevronDownGray = <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 7.5L10 12.5L15 7.5" stroke="#7C7C7C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+
+  const SectionHeader = ({ label, open, onToggle }) => (
+    <button onClick={onToggle} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F5F5", border: "none", cursor: "pointer", borderRadius: 8, fontFamily: "'Inter', sans-serif" }}
+      onMouseEnter={e => e.currentTarget.style.background = "#EBEBEB"} onMouseLeave={e => e.currentTarget.style.background = "#F5F5F5"}>
+      <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
+      {open ? chevronUp : chevronDown}
+    </button>
+  );
+
+  // ── Amount helpers (use absolute value so negatives from bank feed work) ─────
+  const absAmt = Math.abs(parseFloat((amount || "0").replace(/[£$€,\s]/g, "")) || 0);
+  const fmtGBP = (n) => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const displayAmt = absAmt > 0 ? fmtGBP(absAmt) : "£0.00";
+  // Simulate a slight OCR extraction discrepancy (+5%) for the discrepancy banner
+  const extractedAmt = Math.round(absAmt * 1.05 * 100) / 100;
+  const diffAmt = Math.round((extractedAmt - absAmt) * 100) / 100;
+
+  const inputStyle = { width: "100%", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 12px", fontSize: 14, color: "#080908", fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box", background: "#FFFFFF", height: 40 };
+  const labelStyle = { fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 6, display: "block" };
+  const requiredDot = <span style={{ color: "#C8543A", marginLeft: 2 }}>*</span>;
+
+  const SelectRow = ({ value, onChange, options, style }) => (
+    <CustomSelectDropdown value={value} onChange={onChange} options={options} style={style} />
+  );
+
+  // ── Invoice template renderer — shared by thumbnail and main canvas ───────────
+  const renderInvoice = () => {
+    const _parseAmt = (s) => Math.abs(parseFloat((s || "0").replace(/[£$€,\s]/g, "")) || 0);
+    const _fmt = (n) => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const _total = _parseAmt(amount);
+    const _split = (ratios) => {
+      let rem = _total;
+      return ratios.map((r, i) => {
+        if (i === ratios.length - 1) return Math.round(rem * 100) / 100;
+        const v = Math.round(_total * r * 100) / 100;
+        rem -= v;
+        return v;
+      });
+    };
+    const _fmtDateCompact = (d) => (d || "").replace(/\s/g, "");
+    const _fmtDateFull = (d) => {
+      const p = (d || "").replace(/\s/g, "").split("/");
+      if (p.length !== 3) return d;
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return `${parseInt(p[0])} ${months[parseInt(p[1])-1]} ${p[2]}`;
+    };
+    const _ref = reference || "INV-00001";
+    const _iDate = _fmtDateCompact(issueDate);
+    const _dDate = _fmtDateCompact(dueDate);
+    const _iDateFull = _fmtDateFull(issueDate);
+    const _dDateFull = _fmtDateFull(dueDate);
+    const _hash = (contactVal || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    const _tpl = _hash % 4;
+    const _pageStyle = { width: 620, flexShrink: 0, minHeight: Math.round(620 * 297 / 210), background: "#FFFFFF", overflow: "hidden", fontFamily: "Georgia, 'Times New Roman', serif" };
+    const _sans = { fontFamily: "'Inter', Arial, sans-serif" };
+    /* ── Template 0: Orange band (freight) ── */
+    if (_tpl === 0) {
+      const [v1,v2,v3,v4,v5] = _split([0.42, 0.22, 0.16, 0.12, 0.08]);
+      const rows = [
+        [1,1,"service","International freight & logistics services",v1,v1],
+        [2,1,"service","Customs brokerage & trade documentation",v2,v2],
+        [3,1,"policy","Cargo insurance premium",v3,v3],
+        [4,1,"service","Warehousing, handling & storage",v4,v4],
+        [5,1,"delivery","Last-mile delivery to final destination",v5,v5],
+      ];
+      return (
+        <div style={_pageStyle}>
+          <div style={{ background: "#E8720C", padding: "28px 36px 20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF", letterSpacing: 0.3, ..._sans }}>{contactVal?.toUpperCase() || "SUPPLIER"}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 5, lineHeight: 1.6, ..._sans }}>14 Cargo Way, Felixstowe IP11 3SY · United Kingdom</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF", ..._sans }}>TAX INVOICE</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 1.6, ..._sans }}>Invoice #: {_ref}<br/>GBP</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: "20px 36px", display: "flex", gap: 40 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: "#7C7C7C", fontWeight: 600, marginBottom: 6, letterSpacing: 0.6, ..._sans }}>BILL TO</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#1C1C1E", ..._sans }}>Mimo Technology Ltd</div>
+              <div style={{ fontSize: 11, color: "#545453", lineHeight: 1.6, marginTop: 3, ..._sans }}>27 Old Gloucester Street<br/>London WC1N 3AX<br/>VAT: GB 438 2917 50</div>
+            </div>
+            <div style={{ fontSize: 11, ..._sans }}>
+              <div style={{ display: "grid", gridTemplateColumns: "90px auto", gap: "3px 8px" }}>
+                {[["Invoice #:",_ref],["Issue Date:",_iDate],["Due Date:",_dDate],["PO Ref:","PO-2026-0249"]].map(([k,v]) => [
+                  <span key={k} style={{ color: "#7C7C7C" }}>{k}</span>,
+                  <span key={v} style={{ color: "#1C1C1E", fontWeight: 600 }}>{v}</span>
+                ])}
+              </div>
+            </div>
+          </div>
+          <div style={{ margin: "0 36px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, ..._sans }}>
+              <thead><tr style={{ background: "#E8720C" }}>{["#","Qty","Unit","Description","Amount"].map((h,i)=><th key={h} style={{ padding:"7px 8px", color:"#FFFFFF", fontWeight:600, textAlign:i>=4?"right":"left"}}>{h}</th>)}</tr></thead>
+              <tbody>{rows.map(([n,q,u,d,up,a],ri)=><tr key={n} style={{background:ri%2===1?"#FFF8F4":"#FFFFFF"}}>{[n,q,u,d,_fmt(a)].map((v,ci)=><td key={ci} style={{padding:"6px 8px",color:"#1C1C1E",textAlign:ci>=4?"right":"left",borderBottom:"1px solid #F0F0F0"}}>{v}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+          <div style={{ padding: "14px 36px 28px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ minWidth: 240, fontSize: 11, ..._sans }}>
+              {[["Subtotal:",_fmt(_total)],["VAT (0%):",_fmt(0)]].map(([k,v])=><div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",color:"#545453"}}><span>{k}</span><span>{v}</span></div>)}
+              <div style={{display:"flex",justifyContent:"space-between",background:"#E8720C",color:"#FFFFFF",fontWeight:700,fontSize:12,padding:"7px 10px",borderRadius:3,marginTop:4}}><span>Total Due:</span><span>{_fmt(_total)}</span></div>
+            </div>
+          </div>
+          <div style={{ padding: "0 36px 28px", fontSize: 11, color: "#545453", lineHeight: 1.6, ..._sans }}>
+            <strong style={{ color: "#1C1C1E" }}>Payment:</strong> BACS within 14 days. Quote invoice number. Sort: 20-84-06, Account: 43821947.
+          </div>
+        </div>
+      );
+    }
+    /* ── Template 1: Navy professional ── */
+    if (_tpl === 1) {
+      const [v1,v2,v3,v4,v5] = _split([0.38, 0.28, 0.20, 0.09, 0.05]);
+      const rows1 = [
+        ["Professional services — scope of works\nAs per agreed statement of work",1,_fmt(v1),_fmt(v1)],
+        ["Materials, parts & components supplied\nItemised on attached works schedule",1,_fmt(v2),_fmt(v2)],
+        ["Engineer labour — on-site attendance\n"+Math.round(v3/72)+" days at standard day rate",Math.round(v3/72),_fmt(72),_fmt(v3)],
+        ["Sundries, consumables & van stock\nPer site; itemised on delivery note",1,_fmt(v4),_fmt(v4)],
+        ["Documentation, certification & sign-off\nIncluding compliance certificates",1,_fmt(v5),_fmt(v5)],
+      ];
+      return (
+        <div style={{ ..._pageStyle, fontFamily: "'Inter', Arial, sans-serif" }}>
+          <div style={{ padding: "32px 40px 20px", borderBottom: "2px solid #E0E0E0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#1B2B5E", letterSpacing: -0.3 }}>{contactVal?.toUpperCase() || "SUPPLIER"}</div>
+                <div style={{ fontSize: 11, color: "#7C7C7C", marginTop: 4 }}>Professional Services · Maintenance · Engineering</div>
+              </div>
+              <div style={{ textAlign: "right", fontSize: 11, color: "#7C7C7C", lineHeight: 1.7 }}>
+                <div style={{ fontWeight: 600, color: "#1B2B5E" }}>{contactVal || "Supplier"}</div>
+                12 Business Park, London EC1A<br/>T 020 7946 0102
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: "24px 40px 16px" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#1B2B5E", marginBottom: 20 }}>Invoice</div>
+            <div style={{ display: "flex", gap: 40 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: "#7C7C7C", fontWeight: 700, letterSpacing: 0.8, marginBottom: 6 }}>INVOICE TO</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1C1C1E" }}>Mimo Technology Ltd</div>
+                <div style={{ fontSize: 11, color: "#545453", lineHeight: 1.7, marginTop: 3 }}>27 Old Gloucester Street<br/>London WC1N 3AX<br/>FAO: Accounts Payable</div>
+              </div>
+              <div style={{ fontSize: 11 }}>
+                {[["Invoice no.",_ref],["Date",_iDateFull],["Due",_dDateFull],["Currency","GBP"]].map(([k,v])=>(
+                  <div key={k} style={{ display:"flex", gap:16, marginBottom:3 }}>
+                    <span style={{ color:"#7C7C7C", minWidth:70 }}>{k}</span>
+                    <span style={{ fontWeight:600, color:"#1C1C1E" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ margin: "0 40px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead><tr style={{ background: "#1B2B5E" }}>{["Description","Qty","Rate","Amount"].map((h,i)=><th key={h} style={{padding:"8px 10px",color:"#FFFFFF",fontWeight:600,textAlign:i>=2?"right":"left"}}>{h}</th>)}</tr></thead>
+              <tbody>{rows1.map(([d,q,r,a],ri)=>(
+                <tr key={ri} style={{borderBottom:"1px solid #EBEBEB"}}>
+                  <td style={{padding:"8px 10px",color:"#1C1C1E",fontSize:11,lineHeight:1.5}}>{d.split("\n").map((l,ii)=>ii===0?<div key={ii} style={{fontWeight:500}}>{l}</div>:<div key={ii} style={{color:"#7C7C7C",fontSize:10}}>{l}</div>)}</td>
+                  {[q,r,a].map((val,ci)=><td key={ci} style={{padding:"8px 10px",textAlign:"right",color:"#1C1C1E",verticalAlign:"top"}}>{val}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div style={{ padding: "16px 40px 28px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ minWidth: 220, fontSize: 11 }}>
+              {[["Subtotal:",_fmt(_total)],["VAT (0%):",_fmt(0)]].map(([k,v])=><div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",color:"#7C7C7C"}}><span>{k}</span><span>{v}</span></div>)}
+              <div style={{ display:"flex", justifyContent:"space-between", fontWeight:700, fontSize:14, color:"#1B2B5E", borderTop:"2px solid #1B2B5E", paddingTop:6, marginTop:4 }}><span>Total due</span><span>{_fmt(_total)}</span></div>
+            </div>
+          </div>
+          <div style={{ padding: "0 40px 28px", fontSize: 11, color: "#545453", lineHeight: 1.6 }}>
+            <strong style={{ color:"#1C1C1E" }}>Payment.</strong> Payable within 30 days by BACS to Lloyds Bank, sort 30-94-87, account 21548906. Please quote invoice number on remittance.
+          </div>
+        </div>
+      );
+    }
+    /* ── Template 2: Dark red / European ── */
+    if (_tpl === 2) {
+      const [v1,v2,v3,v4] = _split([0.40, 0.30, 0.18, 0.12]);
+      const rows2 = [
+        [1,1,"service","Technical consultancy & project management",_fmt(v1),_fmt(v1)],
+        [2,1,"service","Senior engineering — system integration",_fmt(v2),_fmt(v2)],
+        [3,1,"service","On-site attendance & delivery",_fmt(v3),_fmt(v3)],
+        [4,1,"supply","Components, materials & equipment",_fmt(v4),_fmt(v4)],
+      ];
+      return (
+        <div style={{ ..._pageStyle, fontFamily: "'Inter', Arial, sans-serif" }}>
+          <div style={{ background: "#A01830", padding: "24px 36px 20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#FFFFFF", letterSpacing: 0.2 }}>{contactVal?.toUpperCase() || "SUPPLIER"}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 4, lineHeight: 1.6 }}>42 Business Quarter, London EC2M 4YE</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#FFFFFF" }}>INVOICE</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 4, lineHeight: 1.6 }}>Invoice No.: {_ref}<br/>GBP</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: "24px 36px 16px", display: "flex", gap: 40 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7C7C7C", letterSpacing: 0.8, marginBottom: 8 }}>INVOICE TO</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1C1C1E" }}>Mimo Technology Ltd</div>
+              <div style={{ fontSize: 11, color: "#545453", lineHeight: 1.7, marginTop: 3 }}>27 Old Gloucester Street<br/>London WC1N 3AX<br/>VAT: GB 438 2917 50</div>
+            </div>
+            <div style={{ fontSize: 11 }}>
+              {[["Invoice No.:",_ref],["Issue Date:",_iDate],["Due Date:",_dDate],["Currency:","GBP"],["VAT:","Reverse Charge"]].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", gap:12, marginBottom:3 }}>
+                  <span style={{ color:"#7C7C7C", minWidth:90 }}>{k}</span>
+                  <span style={{ fontWeight:600, color:"#1C1C1E" }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ margin: "0 36px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead><tr style={{ background: "#A01830" }}>{["#","Unit","Description","Unit Price","Total"].map((h,i)=><th key={h} style={{padding:"7px 10px",color:"#FFFFFF",fontWeight:600,textAlign:i>=3?"right":"left"}}>{h}</th>)}</tr></thead>
+              <tbody>{rows2.map(([n,q,u,d,up,a],ri)=>(
+                <tr key={n} style={{background:ri%2===1?"#FBF2F4":"#FFFFFF",borderBottom:"1px solid #F0F0F0"}}>
+                  {[n,u,d,up,a].map((v,ci)=><td key={ci} style={{padding:"7px 10px",color:"#1C1C1E",textAlign:ci>=3?"right":"left"}}>{v}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div style={{ padding: "14px 36px 28px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ minWidth: 260, fontSize: 11 }}>
+              {[["Subtotal (net):",_fmt(_total)],["VAT (0% RC):",_fmt(0)]].map(([k,v])=><div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",color:"#545453"}}><span>{k}</span><span>{v}</span></div>)}
+              <div style={{display:"flex",justifyContent:"space-between",background:"#A01830",color:"#FFFFFF",fontWeight:700,fontSize:12,padding:"8px 12px",borderRadius:3,marginTop:4}}><span>Total Due:</span><span>{_fmt(_total)}</span></div>
+            </div>
+          </div>
+          <div style={{ padding: "0 36px 28px", fontSize: 11, color: "#545453", lineHeight: 1.6 }}>
+            <strong style={{ color: "#1C1C1E" }}>Payment terms:</strong> 30 days net. BACS to Barclays Bank, sort 20-00-00, account 83941726. Please quote invoice reference.
+          </div>
+        </div>
+      );
+    }
+    /* ── Template 3: Minimal clean ── */
+    const [v1,v2,v3,v4] = _split([0.47, 0.26, 0.16, 0.11]);
+    const rows3 = [
+      ["Annual Professional Indemnity Insurance\n12-month policy period",1,_fmt(v1),_fmt(v1)],
+      ["Employers' Liability Insurance (12 Months)\nStatutory cover — unlimited indemnity",1,_fmt(v2),_fmt(v2)],
+      ["Directors & Officers Liability Cover\nAnnual policy; D&O and management liability",1,_fmt(v3),_fmt(v3)],
+      ["Cyber & Data Liability Insurance\nFirst & third-party cyber risk cover",1,_fmt(v4),_fmt(v4)],
+    ];
+    return (
+      <div style={{ ..._pageStyle, fontFamily: "'Inter', Arial, sans-serif" }}>
+        <div style={{ padding: "36px 40px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#1C1C1E" }}>{contactVal || "Supplier"}</div>
+              <div style={{ fontSize: 11, color: "#7C7C7C", marginTop: 3 }}>100 Fenchurch Street, London EC3M 5JD</div>
+              <div style={{ fontSize: 11, color: "#7C7C7C", marginTop: 10 }}><strong style={{ color:"#1C1C1E" }}>Company No:</strong> 01234567 &nbsp;&nbsp; <strong style={{ color:"#1C1C1E" }}>VAT No:</strong> GB999 9999 73</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#1C1C1E", letterSpacing: -0.5 }}>INVOICE</div>
+              <div style={{ fontSize: 11, color: "#545453", marginTop: 8, lineHeight: 1.7 }}>
+                <strong>Invoice #:</strong> {_ref}<br/>
+                <strong>Date:</strong> {_iDateFull}<br/>
+                <strong>Due:</strong> {_dDateFull}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ height: 1, background: "#DBDBDB", margin: "0 40px" }} />
+        <div style={{ padding: "20px 40px 16px" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#545453", marginBottom: 6 }}>Billed To:</div>
+          <div style={{ fontSize: 12, color: "#1C1C1E", lineHeight: 1.7 }}>Mimo Technology Ltd<br/>27 Old Gloucester Street<br/>London, WC1N 3AX</div>
+        </div>
+        <div style={{ margin: "0 40px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead><tr style={{ borderBottom: "2px solid #1C1C1E" }}>{["Description","Qty","Amount"].map((h,i)=><th key={h} style={{padding:"8px 10px",color:"#1C1C1E",fontWeight:700,textAlign:i>=2?"right":"left",fontSize:12}}>{h}</th>)}</tr></thead>
+            <tbody>{rows3.map(([d,q,p,a],ri)=>(
+              <tr key={ri} style={{borderBottom:"1px solid #EBEBEB"}}>
+                <td style={{padding:"10px 10px",color:"#1C1C1E",lineHeight:1.5}}>{d.split("\n").map((l,ii)=>ii===0?<div key={ii} style={{fontWeight:600}}>{l}</div>:<div key={ii} style={{color:"#7C7C7C",fontSize:11}}>{l}</div>)}</td>
+                {[q,a].map((v,ci)=><td key={ci} style={{padding:"10px 10px",textAlign:"right",color:"#1C1C1E",verticalAlign:"top"}}>{v}</td>)}
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+        <div style={{ padding: "16px 40px 28px", display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ minWidth: 220, fontSize: 12 }}>
+            {[["Subtotal:",_fmt(_total)],["VAT (0%):",_fmt(0)]].map(([k,v])=><div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",color:"#545453"}}><span>{k}</span><span>{v}</span></div>)}
+            <div style={{height:1,background:"#1C1C1E",margin:"6px 0"}}/>
+            <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:14,color:"#1C1C1E",paddingTop:4}}><span>Total Due:</span><span>{_fmt(_total)}</span></div>
+          </div>
+        </div>
+        <div style={{ height: 1, background: "#DBDBDB", margin: "0 40px" }} />
+        <div style={{ padding: "16px 40px 28px", fontSize: 11, color: "#7C7C7C", lineHeight: 1.6 }}>
+          Payment due within 14 days of issue. Late payments may incur interest at 8% above Bank of England base rate per the Late Payment of Commercial Debts (Interest) Act 1998.
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", opacity: visible ? 1 : 0, transition: "opacity 0.25s ease" }}>
+      {/* Left: document preview area — slides in from left */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", transform: visible ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)" }}>
+        {/* Toolbar */}
+        <div style={{ height: 44, background: "#404040", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", flexShrink: 0, gap: 8 }}>
+          {/* Left: menu + filename */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+            <button style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fileName || "untitled"}</span>
+          </div>
+          {/* Centre: page nav + zoom */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.1)", borderRadius: 6, padding: "2px 8px", height: 28 }}>
+              <span style={{ fontSize: 13, color: "#FFFFFF", minWidth: 32, textAlign: "center" }}>1 / 1</span>
+            </div>
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
+            {[
+              <path d="M5 12H19M12 5l-7 7 7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
+              <path d="M19 12H5M12 5l7 7-7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            ].map((d, i) => (
+              <button key={i} style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">{d}</svg>
+              </button>
+            ))}
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
+            <button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l-7 7 7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.1)", borderRadius: 6, padding: "2px 8px", height: 28 }}>
+              <span style={{ fontSize: 13, color: "#FFFFFF" }}>100%</span>
+            </div>
+            <button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l7 7-7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
+            {[
+              <><rect x="3" y="3" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/></>,
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>,
+              <><path d="M10 9l-3 3 3 3M14 9l3 3-3 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>,
+              <><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9z" stroke="#FFFFFF" strokeWidth="1.5"/><path d="M9 22V12h6v10" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/></>,
+            ].map((d, i) => (
+              <button key={i} style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">{d}</svg>
+              </button>
+            ))}
+          </div>
+          {/* Right: action icons */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "flex-end" }}>
+            {[
+              <path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>,
+              <path d="M21 15V16.2C21 17.88 21 18.72 20.673 19.362C20.385 19.927 19.927 20.385 19.362 20.673C18.72 21 17.88 21 16.2 21H7.8C6.12 21 5.28 21 4.638 20.673C4.073 20.385 3.615 19.927 3.327 19.362C3 18.72 3 17.88 3 16.2V15M7 10l5 5 5-5M12 15V3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
+              <path d="M6 9V6a3 3 0 0 1 6 0v3M5 9h14l-1.4 9.8A2 2 0 0 1 15.62 21H8.38a2 2 0 0 1-1.98-2.2L5 9z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
+              <><circle cx="12" cy="12" r="1" fill="#FFFFFF"/><circle cx="12" cy="5" r="1" fill="#FFFFFF"/><circle cx="12" cy="19" r="1" fill="#FFFFFF"/></>
+            ].map((d, i) => (
+              <button key={i} style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">{d}</svg>
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Content: thumbnail strip + document canvas */}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          {/* Thumbnail strip */}
+          <div style={{ width: 200, background: "#525252", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: 12, flexShrink: 0 }}>
+            <div style={{ padding: 4, background: "#FFFFFF", borderRadius: 4, border: "2px solid #4A90D9", cursor: "pointer", flexShrink: 0 }}>
+              <div style={{ width: 130, height: 184, overflow: "hidden", position: "relative" }}>
+                <div style={{ transform: "scale(0.2097)", transformOrigin: "top left", width: 620, pointerEvents: "none", userSelect: "none" }}>
+                  {renderInvoice()}
+                </div>
+              </div>
+              <div style={{ textAlign: "center", marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>1</div>
+            </div>
+          </div>
+          {/* Document canvas */}
+          <div ref={docCanvasRef} style={{ flex: 1, background: "#ECECEC", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+            {!docReady ? (
+              /* Loading spinner — shown for 1.5 s before document appears */
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                  <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+            ) : null}
+            {/* Invoice template — fades in after spinner, scaled to fit canvas */}
+            <div style={{ opacity: docReady ? 1 : 0, transition: "opacity 0.4s ease", transform: `scale(${docScale})`, transformOrigin: "center center", flexShrink: 0 }}>
+              {renderInvoice()}
+            </div>{/* end invoice fade wrapper */}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Review & Publish panel */}
+      <div style={{ width: 600, background: "#FFFFFF", display: "flex", flexDirection: "column", position: "relative", transform: visible ? "translateX(0)" : "translateX(100%)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)" }}>
+        {/* Panel header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+          <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Review & Publish</span>
+          <button onClick={() => { setVisible(false); setTimeout(onClose, 280); }} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0, flexShrink: 0 }}>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+        {/* Scrollable content — tabs scroll with content, only header is fixed */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          {/* Tabs */}
+          <div style={{ padding: "12px 36px 0", flexShrink: 0 }}>
+            <div style={{ display: "flex", borderBottom: "1px solid #ECECEC" }}>
+              {["Document", "Audit log"].map(t => (
+                <button key={t} onClick={() => setDocTab(t)} style={{ padding: "0 4px", marginRight: 20, height: 40, border: "none", borderBottom: docTab === t ? "2px solid #05A105" : "2px solid transparent", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: docTab === t ? 500 : 400, color: docTab === t ? "#1F2024" : "#7C7C7C", fontFamily: "'Inter', sans-serif", flexShrink: 0, marginBottom: -1 }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Sections */}
+          <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* Who is it for? */}
+          <div>
+            <SectionHeader label="Who is it for?" open={whoOpen} onToggle={() => setWhoOpen(v => !v)} />
+            {whoOpen && (
+              <div style={{ padding: "16px 16px 18px" }}>
+                <label style={labelStyle}>Contact{requiredDot}</label>
+                <div ref={contactRef} style={{ position: "relative" }}>
+                  <div onClick={() => setContactOpen(v => !v)} style={{ display: "flex", alignItems: "center", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", padding: "0 12px", gap: 8 }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contactVal}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#05A105", background: "#F1F8F0", borderRadius: 4, padding: "0 6px", height: 21, display: "flex", alignItems: "center", flexShrink: 0 }}>New</span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  {contactOpen && (
+                    <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 400, maxHeight: 220, overflowY: "auto" }}>
+                      {allContacts.map(c => (
+                        <div key={c} onClick={() => { setContactVal(c); setContactOpen(false); }} style={{ padding: "10px 14px", fontSize: 14, color: "#1F2024", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>{c}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bank statement */}
+          <div>
+            <SectionHeader label="Bank statement" open={bankOpen} onToggle={() => setBankOpen(v => !v)} />
+            {bankOpen && (
+              <div style={{ padding: "14px 16px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E9E9EB", borderRadius: 10, padding: "0 16px", height: 74, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: 14, color: "#000000" }}>Assign to an open request</span>
+                  <button style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9.99996 13.0039C10.4294 13.578 10.9773 14.0531 11.6065 14.3968C12.2357 14.7406 12.9315 14.945 13.6466 14.9962C14.3617 15.0474 15.0795 14.9442 15.7513 14.6937C16.4231 14.4431 17.0331 14.0509 17.54 13.5439L20.54 10.5439C21.4507 9.60086 21.9547 8.33785 21.9433 7.02687C21.9319 5.71588 21.4061 4.46182 20.479 3.53478C19.552 2.60774 18.2979 2.08189 16.987 2.0705C15.676 2.05911 14.413 2.56308 13.47 3.47387L11.75 5.18387M14 11.0039C13.5705 10.4297 13.0226 9.95469 12.3934 9.61093C11.7642 9.26717 11.0684 9.06276 10.3533 9.01154C9.63816 8.96032 8.92037 9.0635 8.24861 9.31409C7.57685 9.56468 6.96684 9.9568 6.45996 10.4639L3.45996 13.4639C2.54917 14.4069 2.04519 15.6699 2.05659 16.9809C2.06798 18.2919 2.59382 19.5459 3.52086 20.473C4.4479 21.4 5.70197 21.9259 7.01295 21.9372C8.32393 21.9486 9.58694 21.4447 10.53 20.5339L12.24 18.8239" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Assign
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Details */}
+          <div>
+            <SectionHeader label="Details" open={detailsOpen} onToggle={() => setDetailsOpen(v => !v)} />
+            {detailsOpen && (
+              <div style={{ padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <label style={labelStyle}>Document type{requiredDot}</label>
+                  <SelectRow value="Invoice" onChange={() => {}} options={["Invoice", "Credit note"]} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Reference{requiredDot}</label>
+                  <input value={reference} onChange={e => setReference(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Issue date</label>
+                    <input value={issueDate} onChange={e => setIssueDate(e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Due date</label>
+                    <input value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Currency</label>
+                  <SelectRow value="GBP" onChange={() => {}} options={["GBP", "USD", "EUR", "AUD"]} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Line items */}
+          <div>
+            <SectionHeader label="Line items" open={lineItemsOpen} onToggle={() => setLineItemsOpen(v => !v)} />
+            {lineItemsOpen && (
+              <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Discrepancy banner */}
+                <div style={{ border: "1px solid #E8C77A", borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "#FFFBF0" }}>
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#D5A750" strokeWidth="1.5"/><path d="M10 6v5M10 13.5v.5" stroke="#D5A750" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#A07A30" }}>Discrepancy detected</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid #E8C77A" }}>
+                    <div style={{ padding: "12px 14px", borderRight: "1px solid #E8C77A" }}>
+                      <div style={{ fontSize: 11, color: "#7C7C7C", marginBottom: 6 }}>Total amount</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "#080908" }}>{displayAmt}</div>
+                    </div>
+                    <div style={{ padding: "12px 14px", background: "#FDF8EE" }}>
+                      <div style={{ fontSize: 11, color: "#7C7C7C", marginBottom: 6 }}>Extracted amount</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "#080908" }}>{fmtGBP(extractedAmt)}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: "#D5A750", marginTop: 2 }}>+{fmtGBP(diffAmt)}</div>
+                    </div>
+                  </div>
+                </div>
+                {/* Merge to one */}
+                <button style={{ width: "100%", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v14M6 7l4-4 4 4M6 13l4 4 4-4" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Merge to one
+                </button>
+                {/* Column headers */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", borderBottom: "1px solid #E9E9EB", paddingBottom: 8 }}>
+                  <span style={{ fontSize: 12, color: "#7C7C7C" }}>Description</span>
+                  <span style={{ fontSize: 12, color: "#7C7C7C" }}>Actions</span>
+                </div>
+                {/* Line item form */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Description{requiredDot}</label>
+                    <div style={{ position: "relative" }}>
+                      <input defaultValue="International freight and logistics services" style={{ ...inputStyle, paddingLeft: 34 }} />
+                      <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Amount{requiredDot}</label>
+                    <input defaultValue={amount || "£7,274.50"} style={inputStyle} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Account{requiredDot}</label>
+                      <CustomSelectDropdown value="Postage, Freight & Cou..." onChange={() => {}} options={["Postage, Freight & Courier", "Office Expenses", "Consulting", "Travel & Accommodation"]} withStar={true} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Tracking category</label>
+                      <CustomSelectDropdown value="" onChange={() => {}} options={["Operations", "Marketing", "Finance", "Engineering"]} placeholder="Select category" />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Tax rate{requiredDot}</label>
+                      <CustomSelectDropdown value="Reverse Charge Expe..." onChange={() => {}} options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]} withStar={true} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Tax amount{requiredDot}</label>
+                      <input defaultValue="£0.00" style={inputStyle} />
+                    </div>
+                  </div>
+                </div>
+                {/* Add / Restore */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button style={{ height: 38, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#545453" strokeWidth="1.75" strokeLinecap="round"/></svg>
+                    Add line item
+                  </button>
+                  <button style={{ height: 38, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Restore line items
+                  </button>
+                </div>
+                {/* Summary */}
+                <div style={{ borderTop: "1px solid #E9E9EB", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[["Subtotal", amount || "£7,274.50"], ["Tax", "£0.00"]].map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#7C7C7C" }}>
+                      <span>{k}</span><span>{v}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#080908" }}>Total</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", border: "1px solid #E9E9EB", borderRadius: 6, padding: "4px 10px" }}>{amount || "£7,274.50"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Xero preferences */}
+          <div>
+            <SectionHeader label="Xero preferences" open={xeroPrefsOpen} onToggle={() => setXeroPrefsOpen(v => !v)} />
+            {xeroPrefsOpen && (
+              <div style={{ padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <label style={labelStyle}>Publish as</label>
+                  <SelectRow value={publishAs} onChange={setPublishAs} options={["Awaiting payment", "Draft", "Approved"]} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Adjustments */}
+          <div style={{ marginBottom: 4 }}>
+            <SectionHeader label="Adjustments" open={adjustOpen} onToggle={() => setAdjustOpen(v => !v)} />
+            {adjustOpen && (
+              <div style={{ padding: "14px 16px 16px" }}>
+                <div style={{ border: "1px solid #E9E9EB", borderRadius: 10, padding: "14px 14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* AI insight box */}
+                  <div style={{ background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span style={{ fontSize: 14, color: "#1A5C1A", lineHeight: 1.5 }}>The invoice explicitly states 'Annual' and '12 Months', suggesting this may be a prepayment.</span>
+                  </div>
+                  {/* Toggle row */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Mark as prepayment</span>
+                    <div onClick={() => setPrepayment(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: prepayment ? "#05A105" : "#DBDBDB", cursor: "pointer", position: "relative", transition: "background 0.2s ease", flexShrink: 0 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 2, left: prepayment ? 22 : 2, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                    </div>
+                  </div>
+                  {/* Description */}
+                  <p style={{ margin: 0, fontSize: 14, color: "#7C7C7C", lineHeight: 1.5 }}>Prepayment schedule won't be published. Review and publish it later on the Adjustments page.</p>
+                </div>
+              </div>
+            )}
+          </div>
+          </div>{/* end sections */}
+        </div>{/* end scrollable */}
+
+        {/* Footer */}
+        <div style={{ padding: "14px 20px", borderTop: "1px solid #E9E9EB", display: "flex", gap: 10, flexShrink: 0, background: "#FFFFFF" }}>
+          <button onClick={() => { setVisible(false); setTimeout(onClose, 280); }} style={{ flex: 1, height: 42, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+            Save changes
+          </button>
+          <button
+            onClick={() => {
+              if (publishing) return;
+              setPublishing(true);
+              setTimeout(() => { setPublishing(false); setVisible(false); setTimeout(() => { onPublish?.(); onClose(); }, 280); }, 2000);
+            }}
+            style={{ flex: 2, height: 42, border: "none", borderRadius: 8, background: publishing ? "#058F05" : "#05A105", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif", transition: "background 0.2s ease" }}
+            onMouseEnter={e => { if (!publishing) e.currentTarget.style.background = "#058F05"; }}
+            onMouseLeave={e => { if (!publishing) e.currentTarget.style.background = "#05A105"; }}
+          >
+            {publishing ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                  <path d="M10 2A8 8 0 1 1 2 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Publishing...
+              </>
+            ) : "Publish to Xero"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Batch Draft Sidebar ───────────────────────────────────────────────────────
+function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.00", date = "23 March 2026", account = "Lloyds Bank - Business", accountNumber = "1048 9418-2251", batchInfo = null, fileName = "yte-invoice172.pdf", onClose, onConfirm, onPublish, initialUploadDone = false, initialDocStatus = null }) {
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [activeTab, setActiveTab] = useState("Documents");
-  const [confirming, setConfirming] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadingInDropzone, setUploadingInDropzone] = useState(false);
+  const [uploadDone, setUploadDone] = useState(initialUploadDone);
+  const [docStatus, setDocStatus] = useState(initialDocStatus); // "Ready" | "Review" | "Published"
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState(initialUploadDone ? [{ name: fileName }] : []);
   const [draggingOver, setDraggingOver] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
   const fileInputRef2 = useRef(null);
+
+  const handleClose = () => { setClosing(true); setTimeout(() => onClose?.(), 320); };
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(() => onClose?.(), 320); } };
+    const handler = (e) => { if (e.key === "Escape") handleClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
   const handleConfirm = () => {
-    setConfirming(true);
+    setUploadingInDropzone(true);
     setTimeout(() => {
-      setVisible(false);
-      setTimeout(() => { onConfirm?.(); onClose(); }, 320);
+      setUploadingInDropzone(false);
+      setUploadDone(true);
+      setDocStatus(Math.random() < 0.5 ? "Ready" : "Review");
+      onConfirm?.();
     }, 2000);
   };
 
@@ -2497,18 +3242,25 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
   const tabs = ["Documents", "Notes", "Audit trail"];
 
   return (
+    <>
+    {/* Backdrop — click closes with animation */}
+    <div
+      onClick={handleClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200,
+        opacity: visible && !closing ? 1 : 0, transition: "opacity 0.32s cubic-bezier(0.4,0,0.2,1)" }}
+    />
     <div style={{
       position: "fixed", top: 0, right: 0, bottom: 0, width: 600,
       background: "#FFFFFF",
       display: "flex", flexDirection: "column", zIndex: 201,
-      transform: visible ? "translateX(0)" : "translateX(100%)",
+      transform: visible && !closing ? "translateX(0)" : "translateX(100%)",
       transition: "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
       fontFamily: "'Inter', sans-serif",
     }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
         <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>{contact}</span>
-        <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+        <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0 }}>
           <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
@@ -2532,7 +3284,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
             <button style={{ height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
               onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
               onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
-            >Copy upload link</button>
+            >{uploadDone ? "Reopen request" : "Copy upload link"}</button>
           </div>
           {/* Amount + Date */}
           <div style={{ display: "flex", alignItems: "stretch", borderTop: "1px solid #F0F0F0" }}>
@@ -2586,22 +3338,24 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
                 );
               })()}
               {/* Stats */}
-              <div style={{ margin: "0 18px", border: "1px solid #E9E9EB", borderRadius: 8 }}>
-                <div style={{ display: "flex", height: 42, alignItems: "center" }}>
-                  {[
-                    { icon: <FileQuestionIcon />, label: `${batchInfo.requestCount} request${batchInfo.requestCount !== 1 ? "s" : ""}` },
-                    { icon: <BankStatIcon />, label: `${batchInfo.accountCount} account${batchInfo.accountCount !== 1 ? "s" : ""}` },
-                    { icon: <UsersCheckIcon />, label: `${batchInfo.assignees.length} assignee${batchInfo.assignees.length !== 1 ? "s" : ""}` },
-                  ].map(({ icon, label }, i) => (
-                    <React.Fragment key={label}>
-                      {i > 0 && <div style={{ width: 1, background: "#E9E9EB", height: 14, flexShrink: 0 }} />}
-                      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#1F2024", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                        {icon} {label}
-                      </span>
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
+              {(() => {
+                const _cellStyle = { flexGrow: 1, flexShrink: 1, flexBasis: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 14, fontWeight: 500, color: "#1F2024" };
+                const _divStyle = { width: 1, flexShrink: 0, background: "#E9E9EB" };
+                const _reqLabel = `${batchInfo.requestCount} request${batchInfo.requestCount !== 1 ? "s" : ""}`;
+                const _accLabel = `${batchInfo.accountCount} account${batchInfo.accountCount !== 1 ? "s" : ""}`;
+                const _asnLabel = `${batchInfo.assignees.length} assignee${batchInfo.assignees.length !== 1 ? "s" : ""}`;
+                return (
+                  <div style={{ margin: "0 18px", border: "1px solid #E9E9EB", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{ display: "flex", height: 42, alignItems: "stretch" }}>
+                      <div style={_cellStyle}><FileQuestionIcon />{_reqLabel}</div>
+                      <div style={_divStyle} />
+                      <div style={_cellStyle}><BankStatIcon />{_accLabel}</div>
+                      <div style={_divStyle} />
+                      <div style={_cellStyle}><UsersCheckIcon />{_asnLabel}</div>
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Separator + Assignees (only if there are assignees) */}
               {batchInfo.assignees.length > 0 && (<>
                 <div style={{ margin: "12px 18px 0", borderTop: "1px solid #F0F0F0" }} />
@@ -2627,6 +3381,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
         })()}
 
         {/* ── Cancel request ── */}
+        {!uploadDone && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 80, border: "1px solid #E9E9EB", borderRadius: 12, background: "#FFFFFF", boxSizing: "border-box" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 4 }}>Cancel request</div>
@@ -2637,6 +3392,7 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
             onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#E9E9EB"; }}
           >Cancel request</button>
         </div>
+        )}
 
         {/* ── Tabs ── */}
         <div style={{ display: "flex", borderBottom: "1px solid #ECECEC", marginTop: 4 }}>
@@ -2672,7 +3428,47 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
               ) : (
                 <div style={{ flexShrink: 0 }}><InvoiceFileIcon width={28} height={34} /></div>
               );
-              return (
+              return uploadDone ? (
+                <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 12, background: "#FFFFFF", overflow: "hidden" }}>
+                  {/* Invoice header */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px" }}>
+                    <span style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>Supplier invoice</span>
+                    <button onClick={() => setShowEditPanel(true)} style={{ height: 36, padding: "0 16px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>Edit</button>
+                  </div>
+                  {/* Invoice data */}
+                  <div style={{ padding: "0 18px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 14, color: "#080908", marginBottom: 8 }}>
+                      <span style={{ fontWeight: 500 }}>IT Software and Consumables</span>
+                      <span style={{ color: "#7C7C7C", marginLeft: 8 }}>463</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: "#080908" }}>
+                      <span style={{ fontWeight: 500 }}>{contact}</span>
+                      <span style={{ color: "#7C7C7C", marginLeft: 8 }}>{date}</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: "#080908" }}>
+                      <span style={{ fontWeight: 500 }}>{amount}</span>
+                      <span style={{ color: "#7C7C7C", marginLeft: 8 }}>20% (VAT on Expenses), £6.60</span>
+                    </div>
+                  </div>
+                  {/* Separator */}
+                  <div style={{ height: 1, background: "#F0F0F0" }} />
+                  {/* File box */}
+                  <div style={{ padding: "12px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "12px 14px" }}>
+                      {fileIcon}
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#080908", wordBreak: "break-word", lineHeight: "20px" }}>{f.name}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: docStatus === "Ready" ? "#6B4EE6" : docStatus === "Published" ? "#05A105" : "#D5A750", background: docStatus === "Ready" ? "#EDE9FB" : docStatus === "Published" ? "#F1F8F0" : "#FDF8EE", borderRadius: 6, padding: "4px 10px", whiteSpace: "nowrap" }}>{docStatus || "Ready"}</span>
+                        <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 6, padding: 0, flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V15M7 10L12 15L17 10M12 15V3" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div key={i} style={{ border: "1px solid #E9E9EB", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", height: 72, boxSizing: "border-box" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                     {fileIcon}
@@ -2691,12 +3487,22 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
               );
             })}
             {/* Drop zone */}
-            <div
+            {!uploadDone && <div
               onDragOver={e => { e.preventDefault(); setDraggingOver(true); }}
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDraggingOver(false); }}
               onDrop={e => { e.preventDefault(); setDraggingOver(false); handleDropFiles(e.dataTransfer.files); }}
-              style={{ border: `1.5px dashed ${draggingOver ? "#05A105" : "#DBDBDB"}`, borderRadius: 12, padding: "36px 24px 28px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: draggingOver ? "#F4F9F1" : "transparent", transition: "background 0.15s, border-color 0.15s" }}
+              style={{ border: `1.5px dashed ${draggingOver ? "#05A105" : "#DBDBDB"}`, borderRadius: 12, padding: "36px 24px 28px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: draggingOver ? "#F4F9F1" : "transparent", transition: "background 0.15s, border-color 0.15s", position: "relative" }}
             >
+              {uploadingInDropzone && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, borderRadius: 10 }}>
+                  <svg width="32" height="32" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                    <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>Uploading {uploadedFiles.length} document{uploadedFiles.length !== 1 ? "s" : ""}</div>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", opacity: uploadingInDropzone ? 0 : 1, pointerEvents: uploadingInDropzone ? "none" : "auto", transition: "opacity 0.15s" }}>
+              <>
               {/* 3-document fan illustration */}
               <svg width="107" height="70" viewBox="0 0 86 56" fill="none" style={{ marginBottom: 20 }}>
                 <defs>
@@ -2743,7 +3549,9 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/></svg>
                 Upload document
               </button>
-            </div>
+              </>
+              </div>
+            </div>}
             <input ref={fileInputRef2} type="file" multiple accept=".pdf,.png,.webp,.jpg,.jpeg" style={{ display: "none" }} onChange={e => { handleDropFiles(e.target.files); e.target.value = ""; }} />
           </div>
         )}
@@ -2758,27 +3566,63 @@ function BatchDraftSidebar({ contact = "Yorkshire Tea Estates", amount = "£240.
 
       {/* Footer */}
       <div style={{ padding: "16px 28px", borderTop: "1px solid #ECECEC", display: "flex", gap: 12, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ height: 40, padding: "0 24px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
+        <button onClick={onClose} style={{ height: 40, padding: "0 24px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flex: published ? 1 : "none" }}
           onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
           onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}
         >Close</button>
-        {(() => {
+        {!published && (() => {
+          if (uploadDone) {
+            const canPublish = docStatus === "Ready" && !publishing;
+            return (
+              <button
+                onClick={() => {
+                  if (!canPublish) return;
+                  setPublishing(true);
+                  setTimeout(() => {
+                    setPublishing(false);
+                    setPublished(true);
+                    onPublish?.();
+                  }, 2000);
+                }}
+                style={{ flex: 1, padding: "10px 16px", border: (docStatus === "Ready") ? "none" : "1px solid #E9E9EB", borderRadius: 8, background: publishing ? "#058F05" : (docStatus === "Ready") ? "#05A105" : "#F5F5F5", cursor: canPublish ? "pointer" : "default", fontSize: 14, fontWeight: 500, color: (docStatus === "Ready") ? "#FFFFFF" : "#ADADAD", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 0.2s ease" }}
+                onMouseEnter={e => { if (canPublish) e.currentTarget.style.background = "#058F05"; }}
+                onMouseLeave={e => { if (canPublish && !publishing) e.currentTarget.style.background = "#05A105"; }}
+              >
+                {publishing ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                      <path d="M10 2A8 8 0 1 1 2 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Publishing...
+                  </>
+                ) : "Publish to Xero"}
+              </button>
+            );
+          }
           const hasFiles = uploadedFiles.length > 0;
-          const disabled = !hasFiles || confirming;
+          const disabled = !hasFiles || uploadingInDropzone;
           return (
             <button onClick={!disabled ? handleConfirm : undefined}
-              style={{ flex: 1, padding: "10px 16px", border: disabled ? "1px solid #E9E9EB" : "none", borderRadius: 8, background: confirming ? "#F5F5F5" : disabled ? "#F5F5F5" : "#05A105", cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: disabled ? "#ADADAD" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s ease" }}
+              style={{ flex: 1, padding: "10px 16px", border: disabled ? "1px solid #E9E9EB" : "none", borderRadius: 8, background: disabled ? "#F5F5F5" : "#05A105", cursor: disabled ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: disabled ? "#ADADAD" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s ease" }}
               onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = "#058F05"; }}
               onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = "#05A105"; }}
-            >
-              {confirming ? (
-                <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2.5px solid #E9E9EB", borderTopColor: "#05A105", animation: "spin 0.75s linear infinite" }} />
-              ) : "Confirm documents"}
-            </button>
+            >Confirm documents</button>
           );
         })()}
       </div>
     </div>
+    {showEditPanel && (
+      <ReviewPublishPanel
+        contact={contact}
+        amount={amount}
+        date={date}
+        fileName={uploadedFiles[0]?.name || fileName}
+        docStatus={docStatus}
+        onClose={() => setShowEditPanel(false)}
+        onPublish={() => { onPublish?.(); setPublished(true); setShowEditPanel(false); setTimeout(() => onClose?.(), 320); }}
+      />
+    )}
+    </>
   );
 }
 
@@ -5266,7 +6110,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       {/* Batch draft sidebar */}
       {batchDraftSidebar && (
         <>
-          <div onClick={() => setBatchDraftSidebar(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 200 }} />
           <BatchDraftSidebar
             contact={batchDraftSidebar.contact}
             amount={batchDraftSidebar.amount}
@@ -12524,6 +13367,8 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
 // ── Collect Documents Page ────────────────────────────────────────────────────
 function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadStatements, onAllStatements }) {
   const [activeTab, setActiveTab] = useState("Missing documents");
+  const [notifPaused, setNotifPaused] = useState(false);
+  const [notifPauseLoading, setNotifPauseLoading] = useState(false);
   const [search, setSearch] = useState("");
   const collectScrollRef = useRef(null);
   const [collectScrollable, setCollectScrollable] = useState(false);
@@ -12817,9 +13662,9 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
     "Mastercard Business": "Received",
   });
   const [receivedRefs, setReceivedRefs] = useState(new Set(["Highland Energy 455GBP", "Apex Consulting Ltd", "Greenwood Partners", "Maple Leaf Services", "Thames Water Ltd. A918", "Ashford Consulting Group", "Blackstone Logistics", "Cedar Lane Properties", "Dawson & Partners LLP", "Eastbrook Supplies Ltd", "Finsbury Capital Group", "Greystone Media Ltd", "Harrow Building Services", "Ironbridge Technologies", "Jasper Retail Group", "Kingston Software Ltd", "Langley Print Services", "Mercer Freight Ltd", "Newgate Advisory LLP", "Oakhill Energy PLC", "Preston Utilities Ltd", "Quantex Systems Ltd", "Regent Street Holdings", "Silverstone Recruitment", "Thornbury Estates Ltd", "Underhill Engineering", "Vantage Solutions Group", "Westfield Contractors Ltd", "Gas Service Ltd.", "Clearwater Services", "Redwood Advisory", "Barclays - Operations", "Mastercard Business"]));
-  const archivedRefs = new Set(["Elmwood Recruitment", "Thornfield Capital", "Cornerstone Advisory", "Whitmore & Clarke", "Crestwood Ventures", "Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]);
+  const [archivedRefs, setArchivedRefs] = useState(new Set(["Elmwood Recruitment", "Thornfield Capital", "Cornerstone Advisory", "Whitmore & Clarke", "Crestwood Ventures", "Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]));
   const excludedRefs = new Set(["Seagate Systems Ltd", "Ashford Group plc"]);
-  const closedRefs = new Set(["Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]);
+  const [closedRefs, setClosedRefs] = useState(new Set(["Brampton Legal Ltd", "Foxgrove Consulting", "Kestrel Media Group", "Linden Park Services", "Moorfield Solutions", "Northbrook Advisory", "Pemberton Holdings", "Ravenscroft Ltd"]));
   const [rowFromMap, setRowFromMap] = useState({
     "Highland Energy 455GBP": "Oliver Bennett, Sara Thompson",
     "Maple Leaf Services AVT7710p": "Oliver Bennett, Sara Thompson",
@@ -12829,6 +13674,11 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
     "Riverside Engineering": "Oliver Bennett, Sara Thompson",
     "Falcon Tech Solutions": "Oliver Bennett, Sara Thompson",
     "Cobalt Digital Ltd": "Oliver Bennett, Sara Thompson",
+    // Recurring requests assignments (ref = account name)
+    "Lloyds Bank - Business": "Oliver Bennett",
+    "HSBC - Business Transactions": "Sara Thompson",
+    "Barclays - Operations": "James Clarke",
+    // "Lloyds Bank - Operations GBP", "American Express OP GBP", "Mastercard Business" → Not assigned
   });
   const [selectedBatchId, setSelectedBatchId] = useState(null);
   const [showMembersDropdown, setShowMembersDropdown] = useState(false);
@@ -12851,6 +13701,14 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
   const schedulePanelRef = useRef(null);
   const calendarBtnRef = useRef(null);
   const MEMBER_OPTIONS = ["Oliver Bennett", "Sara Thompson", "James Clarke", "Emily Watson", "Michael Osei", "Lucy Hartman"];
+  // Recurring FAB assignee dropdown
+  const [recurFabDropOpen, setRecurFabDropOpen] = useState(false);
+  const [recurFabDropPos, setRecurFabDropPos] = useState({ bottom: 0, left: 0, width: 0 });
+  const [recurFabSelectedMembers, setRecurFabSelectedMembers] = useState(new Set()); // committed (shown on FAB button)
+  const [recurFabDraftMembers, setRecurFabDraftMembers] = useState(new Set()); // staged (shown in dropdown until Assign clicked)
+  const [recurFabMemberSearch, setRecurFabMemberSearch] = useState("");
+  const recurFabBtnRef = useRef(null);
+  const recurFabDropRef = useRef(null);
   const [bankFilterPos, setBankFilterPos] = useState({ top: 0, left: 0 });
   const bankBtnRef = useRef(null);
   const bankDropRef = useRef(null);
@@ -13021,6 +13879,19 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
   }, [showSchedulePanel]);
 
   useEffect(() => {
+    if (!recurFabDropOpen) return;
+    if (recurFabBtnRef.current) {
+      const r = recurFabBtnRef.current.getBoundingClientRect();
+      setRecurFabDropPos({ bottom: window.innerHeight - r.top + 8, left: r.left, width: r.width });
+    }
+    const handler = (e) => {
+      if (recurFabDropRef.current && !recurFabDropRef.current.contains(e.target) && recurFabBtnRef.current && !recurFabBtnRef.current.contains(e.target)) setRecurFabDropOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [recurFabDropOpen]);
+
+  useEffect(() => {
     if (selectedBatchId === null) { setCollectChecked(new Set()); return; }
     const sorted = [...MISSING_TABLE_DATA].sort((a,b)=>(b.dot?1:0)-(a.dot?1:0));
     const filtered = sorted.filter(r => {
@@ -13048,10 +13919,11 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
 
   const RECURRING_DOCS = [
     { id: 1, contact: "Yorkshire Tea Estates", type: "Monthly invoice", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "Lloyds Bank - Business" },
-    { id: 2, contact: "Clifton & Harrow Supplies", type: "Quarterly statement", frequency: "Quarterly", nextDue: "1 Jul 2026", status: "Upcoming", account: "Barclays - Operations" },
-    { id: 3, contact: "Meridian Office Solutions", type: "Monthly receipt", frequency: "Monthly", nextDue: "1 May 2026", status: "Paused", account: "Mastercard Business" },
-    { id: 4, contact: "Bakery & Food Supplies", type: "Weekly invoice", frequency: "Weekly", nextDue: "21 Apr 2026", status: "Active", account: "Lloyds Bank - Business" },
+    { id: 2, contact: "Clifton & Harrow Supplies", type: "Quarterly statement", frequency: "Quarterly", nextDue: "1 Jul 2026", status: "Upcoming", account: "Lloyds Bank - Operations GBP" },
+    { id: 3, contact: "Meridian Office Solutions", type: "Monthly receipt", frequency: "Monthly", nextDue: "1 May 2026", status: "Paused", account: "HSBC - Business Transactions" },
+    { id: 4, contact: "Bakery & Food Supplies", type: "Weekly invoice", frequency: "Weekly", nextDue: "21 Apr 2026", status: "Active", account: "Barclays - Operations" },
     { id: 5, contact: "Direct Expenses", type: "Monthly report", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "American Express OP GBP" },
+    { id: 6, contact: "Internal Transfer", type: "Monthly statement", frequency: "Monthly", nextDue: "1 May 2026", status: "Active", account: "Mastercard Business" },
   ];
 
   const MISSING_TABLE_DATA = [
@@ -13212,11 +14084,11 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
         {/* Tabs */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 24, borderBottom: "1px solid #ECECEC", marginBottom: 0 }}>
           {[{ label: "Missing documents", count: MISSING_TABLE_DATA.filter(r => !archivedRefs.has(r.ref) && !excludedRefs.has(r.ref) && !receivedRefs.has(r.ref)).length }, { label: "Recurring requests", count: RECURRING_DOCS.filter(r => r.status === "Active" && !archivedRefs.has(r.account)).length }].map(tab => (
-            <button key={tab.label} onClick={() => { setActiveTab(tab.label); if (tab.label === "Recurring requests" && tableTab === "Excluded") setTableTab("Open requests"); }}
+            <button key={tab.label} onClick={() => { setActiveTab(tab.label); setCollectChecked(new Set()); if (tab.label === "Recurring requests" && tableTab === "Excluded") setTableTab("Open requests"); }}
               style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: "0 0 12px", fontFamily: "'Inter', sans-serif" }}>
               <span style={{ fontSize: 14, fontWeight: activeTab === tab.label ? 500 : 400, color: activeTab === tab.label ? "#2A2A2A" : "#7C7C7C" }}>{tab.label}</span>
               <span style={{ fontSize: 12, fontWeight: 500, color: "#FFFFFF", background: "#05A105", borderRadius: 5, padding: "0 5px", lineHeight: "20px", minWidth: 20, textAlign: "center" }}>{tab.count}</span>
-              {activeTab === tab.label && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: "#05A105" }} />}
+              {activeTab === tab.label && <div style={{ position: "absolute", bottom: -1, left: 0, right: 0, height: 2, background: "#05A105", zIndex: 1 }} />}
             </button>
           ))}
         </div>
@@ -13225,6 +14097,65 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
 
       <div style={{ padding: "32px 48px" }}>
         <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+
+        {/* Recurring requests — notification scheduler banner */}
+        {!isMissing && (() => {
+          const paused = notifPaused;
+          const setPaused = setNotifPaused;
+          const pauseLoading = notifPauseLoading;
+          const handlePauseToggle = () => {
+            if (pauseLoading) return;
+            setNotifPauseLoading(true);
+            setTimeout(() => {
+              setNotifPauseLoading(false);
+              setNotifPaused(v => { const next = !v; showToast(next ? "Notifications paused" : "Notifications resumed"); return next; });
+            }, 1000);
+          };
+          const nextDate = "1 Jun 2026, 02:00:00";
+          const lastSent = "11/05/2026, 13:03:03";
+          return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, padding: "14px 18px", marginBottom: 28 }}>
+              {/* Left: icon + text */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: paused ? "#F5F5F5" : "#F1F8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {paused
+                    ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8.63306 3.03371C9.61959 2.3649 10.791 2 12 2C13.5913 2 15.1174 2.63214 16.2426 3.75736C17.3679 4.88258 18 6.4087 18 8C18 10.1008 18.2702 11.7512 18.6484 13.0324M6.25867 6.25724C6.08866 6.81726 6 7.40406 6 8C6 11.0902 5.22047 13.206 4.34966 14.6054C3.61513 15.7859 3.24786 16.3761 3.26132 16.5408C3.27624 16.7231 3.31486 16.7926 3.46178 16.9016C3.59446 17 4.19259 17 5.38885 17H17M9.35418 21C10.0593 21.6224 10.9856 22 12 22C13.0144 22 13.9407 21.6224 14.6458 21M21 21L3 3" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    : <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15.6459 18.0123C16.0747 19.6127 15.125 21.2577 13.5246 21.6866C11.9242 22.1154 10.2792 21.1657 9.85036 19.5653M2.05683 11.6109C1.66734 10.2127 2.07238 8.70105 3.10878 7.68493M12.1463 5.73841C12.4505 5.19111 12.5507 4.52961 12.3759 3.87701C12.0185 2.54335 10.6477 1.75189 9.314 2.10924C7.98034 2.4666 7.18888 3.83744 7.54624 5.17111C7.7211 5.8237 8.13863 6.34647 8.67573 6.66835M20.319 6.71756C19.9572 5.31195 18.8506 4.20535 17.445 3.84357M17.4906 9.44284C17.1337 8.11071 16.1808 6.99674 14.8415 6.34601C13.5022 5.69528 11.8863 5.56108 10.3492 5.97294C8.81214 6.3848 7.47981 7.30898 6.64533 8.54216C5.81085 9.77535 5.54258 11.2165 5.89952 12.5487C6.4901 14.7527 6.37542 16.5111 6.00247 17.8472C5.5774 19.3701 5.36487 20.1315 5.42228 20.2844C5.48798 20.4593 5.53549 20.5074 5.70973 20.5749C5.86202 20.6339 6.50179 20.4624 7.78133 20.1196L19.6464 16.9404C20.9259 16.5975 21.5657 16.4261 21.6681 16.2988C21.7852 16.1533 21.8024 16.0879 21.7718 15.9036C21.7451 15.7425 21.1803 15.1893 20.0508 14.083C19.0597 13.1124 18.0812 11.6469 17.4906 9.44284Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  }
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "#1F2024" }}>
+                    {paused ? "Notification emails paused" : `Notification email scheduled for ${nextDate}`}
+                  </div>
+                  <div style={{ fontSize: 14, color: "#7C7C7C" }}>Last sent {lastSent}</div>
+                </div>
+              </div>
+              {/* Right: action buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <button style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter', sans-serif" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21L16.65 16.65M11 6C13.7614 6 16 8.23858 16 11M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Preview
+                </button>
+                <button onClick={handlePauseToggle} style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: pauseLoading ? "default" : "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter', sans-serif", minWidth: 100, justifyContent: "center" }}
+                  onMouseEnter={e => { if (!pauseLoading) e.currentTarget.style.background = "#F5F5F5"; }} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  {pauseLoading
+                    ? <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}><path d="M10 2A8 8 0 1 1 2 10" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    : paused
+                      ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15.6459 18.0123C16.0747 19.6127 15.125 21.2577 13.5246 21.6866C11.9242 22.1154 10.2792 21.1657 9.85036 19.5653M2.05683 11.6109C1.66734 10.2127 2.07238 8.70105 3.10878 7.68493M12.1463 5.73841C12.4505 5.19111 12.5507 4.52961 12.3759 3.87701C12.0185 2.54335 10.6477 1.75189 9.314 2.10924C7.98034 2.4666 7.18888 3.83744 7.54624 5.17111C7.7211 5.8237 8.13863 6.34647 8.67573 6.66835M20.319 6.71756C19.9572 5.31195 18.8506 4.20535 17.445 3.84357M17.4906 9.44284C17.1337 8.11071 16.1808 6.99674 14.8415 6.34601C13.5022 5.69528 11.8863 5.56108 10.3492 5.97294C8.81214 6.3848 7.47981 7.30898 6.64533 8.54216C5.81085 9.77535 5.54258 11.2165 5.89952 12.5487C6.4901 14.7527 6.37542 16.5111 6.00247 17.8472C5.5774 19.3701 5.36487 20.1315 5.42228 20.2844C5.48798 20.4593 5.53549 20.5074 5.70973 20.5749C5.86202 20.6339 6.50179 20.4624 7.78133 20.1196L19.6464 16.9404C20.9259 16.5975 21.5657 16.4261 21.6681 16.2988C21.7852 16.1533 21.8024 16.0879 21.7718 15.9036C21.7451 15.7425 21.1803 15.1893 20.0508 14.083C19.0597 13.1124 18.0812 11.6469 17.4906 9.44284Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      : <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M8.63306 3.03371C9.61959 2.3649 10.791 2 12 2C13.5913 2 15.1174 2.63214 16.2426 3.75736C17.3679 4.88258 18 6.4087 18 8C18 10.1008 18.2702 11.7512 18.6484 13.0324M6.25867 6.25724C6.08866 6.81726 6 7.40406 6 8C6 11.0902 5.22047 13.206 4.34966 14.6054C3.61513 15.7859 3.24786 16.3761 3.26132 16.5408C3.27624 16.7231 3.31486 16.7926 3.46178 16.9016C3.59446 17 4.19259 17 5.38885 17H17M9.35418 21C10.0593 21.6224 10.9856 22 12 22C13.0144 22 13.9407 21.6224 14.6458 21M21 21L3 3" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  }
+                  {!pauseLoading && (paused ? "Resume" : "Pause")}
+                </button>
+                <button style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 16px", border: "none", borderRadius: 8, background: "#05A105", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "'Inter', sans-serif" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#048A04"} onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C12 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke="#FFFFFF" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Send all requests
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Email batches section */}
         {isMissing && (
@@ -13263,13 +14194,13 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                         })()}
                       </div>
                     </div>
-                    <div style={{ border: "1px solid #ECECEC", borderRadius: 8, padding: "0 12px", height: 42, display: "flex", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ border: "1px solid #ECECEC", borderRadius: 8, height: 42, display: "flex", alignItems: "stretch" }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.6666 7.91602V5.66602C16.6666 4.26588 16.6666 3.56582 16.3941 3.03104C16.1544 2.56063 15.772 2.17818 15.3016 1.9385C14.7668 1.66602 14.0667 1.66602 12.6666 1.66602H7.33325C5.93312 1.66602 5.23305 1.66602 4.69828 1.9385C4.22787 2.17818 3.84542 2.56063 3.60574 3.03104C3.33325 3.56582 3.33325 4.26588 3.33325 5.66602V14.3327C3.33325 15.7328 3.33325 16.4329 3.60574 16.9677C3.84542 17.4381 4.22787 17.8205 4.69828 18.0602C5.23305 18.3327 5.93312 18.3327 7.33325 18.3327H11.6666M11.6666 9.16602H6.66659M8.33325 12.4993H6.66659M13.3333 5.83268H6.66659M13.7499 12.5012C13.8967 12.0838 14.1866 11.7319 14.568 11.5077C14.9495 11.2835 15.398 11.2015 15.8341 11.2763C16.2702 11.3511 16.6658 11.5779 16.9507 11.9164C17.2357 12.2549 17.3916 12.6833 17.391 13.1257C17.391 14.3748 15.5174 14.9993 15.5174 14.9993M15.5415 17.4993H15.5498" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         <span style={{ fontSize: 14, color: "#1F2024", whiteSpace: "nowrap" }}>{batch.status === "Sent" ? `${Object.entries(rowBatchMap).filter(([ref, id]) => id === batch.id && receivedRefs.has(ref)).length}/${batch.requestCount} received` : `${batch.requestCount} request${batch.requestCount !== 1 ? "s" : ""}`}</span>
                       </div>
-                      <div style={{ width: 1, height: 20, background: "#E9E9EB", flexShrink: 0, margin: "0 12px" }} />
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 1, background: "#E9E9EB", flexShrink: 0 }} />
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.3333 15L15 16.6667L18.3333 13.3333M9.99996 12.5H6.66663C5.11349 12.5 4.33692 12.5 3.72435 12.7537C2.90759 13.092 2.25867 13.741 1.92036 14.5577C1.66663 15.1703 1.66663 15.9469 1.66663 17.5M12.9166 2.7423C14.1382 3.23679 15 4.43443 15 5.83333C15 7.23224 14.1382 8.42988 12.9166 8.92437M11.25 5.83333C11.25 7.67428 9.75757 9.16667 7.91663 9.16667C6.07568 9.16667 4.58329 7.67428 4.58329 5.83333C4.58329 3.99238 6.07568 2.5 7.91663 2.5C9.75757 2.5 11.25 3.99238 11.25 5.83333Z" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         <span style={{ fontSize: 14, color: "#1F2024", whiteSpace: "nowrap" }}>{batch.assigneeCount} assignee{batch.assigneeCount !== 1 ? "s" : ""}</span>
                       </div>
@@ -13315,7 +14246,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                 const matchAssignee = activeAssignees.size === 0 || [...activeAssignees].some(a => rowAssignee.includes(a));
                 return matchSearch && matchBank && matchBatch && matchAmount && matchDate && matchAssignee;
               });
-              const openCount = baseRows.filter(r => !archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (!r.status || r.status === "Active")).length;
+              const openCount = baseRows.filter(r => !archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (isMissing ? (!r.status || r.status === "Active") : true)).length;
               const receivedCount = canShowReceived ? baseRows.filter(r => receivedRefs.has(r.ref) && !archivedRefs.has(r.ref)).length : 0;
               const archivedCount = baseRows.filter(r => archivedRefs.has(r.ref)).length;
               const excludedCount = isMissing ? baseRows.filter(r => excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)).length : 0;
@@ -13592,7 +14523,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
               const matchSearch = (r.ref || "").toLowerCase().includes(search.toLowerCase()) || (r.from || "").toLowerCase().includes(search.toLowerCase());
               const matchBank = selectedBankAccounts.size === 0 || selectedBankAccounts.has(r.account);
               const matchBatch = selectedBatchId === null || rowBatchMap[r.ref] === selectedBatchId;
-              const matchTab = tableTab === "Received" ? (canShowReceived && receivedRefs.has(r.ref)) : tableTab === "Open requests" ? (!archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (!r.status || r.status === "Active")) : tableTab === "Archived" ? archivedRefs.has(r.ref) : tableTab === "Excluded" ? (isMissing && excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)) : false;
+              const matchTab = tableTab === "Received" ? (canShowReceived && receivedRefs.has(r.ref)) : tableTab === "Open requests" ? (!archivedRefs.has(r.ref) && !(isMissing && excludedRefs.has(r.ref)) && (!canShowReceived || !receivedRefs.has(r.ref)) && (isMissing ? (!r.status || r.status === "Active") : true)) : tableTab === "Archived" ? archivedRefs.has(r.ref) : tableTab === "Excluded" ? (isMissing && excludedRefs.has(r.ref) && !archivedRefs.has(r.ref) && !receivedRefs.has(r.ref)) : false;
               const amtRaw = parseFloat((r.amount || "").replace(/[^0-9.-]/g,"")) || 0;
               const absAmt = Math.abs(amtRaw);
               const matchAmount = (!activeAmountMin || absAmt >= parseFloat(activeAmountMin)) && (!activeAmountMax || absAmt <= parseFloat(activeAmountMax));
@@ -13632,17 +14563,17 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                     ? (rowStatusMap[r.ref] || "Review")
                     : "Open";
                 const cfg = STATUS_CFG[s];
-                const STATUS_TIPS = { Open: "Request is pending documents", Review: "Documents require review", Ready: "Document ready for publish", Archived: "Request has been archived", Closed: "Request has been closed", Received: "Document received" };
+                const STATUS_TIPS = { Open: "Request is pending documents", Review: "Documents require review", Ready: "Document ready for publish", Archived: "Request has been archived", Closed: "All documents has been published to Xero", Received: "Document received" };
                 return <Tooltip text={STATUS_TIPS[s] || s}><span style={{ fontSize: 12, fontWeight: 500, color: cfg.color, background: cfg.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", cursor: "default" }}>{s}</span></Tooltip>;
               }}] : []),
               { key: "ref",     label: "Request title",  width: "1fr",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && !archivedRefs.has(r.ref) && tableTab !== "Received" && tableTab !== "Excluded" && <Tooltip text="New request since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
               ...(!isMissing && tableTab === "Received" ? [{ key: "resolved", label: "Resolved", width: "120px", render: () => <span style={{ fontSize: 14, color: "#BCBCBC" }}>—</span> }] : []),
-              { key: "date",    label: isMissing ? "Date" : "Closing period", width: tableTab === "Excluded" ? "140px" : "120px", render: (v) => {
+              { key: "date",    label: isMissing ? "Date" : "Closing period", width: tableTab === "Excluded" ? "140px" : isMissing ? "120px" : "150px", render: (v) => {
                 if (!isMissing && v) { const m = String(v).match(/\d+\s+(\w+)\s+(\d{4})/); if (m) return <span style={{ fontSize:14, color:"#1F2024" }}>{m[1]} {m[2]}</span>; }
                 return <span style={{ fontSize:14, color: v ? "#1F2024" : "#BCBCBC" }}>{v || "—"}</span>;
               }},
               ...(isMissing ? [{ key: "amount", label: "Amount", width: tableTab === "Excluded" ? "130px" : "110px" }] : []),
-              ...(tableTab !== "Excluded" ? [{ key: "batch",   label: "Email batch",    width: "160px", render: (v, r) => { const bid = rowBatchMap[r.ref]; const b = bid != null ? batches.find(x => x.id === bid) : null; if (!b) {
+              ...(tableTab !== "Excluded" ? [{ key: "batch",   label: isMissing ? "Email batch" : "Notification",    width: "160px", render: (v, r) => { const bid = rowBatchMap[r.ref]; const b = bid != null ? batches.find(x => x.id === bid) : null; if (!b) {
                   if (receivedRefs.has(r.ref)) {
                     const SHORT_M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                     const sentBatch = batches.find(x => x.status === "Sent" && x.sentDate);
@@ -13650,7 +14581,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                     const label = `${d.getDate()} ${SHORT_M[d.getMonth()]}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
                     return <Tooltip text={`${sentBatch ? sentBatch.title + " · " : ""}Sent ${label}`}><span style={{ fontSize: 12, fontWeight: 500, color: "#05A105", background: "#F1F8F0", borderRadius: 6, padding: "0 8px 0 6px", height: 25, minHeight: 25, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", cursor: "default", flexShrink: 0 }}><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M8.75 11.25L17.5 2.5M8.86 11.52L11.05 17.16C11.24 17.65 11.34 17.9 11.47 17.97C11.59 18.03 11.74 18.03 11.86 17.97C12 17.9 12.09 17.65 12.29 17.16L17.78 3.08C17.96 2.64 18.04 2.41 17.99 2.27C17.95 2.14 17.86 2.05 17.73 2.01C17.59 1.96 17.36 2.04 16.92 2.22L2.84 7.71C2.35 7.9 2.1 8 2.03 8.14C1.96 8.26 1.97 8.4 2.03 8.53C2.1 8.66 2.35 8.76 2.84 8.95L8.48 11.14C8.58 11.18 8.63 11.2 8.67 11.23C8.71 11.26 8.74 11.29 8.77 11.33C8.8 11.37 8.82 11.42 8.86 11.52Z" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>{label}</span></Tooltip>;
                   }
-                  return <span style={{ fontSize: 14, color: "#BCBCBC" }}>No Batch</span>;
+                  return <span style={{ fontSize: 14, color: "#BCBCBC" }}>{isMissing ? "No Batch" : "Not scheduled"}</span>;
                 } const SC = { Draft: { color: "#545453", bg: "#F0F0F0" }, Scheduled: { color: "#4C71DF", bg: "#EEF2FF" }, Sent: { color: "#05A105", bg: "#F1F8F0" } }; const s = SC[b.status] || SC.Draft; const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; const SHORT_MONTHS_B = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                 const tip = b.status === "Scheduled" && b.scheduledDate ? `${b.title} · Will be sent: ${b.scheduledDate.d} ${SHORT_MONTHS_B[b.scheduledDate.m]}, 09:00` : b.status === "Sent" && b.sentDate ? `${b.title} · Sent ${b.sentDate.getDate()} ${SHORT_MONTHS_B[b.sentDate.getMonth()]}, ${String(b.sentDate.getHours()).padStart(2,"0")}:${String(b.sentDate.getMinutes()).padStart(2,"0")}` : b.title;
                 if (b.status === "Sent" && b.sentDate) {
@@ -13662,7 +14593,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                   </span></Tooltip>;
                 }
                 return <Tooltip text={tip}><span style={{ fontSize: 12, fontWeight: 500, color: s.color, background: s.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{b.status}</span></Tooltip>; } }] : []),
-              ...(tableTab !== "Excluded" ? [{ key: "from",    label: isMissing ? "Requested from" : "Assigned to client member", width: isMissing ? "180px" : "1fr", render: (v, r) => { const fromVal = rowFromMap[r.ref] || v; return <span style={{ color: fromVal ? "#000000" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fromVal || "Not assigned"}</span>; } }] : []),
+              ...(tableTab !== "Excluded" ? [{ key: "from",    label: isMissing ? "Requested from" : "Assigned to client member", width: isMissing ? "180px" : "1fr", render: (v, r) => { const fromVal = isMissing ? (rowFromMap[r.ref] || v) : rowFromMap[r.ref]; return <span style={{ color: fromVal ? "#000000" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fromVal || "Not assigned"}</span>; } }] : []),
               ...(isMissing ? [{ key: "account", label: "Bank account", width: tableTab === "Excluded" ? "1fr" : "180px", render: (v) => <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 14, color: v ? "#080908" : "#BCBCBC" }}>{v || "—"}</span> }] : []),
               ...(tableTab !== "Excluded" ? [{ key: "upload",  label: tableTab === "Received" ? "Uploaded document" : "Upload file", width: tableTab === "Received" ? "220px" : "150px", render: (v, r) => {
                 const RECEIVED_DOCS = {
@@ -13765,7 +14696,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                       return (
                         <div key={col.key} data-collect-sticky={ci===lastIC||undefined}
                           onClick={() => { if (!isSortable) return; if (sortKey === col.key) { setSortDir(d => d === "asc" ? "desc" : "asc"); } else { setSortKey(col.key); setSortDir("asc"); } }}
-                          style={{ display:"flex", alignItems:"center", justifyContent: col.key==="check" ? "center" : (col.align==="right"?"flex-end":"flex-start"), gap:4, fontSize:14, fontWeight:400, color: isActive ? "#080908" : "#7c7c7c", padding: col.cellPadding ? col.cellPadding.replace("14px","11px") : "11px 16px", borderRight: ci<lastIC?"1px solid #E9E9EB":"none", cursor: isSortable ? "pointer" : "default", userSelect:"none", ...stickyCStyle(ci,"#FFFFFF") }}
+                          style={{ display:"flex", alignItems:"center", justifyContent: col.key==="check" ? "center" : (col.align==="right"?"flex-end":"flex-start"), gap:4, fontSize:14, fontWeight:400, color: isActive ? "#080908" : "#7c7c7c", padding: col.cellPadding ? col.cellPadding.replace("14px","11px") : "11px 16px", borderRight: ci<lastIC?"1px solid #E9E9EB":"none", cursor: isSortable ? "pointer" : "default", userSelect:"none", whiteSpace:"nowrap", ...stickyCStyle(ci,"#FFFFFF") }}
                           onMouseEnter={e => { if (isSortable) { e.currentTarget.style.color = "#080908"; e.currentTarget.style.background = "#F5F5F5"; const hint = e.currentTarget.querySelector(".sort-hint"); if (hint) hint.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (isSortable) { if (!isActive) e.currentTarget.style.color = "#7c7c7c"; e.currentTarget.style.background = "transparent"; const hint = e.currentTarget.querySelector(".sort-hint"); if (hint) hint.style.opacity = "0"; } }}>
                           {col.label}
@@ -13812,6 +14743,8 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                                   account: row.account,
                                   accountNumber: _acct?.number || "—",
                                   fileAction: row.ref.replace(/\s+/g, "-").toLowerCase() + "-doc.pdf",
+                                  initialUploadDone: receivedRefs.has(row.ref) || archivedRefs.has(row.ref),
+                                  initialDocStatus: archivedRefs.has(row.ref) ? "Published" : (receivedRefs.has(row.ref) ? (rowStatusMap[row.ref] || "Review") : null),
                                   batchInfo: _batch ? {
                                     title: _batch.title,
                                     status: _batch.status,
@@ -14190,6 +15123,99 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
             </div>
           </div>
         )}
+        {/* ── Recurring requests FAB ─────────────────────────────────────── */}
+        {collectChecked.size > 0 && !isMissing && (
+          <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:12, padding:"10px 12px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
+            {/* × deselect */}
+            <button onClick={() => setCollectChecked(new Set())} style={{ width:28, height:28, background:"#F5F5F5", border:"none", borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, flexShrink:0 }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", whiteSpace:"nowrap" }}>{collectChecked.size} request{collectChecked.size !== 1 ? "s" : ""}</span>
+            {/* Divider */}
+            <div style={{ width:1, height:20, background:"#E9E9EB", flexShrink:0 }} />
+            {/* Assign dropdown trigger */}
+            <button ref={recurFabBtnRef} onClick={() => { setRecurFabDraftMembers(new Set(recurFabSelectedMembers)); setRecurFabMemberSearch(""); setRecurFabDropOpen(v => !v); }}
+              style={{ height:40, border:"1px solid #E9E9EB", borderRadius:8, padding:"0 12px", display:"flex", alignItems:"center", gap:8, background:"#FFFFFF", cursor:"pointer", fontFamily:"'Inter',sans-serif", whiteSpace:"nowrap" }}
+              onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+              {recurFabSelectedMembers.size === 0
+                ? <span style={{ fontSize:14, color:"#000000" }}>Assign to member or email</span>
+                : <span style={{ fontSize:14, color:"#1F2024", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis" }}>{[...recurFabSelectedMembers].join(", ")}</span>
+              }
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ transform: recurFabDropOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s", flexShrink:0 }}><path d="M5 7.5l5 5 5-5" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {/* Send marked requests */}
+            <button onClick={() => { showToast("Notification emails sent successfully"); setCollectChecked(new Set()); setRecurFabSelectedMembers(new Set()); setRecurFabDropOpen(false); }}
+              style={{ height:40, border:"none", borderRadius:8, padding:"0 16px 0 12px", display:"flex", alignItems:"center", gap:8, background:"#05A105", cursor:"pointer", fontSize:14, fontWeight:500, color:"#FFFFFF", fontFamily:"'Inter',sans-serif", whiteSpace:"nowrap" }}
+              onMouseEnter={e=>e.currentTarget.style.background="#048A04"} onMouseLeave={e=>e.currentTarget.style.background="#05A105"}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M8.74952 11.2501L17.4995 2.50014M8.85584 11.5235L11.0459 17.1552C11.2389 17.6513 11.3353 17.8994 11.4743 17.9718C11.5948 18.0346 11.7384 18.0347 11.859 17.972C11.998 17.8998 12.0948 17.6518 12.2883 17.1559L17.7803 3.08281C17.955 2.63516 18.0423 2.41133 17.9945 2.26831C17.953 2.1441 17.8556 2.04663 17.7314 2.00514C17.5883 1.95736 17.3645 2.0447 16.9169 2.21939L2.84373 7.71134C2.34784 7.90486 2.09989 8.00163 2.02763 8.14071C1.96499 8.26129 1.96508 8.40483 2.02786 8.52533C2.10028 8.66433 2.34834 8.7608 2.84446 8.95373L8.47613 11.1438C8.57684 11.183 8.62719 11.2026 8.66959 11.2328C8.70717 11.2596 8.74004 11.2925 8.76685 11.3301C8.79709 11.3725 8.81667 11.4228 8.85584 11.5235Z" stroke="#FFFFFF" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Send marked requests
+            </button>
+            {/* ⋮ dots */}
+            <button style={{ width:40, height:40, border:"none", background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:8, padding:0, flexShrink:0 }}
+              onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="10" r="1.5" fill="#2A2A2A"/><circle cx="10" cy="16" r="1.5" fill="#2A2A2A"/></svg>
+            </button>
+          </div>
+        )}
+        {/* Recurring FAB assignee dropdown */}
+        {recurFabDropOpen && (
+          <div ref={recurFabDropRef} style={{ position:"fixed", bottom: recurFabDropPos.bottom, left: recurFabDropPos.left, background:"#FFFFFF", border:"1px solid #E9E9EB", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:300, width: 385, paddingTop:12, fontFamily:"'Inter',sans-serif" }}>
+            <div style={{ margin:"0 12px 10px", display:"flex", alignItems:"center", gap:8, border:"1.5px solid #E9E9EB", borderRadius:8, padding:"8px 12px" }}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink:0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167A6.667 6.667 0 1 1 2.5 9.167a6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <input value={recurFabMemberSearch} onChange={e => setRecurFabMemberSearch(e.target.value)} placeholder="Search members" style={{ border:"none", outline:"none", fontSize:14, color:"#080908", background:"transparent", fontFamily:"'Inter',sans-serif", width:"100%" }} />
+            </div>
+            <div onClick={() => { if (recurFabDraftMembers.size === MEMBER_OPTIONS.length) setRecurFabDraftMembers(new Set()); else setRecurFabDraftMembers(new Set(MEMBER_OPTIONS)); }}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px", cursor:"pointer" }}
+              onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <div style={{ width:18, height:18, borderRadius:4, border:`1.5px solid ${recurFabDraftMembers.size===MEMBER_OPTIONS.length?"#05A105":"#CFCFD1"}`, background:recurFabDraftMembers.size===MEMBER_OPTIONS.length?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {recurFabDraftMembers.size===MEMBER_OPTIONS.length && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Select all ({MEMBER_OPTIONS.length})</span>
+            </div>
+            <div style={{ height:1, background:"#E9E9EB", margin:"4px 0 6px" }} />
+            <div style={{ maxHeight:220, overflowY:"auto" }}>
+              {MEMBER_OPTIONS.filter(m => m.toLowerCase().includes(recurFabMemberSearch.toLowerCase())).map(m => {
+                const checked = recurFabDraftMembers.has(m);
+                return (
+                  <div key={m} onClick={() => { const n = new Set(recurFabDraftMembers); checked ? n.delete(m) : n.add(m); setRecurFabDraftMembers(n); }}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px", cursor:"pointer" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#FAFAFA"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{ width:18, height:18, borderRadius:4, border:`1.5px solid ${checked?"#05A105":"#CFCFD1"}`, background:checked?"#05A105":"#FFFFFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      {checked && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <span style={{ fontSize:14, color:"#080908" }}>{m}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Footer */}
+            <div style={{ height:1, background:"#E9E9EB", margin:"4px 0 0" }} />
+            <div style={{ display:"flex", gap:8, padding:"10px 12px" }}>
+              <button onClick={() => setRecurFabDropOpen(false)}
+                style={{ flex:1, height:40, border:"1px solid #E9E9EB", borderRadius:8, background:"#FFFFFF", cursor:"pointer", fontSize:14, fontWeight:500, color:"#080908", fontFamily:"'Inter',sans-serif" }}
+                onMouseEnter={e=>e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e=>e.currentTarget.style.background="#FFFFFF"}>
+                Cancel
+              </button>
+              <button
+                disabled={recurFabDraftMembers.size === 0}
+                onClick={() => {
+                  if (recurFabDraftMembers.size === 0) return;
+                  const fromLabel = [...recurFabDraftMembers].join(", ");
+                  const newFromMap = { ...rowFromMap };
+                  [...collectChecked].forEach(ref => { newFromMap[ref] = fromLabel; });
+                  setRowFromMap(newFromMap);
+                  setRecurFabSelectedMembers(new Set(recurFabDraftMembers));
+                  setRecurFabDropOpen(false);
+                  showToast(`Assigned ${collectChecked.size} request${collectChecked.size !== 1 ? "s" : ""} to ${fromLabel}`);
+                }}
+                style={{ flex:1, height:40, border:"none", borderRadius:8, background: recurFabDraftMembers.size === 0 ? "#F5F5F5" : "#05A105", cursor: recurFabDraftMembers.size === 0 ? "default" : "pointer", fontSize:14, fontWeight:500, color: recurFabDraftMembers.size === 0 ? "#ADADAD" : "#FFFFFF", fontFamily:"'Inter',sans-serif", whiteSpace:"nowrap" }}
+                onMouseEnter={e=>{ if (recurFabDraftMembers.size > 0) e.currentTarget.style.background="#048A04"; }}
+                onMouseLeave={e=>{ if (recurFabDraftMembers.size > 0) e.currentTarget.style.background="#05A105"; }}>
+                Assign {recurFabDraftMembers.size} requestee{recurFabDraftMembers.size !== 1 ? "s" : ""}
+              </button>
+            </div>
+          </div>
+        )}
         {showAddToBatch && batches.length > 0 && (
           <div ref={addToBatchDropRef} style={{ position:"fixed", bottom: addToBatchPos.bottom, left: addToBatchPos.left, transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", zIndex:300, width:300, overflow:"hidden", fontFamily:"'Inter',sans-serif" }}>
             <div style={{ padding:"12px 16px 8px", fontSize:12, fontWeight:500, color:"#8C8C8B", letterSpacing:"0.15px" }}>Add {collectChecked.size} request{collectChecked.size !== 1 ? "s" : ""} to batch</div>
@@ -14419,7 +15445,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
           </div>
         )}
         {/* FAB: normal selection — shown when no batch is active and rows are checked */}
-        {collectChecked.size > 0 && selectedBatchId === null && (
+        {collectChecked.size > 0 && selectedBatchId === null && isMissing && (
           <div style={{ position:"fixed", bottom:32, left:"50%", transform:"translateX(-50%)", background:"#FFFFFF", border:"1px solid #ECECEC", borderRadius:12, boxShadow:"0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display:"flex", alignItems:"center", gap:16, padding:"12px 16px", zIndex:200, fontFamily:"'Inter',sans-serif" }}>
             {/* Left: close + count */}
             <div style={{ display:"flex", gap:16, alignItems:"center" }}>
@@ -15268,7 +16294,6 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
         </>)}
         {/* Open Request sidebar */}
         {openRequestSidebar && (<>
-          <div onClick={() => setOpenRequestSidebar(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.15)", zIndex:200 }} />
           <BatchDraftSidebar
             contact={openRequestSidebar.contact}
             amount={openRequestSidebar.amount}
@@ -15277,8 +16302,24 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
             accountNumber={openRequestSidebar.accountNumber}
             batchInfo={openRequestSidebar.batchInfo}
             fileName={openRequestSidebar.fileAction}
+            initialUploadDone={openRequestSidebar.initialUploadDone || false}
+            initialDocStatus={openRequestSidebar.initialDocStatus || null}
             onClose={() => setOpenRequestSidebar(null)}
-            onConfirm={() => setOpenRequestSidebar(null)}
+            onConfirm={() => {
+              if (openRequestSidebar?.contact) {
+                const ref = openRequestSidebar.contact;
+                setReceivedRefs(prev => new Set([...prev, ref]));
+                setRowStatusMap(prev => ({ ...prev, [ref]: "Ready" }));
+              }
+            }}
+            onPublish={() => {
+              if (openRequestSidebar?.contact) {
+                const ref = openRequestSidebar.contact;
+                setArchivedRefs(prev => new Set([...prev, ref]));
+                setClosedRefs(prev => new Set([...prev, ref]));
+                setReceivedRefs(prev => { const n = new Set(prev); n.delete(ref); return n; });
+              }
+            }}
           />
         </>)}
         </div>
