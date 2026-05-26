@@ -11365,6 +11365,29 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
   );
 }
 
+const VAT_QUESTIONS = [
+  {
+    identified: "We identified 4 related pattern(s) affecting about 106 journal(s) where account 1018051 is coded as NONE instead of the historical typical INPUT2.",
+    question: "Does your firm always code account 1018051 as NONE for this client rather than INPUT2?",
+  },
+  {
+    identified: "We identified 4 related pattern(s) affecting about 104 journal(s) where account 01013606 is coded as EXEMPTINPUT instead of the historical typical NONE.",
+    question: "Does your firm always code account 01013606 as EXEMPTINPUT for this client rather than NONE?",
+  },
+  {
+    identified: "We identified 2 related pattern(s) affecting about 102 journal(s) where account 01051009 is coded as ZERORATEDOUTPUT instead of the historical typical OUTPUT2.",
+    question: "Does your firm always code account 01051009 as ZERORATEDOUTPUT for this client rather than OUTPUT2?",
+  },
+  {
+    identified: "We identified 2 related pattern(s) affecting about 84 journal(s) where account 01011001 is coded as ZERORATEDOUTPUT instead of the historical typical OUTPUT2.",
+    question: "Does your firm always code account 01011001 as ZERORATEDOUTPUT for this client rather than OUTPUT2?",
+  },
+  {
+    identified: "We identified 4 related pattern(s) affecting about 78 journal(s) where account 01013118 is coded as ZERORATEDINPUT instead of the historical typical NONE.",
+    question: "Does your firm always code account 01013118 as ZERORATEDINPUT for this client rather than NONE?",
+  },
+];
+
 function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
   const [stepStatuses, setStepStatuses] = useState(showResults ? VAT_STEPS.map(() => "done") : []);
   const [stepSubtexts, setStepSubtexts] = useState(showResults ? VAT_STEPS.map(() => true) : []);
@@ -11392,6 +11415,30 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [rerunKey, setRerunKey] = useState(0);
+  const [vatAnswers, setVatAnswers] = useState(showResults ? VAT_QUESTIONS.map(() => "yes") : []);
+  const allVatAnswered = vatAnswers.length >= VAT_QUESTIONS.length;
+  // revealedCount controls when the next question's content appears (after a thinking delay)
+  const PATTERN_THEMES_TEXT = "Pattern themes: Seabrook Foods Ltd.\nPeriod: 2026-05-01 – 2026-05-30\nThemes: 96 (from 222 individual patterns)";
+  const [revealedCount, setRevealedCount] = useState(showResults ? VAT_QUESTIONS.length : 0);
+  const isThinking = !showResults && rerunKey === 0 && vatAnswers.length > 0 && vatAnswers.length >= revealedCount && !allVatAnswered;
+
+  // Subsequent reveals — after user answers, thinking delay, then next question
+  useEffect(() => {
+    if (showResults || rerunKey !== 0 || vatAnswers.length === 0 || vatAnswers.length < revealedCount) return;
+    const t = setTimeout(() => setRevealedCount(c => Math.min(c + 1, VAT_QUESTIONS.length)), 1600);
+    return () => clearTimeout(t);
+  }, [vatAnswers.length, revealedCount]);
+
+  // One typewriter hook per question — card appears exactly when each text finishes
+  const { done: q0TextDone } = useTypewriter(revealedCount >= 1 ? VAT_QUESTIONS[0].identified : "", 18, showResults);
+  const { done: q1TextDone } = useTypewriter(revealedCount >= 2 ? VAT_QUESTIONS[1].identified : "", 18, showResults);
+  const { done: q2TextDone } = useTypewriter(revealedCount >= 3 ? VAT_QUESTIONS[2].identified : "", 18, showResults);
+  const { done: q3TextDone } = useTypewriter(revealedCount >= 4 ? VAT_QUESTIONS[3].identified : "", 18, showResults);
+  const { done: q4TextDone } = useTypewriter(revealedCount >= 5 ? VAT_QUESTIONS[4].identified : "", 18, showResults);
+  const qTextDones = [q0TextDone, q1TextDone, q2TextDone, q3TextDone, q4TextDone];
+  const currentQTextDone = revealedCount > 0 && revealedCount <= VAT_QUESTIONS.length ? qTextDones[revealedCount - 1] : false;
+
+  const [highlightedVatOption, setHighlightedVatOption] = useState(0);
   const stepsComplete = stepStatuses.length > 0 && stepStatuses.every(s => s === "done");
   const totalSuggestions = VAT_CARDS.length;
 
@@ -11408,9 +11455,47 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const introFull = introSegments.map(s => s.text).join("");
   const { done: introDone } = useTypewriter(introFull, 18, showResults);
 
-  // Phase 1: reveal steps one by one once intro finishes (or on re-run)
+  // Track exactly when pattern themes text finishes typing
+  const { done: patternThemesDone } = useTypewriter(
+    introDone && rerunKey === 0 ? PATTERN_THEMES_TEXT : "", 18, showResults
+  );
+
+  // cardVisible and keyboard nav — placed here so introDone is in scope
+  const cardVisible = rerunKey === 0 && introDone && !allVatAnswered && !isThinking && !showResults && currentQTextDone;
+  const highlightedVatRef = useRef(0);
   useEffect(() => {
-    if (!introDone || (showResults && rerunKey === 0)) return;
+    if (!cardVisible) return;
+    setHighlightedVatOption(0);
+    highlightedVatRef.current = 0;
+    const handler = (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = Math.min(highlightedVatRef.current + 1, 1);
+        highlightedVatRef.current = next;
+        setHighlightedVatOption(next);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = Math.max(highlightedVatRef.current - 1, 0);
+        highlightedVatRef.current = next;
+        setHighlightedVatOption(next);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        setVatAnswers(prev => [...prev, highlightedVatRef.current === 0 ? "yes" : "no"]);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [cardVisible]);
+
+  // Initial reveal of Q0 — triggered the moment pattern themes finishes typing
+  useEffect(() => {
+    if (!patternThemesDone || showResults || rerunKey !== 0 || revealedCount > 0) return;
+    setRevealedCount(1);
+  }, [patternThemesDone, revealedCount]);
+
+  // Phase 1: reveal steps one by one once theme question answered (or on re-run)
+  useEffect(() => {
+    if (rerunKey === 0 ? (!allVatAnswered || (showResults && rerunKey === 0)) : !introDone) return;
     const REVEAL_INTERVAL = 600;
     const timers = [];
     VAT_STEPS.forEach((_, i) => {
@@ -11421,7 +11506,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     const totalRevealTime = (VAT_STEPS.length - 1) * REVEAL_INTERVAL + 450;
     timers.push(setTimeout(() => setStepsPopulated(true), totalRevealTime));
     return () => timers.forEach(clearTimeout);
-  }, [introDone, rerunKey]);
+  }, [introDone, rerunKey, allVatAnswered]);
 
   // Phase 2: run spinner through steps once all are populated
   useEffect(() => {
@@ -11480,8 +11565,10 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
   // Auto-scroll to bottom
   useEffect(() => {
-    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [stepStatuses, stepsCollapsed, resultsVisible, visibleSteps]);
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [stepStatuses, stepsCollapsed, resultsVisible, visibleSteps, cardVisible, revealedCount, vatAnswers.length, isThinking]);
 
   // Track whether chat is scrolled to bottom
   useEffect(() => {
@@ -11567,6 +11654,14 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
         @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes stepPop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
         @keyframes stepReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideUpFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes thinkingShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+        .vat-mimo-loader { width:auto; height:20px; overflow:visible; }
+        .vat-mimo-loader path { fill:#1F2024; transform-box:fill-box; transform-origin:center; }
+        .vat-mimo-loader .m-right, .vat-mimo-loader .m-left { animation:mimo-counter-a 2.2s infinite; }
+        .vat-mimo-loader .m-diag { animation:mimo-counter-b 2.2s infinite; }
+        @keyframes mimo-counter-a { 0%{transform:rotate(0deg);animation-timing-function:linear} 10%{transform:rotate(0deg);animation-timing-function:cubic-bezier(.65,0,.35,1)} 45%{transform:rotate(360deg);animation-timing-function:linear} 55%{transform:rotate(360deg);animation-timing-function:cubic-bezier(.65,0,.35,1)} 90%,100%{transform:rotate(0deg)} }
+        @keyframes mimo-counter-b { 0%{transform:rotate(0deg);animation-timing-function:linear} 10%{transform:rotate(0deg);animation-timing-function:cubic-bezier(.65,0,.35,1)} 45%{transform:rotate(-360deg);animation-timing-function:linear} 55%{transform:rotate(-360deg);animation-timing-function:cubic-bezier(.65,0,.35,1)} 90%,100%{transform:rotate(0deg)} }
       `}</style>
 
       {/* Top bar — matches bank reconciliation style */}
@@ -11698,7 +11793,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
           <div style={{ flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
             <div ref={chatScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", scrollBehavior: "smooth" }}>
               {resultsVisible && <div style={{ position: "sticky", top: 0, height: 40, marginBottom: -40, background: "linear-gradient(to bottom, rgba(251,251,251,1) 0%, rgba(251,251,251,0) 100%)", zIndex: 2, pointerEvents: "none", flexShrink: 0 }} />}
-              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : "24px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
+              <div style={{ maxWidth: 680, width: "100%", margin: "0 auto", padding: resultsVisible ? "24px 24px 72px" : cardVisible ? "24px 24px 24px" : "24px 24px 300px", flex: 1, display: "flex", flexDirection: "column" }}>
 
                 {/* Workflow card */}
                 <WorkflowCard label={`VAT and miscoding review for ${selectedPeriod}`} />
@@ -11708,6 +11803,66 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
                   <p style={{ margin: 0 }}><StreamingMessage segments={introSegments} speed={18} instant={showResults} /></p>
                 </div>
+
+                {/* Pattern themes info — shown after intro on first run, with typewriter animation */}
+                {rerunKey === 0 && introDone && (
+                  <div style={{ marginTop: 20, width: resultsVisible ? "90%" : "70%", fontSize: 14, color: "#080908", lineHeight: "22px", whiteSpace: "pre-line" }}>
+                    <StreamingMessage
+                      key="vat-pattern-themes"
+                      segments={[
+                        { text: "Pattern themes: ", bold: false },
+                        { text: "Seabrook Foods Ltd.\n", bold: true },
+                        { text: "Period: ", bold: false },
+                        { text: "2026-05-01 – 2026-05-30\n", bold: true },
+                        { text: "Themes: ", bold: false },
+                        { text: "96 (from 222 individual patterns)", bold: true },
+                      ]}
+                      speed={18}
+                      instant={showResults}
+                    />
+                  </div>
+                )}
+
+                {/* Sequential Q&A — each question revealed after previous is answered + thinking delay */}
+                {rerunKey === 0 && introDone && VAT_QUESTIONS.map((q, i) => {
+                  if (revealedCount <= i) return null;
+                  return (
+                    <React.Fragment key={i}>
+                      <div style={{ marginTop: 20, width: resultsVisible ? "90%" : "70%", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                        <p style={{ margin: 0 }}><StreamingMessage key={`vat-q-${i}`} segments={[{ text: q.identified, bold: false }]} speed={18} instant={showResults} /></p>
+                      </div>
+                      {/* Writing spinner — shown while this question's identified text is still typing */}
+                      {i === revealedCount - 1 && !qTextDones[i] && !showResults && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+                          <svg className="vat-mimo-loader" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Writing">
+                            <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                            <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                            <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                          </svg>
+                          <span style={{ fontSize: 14, display: "inline-block", background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "thinkingShimmer 2.4s linear infinite" }}>Writing...</span>
+                        </div>
+                      )}
+                      {vatAnswers[i] && !showResults && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+                          <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                            {vatAnswers[i] === "yes" ? "Yes" : "No"}
+                          </div>
+                        </div>
+                      )}
+                      {/* Thinking spinner — shown after this answer, while waiting for next reveal */}
+                      {vatAnswers[i] && i === vatAnswers.length - 1 && isThinking && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+                          <svg className="vat-mimo-loader" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Thinking">
+                            <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                            <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                            <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                          </svg>
+                          <span style={{ fontSize: 14, display: "inline-block", background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "thinkingShimmer 2.4s linear infinite" }}>Thinking...</span>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
 
                 {/* Steps block */}
                 {visibleSteps > 0 && (
@@ -11775,8 +11930,42 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
             </div>
           </div>
 
-          {/* Typing indicator — shown while intro is typing and while steps are running */}
-          {!stepsComplete && (
+          {/* Reviewer question card — pinned at bottom, cycles through all VAT_QUESTIONS */}
+          {cardVisible && (
+            <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
+              <div style={{ maxWidth: 680, margin: "0 auto" }}>
+                <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "24px 24px 16px", width: "100%", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>{VAT_QUESTIONS[vatAnswers.length].question}</p>
+                  {[{ key: "yes", label: "Yes" }, { key: "no", label: "No" }].map((opt, i) => {
+                    const isActive = i === highlightedVatOption;
+                    return (
+                      <div
+                        key={opt.key}
+                        onClick={() => setVatAnswers(prev => [...prev, opt.key])}
+                        onMouseEnter={() => { highlightedVatRef.current = i; setHighlightedVatOption(i); }}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 18px", marginBottom: 8, background: isActive ? "#E3E3E3" : "#F7F7F7", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: isActive ? 600 : 400, color: "#080908", boxSizing: "border-box", transition: "background 0.1s" }}
+                      >
+                        <span>{opt.label}</span>
+                        {isActive && (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                            <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                          </svg>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 }}>
+                  <span style={{ fontSize: 12, color: "#8C8C8B" }}>↑↓ to navigate</span>
+                  <span style={{ fontSize: 12, color: "#CFCFD1" }}>·</span>
+                  <span style={{ fontSize: 12, color: "#8C8C8B" }}>Enter to select</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Typing indicator — shown while steps are running, after all questions answered */}
+          {!stepsComplete && allVatAnswered && (
             <div style={{ padding: "0 24px 20px", flexShrink: 0 }}>
               <div style={{ maxWidth: 680, margin: "0 auto" }}>
                 <div style={{ borderRadius: 8, padding: "14px 14px 12px", background: "#FFFFFF", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04), 0 0 0 1px #E9E9EB" }}>
