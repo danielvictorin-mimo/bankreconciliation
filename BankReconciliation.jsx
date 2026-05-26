@@ -2495,7 +2495,7 @@ function CustomSelectDropdown({ value, onChange, options, placeholder, withStar 
 }
 
 // ── Review & Publish Panel ────────────────────────────────────────────────────
-function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish }) {
+function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish, bankMatch, bankMatchAccount, bankMatchAccountNo }) {
   const [visible, setVisible] = useState(false);
   const [docTab, setDocTab] = useState("Document");
   const [whoOpen, setWhoOpen] = useState(true);
@@ -2991,13 +2991,43 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
             <SectionHeader label="Bank statement" open={bankOpen} onToggle={() => setBankOpen(v => !v)} />
             {bankOpen && (
               <div style={{ padding: "14px 16px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E9E9EB", borderRadius: 10, padding: "0 16px", height: 74, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: 14, color: "#000000" }}>Assign to an open request</span>
-                  <button style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9.99996 13.0039C10.4294 13.578 10.9773 14.0531 11.6065 14.3968C12.2357 14.7406 12.9315 14.945 13.6466 14.9962C14.3617 15.0474 15.0795 14.9442 15.7513 14.6937C16.4231 14.4431 17.0331 14.0509 17.54 13.5439L20.54 10.5439C21.4507 9.60086 21.9547 8.33785 21.9433 7.02687C21.9319 5.71588 21.4061 4.46182 20.479 3.53478C19.552 2.60774 18.2979 2.08189 16.987 2.0705C15.676 2.05911 14.413 2.56308 13.47 3.47387L11.75 5.18387M14 11.0039C13.5705 10.4297 13.0226 9.95469 12.3934 9.61093C11.7642 9.26717 11.0684 9.06276 10.3533 9.01154C9.63816 8.96032 8.92037 9.0635 8.24861 9.31409C7.57685 9.56468 6.96684 9.9568 6.45996 10.4639L3.45996 13.4639C2.54917 14.4069 2.04519 15.6699 2.05659 16.9809C2.06798 18.2919 2.59382 19.5459 3.52086 20.473C4.4479 21.4 5.70197 21.9259 7.01295 21.9372C8.32393 21.9486 9.58694 21.4447 10.53 20.5339L12.24 18.8239" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Assign
-                  </button>
-                </div>
+                {bankMatch ? (
+                  <div style={{ border: "1px solid #E9E9EB", borderRadius: 10, overflow: "hidden" }}>
+                    {/* Bank row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <BankBuildingIcon size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{bankMatchAccount}</div>
+                          <div style={{ fontSize: 13, color: "#7C7C7C", marginTop: 3 }}>{bankMatchAccountNo}</div>
+                        </div>
+                      </div>
+                      <button style={{ height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>Copy upload link</button>
+                    </div>
+                    {/* Amount + Date */}
+                    <div style={{ display: "flex", alignItems: "stretch", borderTop: "1px solid #F0F0F0" }}>
+                      <div style={{ flex: 1, padding: "14px 18px" }}>
+                        <div style={{ fontSize: 14, color: "#7C7C7C", marginBottom: 4 }}>Amount</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{amount}</div>
+                      </div>
+                      <div style={{ width: 1, background: "#F0F0F0", alignSelf: "stretch" }} />
+                      <div style={{ flex: 1, padding: "14px 18px" }}>
+                        <div style={{ fontSize: 14, color: "#7C7C7C", marginBottom: 4 }}>Date</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{date}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E9E9EB", borderRadius: 10, padding: "0 16px", height: 74, boxSizing: "border-box" }}>
+                    <span style={{ fontSize: 14, color: "#000000" }}>Assign to an open request</span>
+                    <button style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9.99996 13.0039C10.4294 13.578 10.9773 14.0531 11.6065 14.3968C12.2357 14.7406 12.9315 14.945 13.6466 14.9962C14.3617 15.0474 15.0795 14.9442 15.7513 14.6937C16.4231 14.4431 17.0331 14.0509 17.54 13.5439L20.54 10.5439C21.4507 9.60086 21.9547 8.33785 21.9433 7.02687C21.9319 5.71588 21.4061 4.46182 20.479 3.53478C19.552 2.60774 18.2979 2.08189 16.987 2.0705C15.676 2.05911 14.413 2.56308 13.47 3.47387L11.75 5.18387M14 11.0039C13.5705 10.4297 13.0226 9.95469 12.3934 9.61093C11.7642 9.26717 11.0684 9.06276 10.3533 9.01154C9.63816 8.96032 8.92037 9.0635 8.24861 9.31409C7.57685 9.56468 6.96684 9.9568 6.45996 10.4639L3.45996 13.4639C2.54917 14.4069 2.04519 15.6699 2.05659 16.9809C2.06798 18.2919 2.59382 19.5459 3.52086 20.473C4.4479 21.4 5.70197 21.9259 7.01295 21.9372C8.32393 21.9486 9.58694 21.4447 10.53 20.5339L12.24 18.8239" stroke="#1F2024" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Assign
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -16789,6 +16819,14 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
 // ── Inbox Page ────────────────────────────────────────────────────────────────
 function InboxPage() {
   const [activeTab, setActiveTab] = useState("Received");
+  const [inboxToast, setInboxToast] = useState(null);
+  const [inboxToastLeaving, setInboxToastLeaving] = useState(false);
+  const showInboxToast = (msg) => {
+    setInboxToastLeaving(false);
+    setInboxToast(msg);
+    setTimeout(() => setInboxToastLeaving(true), 3150);
+    setTimeout(() => { setInboxToast(null); setInboxToastLeaving(false); }, 3500);
+  };
   const [winWidth, setWinWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
   useEffect(() => {
     const onResize = () => setWinWidth(window.innerWidth);
@@ -16800,12 +16838,59 @@ function InboxPage() {
   const [tableScrollable, setTableScrollable] = useState(false);
   const [inboxChecked, setInboxChecked] = useState(new Set());
   const [tableShadow, setTableShadow] = useState(false);
+  const [inboxPreviewRow, setInboxPreviewRow] = useState(null);
+  const [inboxPreviewVisible, setInboxPreviewVisible] = useState(false);
+  const openInboxPreview = (row) => { setInboxPreviewRow(row); setInboxPreviewVisible(false); requestAnimationFrame(() => requestAnimationFrame(() => setInboxPreviewVisible(true))); };
+  const closeInboxPreview = () => { setInboxPreviewVisible(false); setTimeout(() => setInboxPreviewRow(null), 360); };
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") closeInboxPreview(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
   const [inboxSortKey, setInboxSortKey] = useState("date");
   const [inboxSortDir, setInboxSortDir] = useState("desc");
   const [inboxPage, setInboxPage] = useState(1);
   const [inboxPageSize, setInboxPageSize] = useState(20);
   const [showInboxPageSizeDrop, setShowInboxPageSizeDrop] = useState(false);
   const inboxPageSizeDropRef = useRef(null);
+  // Add filter dropdown
+  const [addFilterOpen, setAddFilterOpen] = useState(false);
+  const [addFilterCategory, setAddFilterCategory] = useState("Status");
+  const [isPublishingAll, setIsPublishingAll] = useState(false);
+  const [isArchivingAll, setIsArchivingAll] = useState(false);
+  const addFilterBtnRef = useRef(null);
+  const addFilterDropRef = useRef(null);
+  useEffect(() => {
+    if (!addFilterOpen) return;
+    const h = (e) => { if (addFilterDropRef.current && !addFilterDropRef.current.contains(e.target) && addFilterBtnRef.current && !addFilterBtnRef.current.contains(e.target)) setAddFilterOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [addFilterOpen]);
+
+  // Status filter (single-select)
+  const [statusFilter, setStatusFilter] = useState(null); // null = no filter
+  const [statusDropOpen, setStatusDropOpen] = useState(false);
+  const statusBtnRef = useRef(null);
+  const statusDropRef = useRef(null);
+  useEffect(() => {
+    if (!statusDropOpen) return;
+    const h = (e) => { if (statusDropRef.current && !statusDropRef.current.contains(e.target) && statusBtnRef.current && !statusBtnRef.current.contains(e.target)) setStatusDropOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [statusDropOpen]);
+
+  // Document type filter (multi-select)
+  const DOC_TYPES = ["Invoice", "Credit note", "Bank statement", "General file"];
+  const [docTypeFilter, setDocTypeFilter] = useState(new Set()); // empty = no filter
+  const [docTypeDropOpen, setDocTypeDropOpen] = useState(false);
+  const docTypeBtnRef = useRef(null);
+  const docTypeDropRef = useRef(null);
+  useEffect(() => {
+    if (!docTypeDropOpen) return;
+    const h = (e) => { if (docTypeDropRef.current && !docTypeDropRef.current.contains(e.target) && docTypeBtnRef.current && !docTypeBtnRef.current.contains(e.target)) setDocTypeDropOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [docTypeDropOpen]);
   useEffect(() => {
     const el = tableScrollRef.current;
     if (!el) return;
@@ -16822,18 +16907,20 @@ function InboxPage() {
   }, []);
 
   const STATUS_STYLE = {
-    "Review": { bg: "#FDF8EE", color: "#D5A750", border: "none" },
-    "Ready":  { bg: "#EDE9FB", color: "#6B4EE6", border: "none" },
+    "Review":    { bg: "#FDF8EE", color: "#D5A750", border: "none" },
+    "Ready":     { bg: "#EDE9FB", color: "#6B4EE6", border: "none" },
+    "Archived":  { bg: "#F0F0F0", color: "#6B6B6B", border: "none" },
+    "Published": { bg: "#EAF2E2", color: "#05A105", border: "none" },
   };
 
-  const ROWS = [
+  const [inboxRows, setInboxRows] = useState([
     { status: "Review", contact: "Harrington & Co Ltd",                date: "29/04/2026", account: null,                              ref: "DOC-2026-0511",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "11 May, 2026", uploadedDateTime: "11/05/2026, 08:14:03", dot: true },
-    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Postage, Freight & Courier",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "20 Apr, 2026", uploadedDateTime: "20/04/2026, 14:32:47", dot: true },
+    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Postage, Freight & Courier",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          bankMatchAccount: "Lloyds Bank - Business",        bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "20 Apr, 2026", uploadedDateTime: "20/04/2026, 14:32:47", dot: true },
     { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "16 Apr, 2026", uploadedDateTime: "16/04/2026, 09:05:22", dot: true },
-    { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "14 Apr, 2026", uploadedDateTime: "14/04/2026, 11:48:59", dot: true },
+    { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "14 Apr, 2026", uploadedDateTime: "14/04/2026, 11:48:59", dot: true },
     { status: "Review", contact: "Calendly LLC",                       date: "21/03/2026", account: "Subscriptions",                   ref: "F7A7C97A-000212",    type: "Bank statement",tax: "US$0.00",      amount: "US$12.00",     uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "21 Mar, 2026", uploadedDateTime: "21/03/2026, 16:20:11", dot: true },
     { status: "Review", contact: "Fenwick Supplies Ltd",               date: "20/03/2026", account: null,                              ref: "UPL-0320-7741",      type: null,            tax: "£0.92",        amount: "£236.11",      uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "20 Mar, 2026", uploadedDateTime: "20/03/2026, 10:03:38", dot: true },
-    { status: "Review", contact: "Andrews Sykes Hire Solutions",       date: "11/03/2026", account: "Rent",                            ref: "510-81135000",       bankMatch: true, openRequestName: "Andrews Sykes – Q1 hire invoice",       type: "Invoice",       tax: "£67.44",       amount: "£404.64",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "11 Mar, 2026", uploadedDateTime: "11/03/2026, 13:55:04", dot: true },
+    { status: "Review", contact: "Andrews Sykes Hire Solutions",       date: "11/03/2026", account: "Rent",                            ref: "510-81135000",       bankMatch: true, openRequestName: "Andrews Sykes – Q1 hire invoice",        bankMatchAccount: "Barclays - Business Account",   bankMatchAccountNo: "20-44-51-81935027", type: "Invoice",       tax: "£67.44",       amount: "£404.64",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "11 Mar, 2026", uploadedDateTime: "11/03/2026, 13:55:04", dot: true },
     { status: "Ready",  contact: "Gorgias Inc",                        date: "11/03/2026", account: "General Expenses",                ref: "INC-03-2026-634",    type: "Credit note",   tax: "US$0.00",      amount: "US$3,100.00",  uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "11 Mar, 2026", uploadedDateTime: "11/03/2026, 09:41:27", dot: true },
     { status: "Review", contact: "Able Plumbing Solutions Ltd",        date: "10/03/2026", account: null,                              ref: "U005521710dddd",     type: "Invoice",       tax: "£41.23",       amount: "£247.36",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "10 Mar, 2026", uploadedDateTime: "10/03/2026, 15:17:50", dot: true },
     { status: "Review", contact: "Acme Solutions Inc.",                date: "05/03/2026", account: "Consulting",                      ref: "INV-2608",           type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00", uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "5 Mar, 2026",  uploadedDateTime: "05/03/2026, 08:59:14" },
@@ -16874,12 +16961,28 @@ function InboxPage() {
     { status: "Review", contact: "Marlowe Consulting Group",           date: "06/04/2026", account: null,                              ref: "MCG-2025-1113",      type: null,            tax: "£0.00",        amount: "£2,880.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "13 Nov, 2025", uploadedDateTime: "13/11/2025, 08:29:47" },
     { status: "Review", contact: "Pennbrook Property Group",           date: "03/04/2026", account: "Rent",                            ref: "PPG-NOV25-008",      type: "Invoice Split", tax: "£1,200.00",    amount: "£7,200.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "10 Nov, 2025", uploadedDateTime: "10/11/2025, 13:06:55" },
     { status: "Ready",  contact: "Silvergate Analytics Ltd",           date: "01/04/2026", account: "Professional Fees",               ref: "SAL-2025-1105",      type: "Credit note",   tax: "£280.00",      amount: "£1,680.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "5 Nov, 2025",  uploadedDateTime: "05/11/2025, 10:41:32" },
-  ];
+  ]);
 
-  const filtered = ROWS.filter(r =>
-    !search || (r.contact || "").toLowerCase().includes(search.toLowerCase()) ||
-    (r.ref || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const [archivedRows, setArchivedRows] = useState([
+    { status: "Published", contact: "Harrington & Co Ltd",          date: "14/02/2026", account: "General Expenses",           ref: "DOC-2026-0214", type: "Invoice",       tax: "£98.00",       amount: "£588.00",      uploadedBy: "client",     uploadedByName: "Sarah Thompson", uploadedDate: "14 Feb, 2026", uploadedDateTime: "14/02/2026, 09:22:00" },
+    { status: "Archived",  contact: "Outback Logistics Pty Ltd",    date: "10/02/2026", account: "Postage, Freight & Courier", ref: "INV-04210",     type: "Invoice",       tax: "A$540.00",     amount: "A$3,240.00",   uploadedBy: "client",     uploadedByName: "James Clarke",   uploadedDate: "10 Feb, 2026", uploadedDateTime: "10/02/2026, 11:05:14" },
+    { status: "Published", contact: "Fenwick Supplies Ltd",          date: "08/02/2026", account: "Purchases",                 ref: "UPL-0208-1122", type: "Invoice",       tax: "£44.00",       amount: "£264.00",      uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "8 Feb, 2026",  uploadedDateTime: "08/02/2026, 14:30:47" },
+    { status: "Archived",  contact: "Calendly LLC",                  date: "21/01/2026", account: "Subscriptions",             ref: "F7A7C97A-000191",type: "Bank statement",tax: "US$0.00",      amount: "US$12.00",     uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "21 Jan, 2026", uploadedDateTime: "21/01/2026, 16:01:33" },
+    { status: "Published", contact: "Whitford Mechanical Services",  date: "20/01/2026", account: "General Expenses",          ref: "WMS-26-0120",   type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "client",     uploadedByName: "Oliver Bennett", uploadedDate: "20 Jan, 2026", uploadedDateTime: "20/01/2026, 10:44:22" },
+    { status: "Published", contact: "Gorgias Inc",                   date: "11/01/2026", account: "General Expenses",          ref: "INC-01-2026-588",type: "Credit note",  tax: "US$0.00",      amount: "US$3,100.00",  uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "11 Jan, 2026", uploadedDateTime: "11/01/2026, 09:19:05" },
+    { status: "Archived",  contact: "Acme Solutions Inc.",           date: "05/01/2026", account: "Consulting",                ref: "INV-2540",      type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00", uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "5 Jan, 2026",  uploadedDateTime: "05/01/2026, 08:58:44" },
+    { status: "Published", contact: "Northgate Financial Ltd",       date: "28/12/2025", account: "Professional Fees",         ref: "NF-2025-1228",  type: "Invoice",       tax: "£320.00",      amount: "£1,920.00",    uploadedBy: "client",     uploadedByName: "Sara Thompson",  uploadedDate: "28 Dec, 2025", uploadedDateTime: "28/12/2025, 13:15:00" },
+    { status: "Published", contact: "Elmwood Trading Co",            date: "22/12/2025", account: "Purchases",                 ref: "ET-2025-1222",  type: "Invoice",       tax: "£112.50",      amount: "£675.00",      uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "22 Dec, 2025", uploadedDateTime: "22/12/2025, 15:10:30" },
+    { status: "Archived",  contact: "Bridgewater Associates",        date: "18/12/2025", account: "Subscriptions",             ref: "BWA-DEC25-001", type: "Bank statement",tax: "US$0.00",      amount: "US$299.00",    uploadedBy: "client",     uploadedByName: "James Clarke",   uploadedDate: "18 Dec, 2025", uploadedDateTime: "18/12/2025, 11:05:52" },
+  ]);
+
+  const activeSource = activeTab === "Archived" ? archivedRows : inboxRows;
+  const filtered = activeSource.filter(r => {
+    const matchSearch = !search || (r.contact || "").toLowerCase().includes(search.toLowerCase()) || (r.ref || "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = !statusFilter || r.status === statusFilter;
+    const matchDocType = docTypeFilter.size === 0 || docTypeFilter.has(r.type) || (docTypeFilter.has("General file") && !r.type);
+    return matchSearch && matchStatus && matchDocType;
+  });
 
   const INBOX_SORTABLE = ["date", "contact", "amount", "uploaded", "status", "account", "type"];
   const sorted = inboxSortKey ? [...filtered].sort((a, b) => {
@@ -16906,7 +17009,7 @@ function InboxPage() {
   const totalInboxPages = Math.max(1, Math.ceil(totalInboxRows / inboxPageSize));
   const safeInboxPage = Math.min(inboxPage, totalInboxPages);
   const pagedSorted = sorted.slice((safeInboxPage - 1) * inboxPageSize, safeInboxPage * inboxPageSize);
-  const rows = pagedSorted.map(r => ({ check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot: r.dot, _raw: r }));
+  const rows = pagedSorted.map((r, i) => { const sortedIndex = (safeInboxPage - 1) * inboxPageSize + i; return { check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot: sortedIndex < 9, _raw: r }; });
 
   const cols = [
     { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", align: "center", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
@@ -16971,8 +17074,8 @@ function InboxPage() {
       );
     }},
     { key: "tax",     label: "Tax",        width: "110px", align: "right" },
-    { key: "amount",  label: "Amount",     width: "120px", align: "right", render: v => <span style={{ fontWeight: 500, color: "#000" }}>{v}</span> },
-    { key: "actions", label: "",           width: "40px",  fixedWidth: true, cellPadding: "14px 0px", align: "center", render: () => <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10.0002 10.834C10.4604 10.834 10.8335 10.4609 10.8335 10.0007C10.8335 9.54041 10.4604 9.16732 10.0002 9.16732C9.53993 9.16732 9.16683 9.54041 9.16683 10.0007C9.16683 10.4609 9.53993 10.834 10.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M15.0002 10.834C15.4604 10.834 15.8335 10.4609 15.8335 10.0007C15.8335 9.54041 15.4604 9.16732 15.0002 9.16732C14.5399 9.16732 14.1668 9.54041 14.1668 10.0007C14.1668 10.4609 14.5399 10.834 15.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.00016 10.834C5.46040 10.834 5.8335 10.4609 5.8335 10.0007C5.8335 9.54041 5.46040 9.16732 5.00016 9.16732C4.53993 9.16732 4.16683 9.54041 4.16683 10.0007C4.16683 10.4609 4.53993 10.834 5.00016 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button> },
+    { key: "amount",  label: "Amount",     width: "120px", align: "right", render: v => <span style={{ fontWeight: 400, color: "#000" }}>{v}</span> },
+    ...(activeTab !== "Archived" ? [{ key: "actions", label: "",           width: "40px",  fixedWidth: true, cellPadding: "14px 0px", align: "center", render: () => <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10.0002 10.834C10.4604 10.834 10.8335 10.4609 10.8335 10.0007C10.8335 9.54041 10.4604 9.16732 10.0002 9.16732C9.53993 9.16732 9.16683 9.54041 9.16683 10.0007C9.16683 10.4609 9.53993 10.834 10.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M15.0002 10.834C15.4604 10.834 15.8335 10.4609 15.8335 10.0007C15.8335 9.54041 15.4604 9.16732 15.0002 9.16732C14.5399 9.16732 14.1668 9.54041 14.1668 10.0007C14.1668 10.4609 14.5399 10.834 15.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.00016 10.834C5.46040 10.834 5.8335 10.4609 5.8335 10.0007C5.8335 9.54041 5.46040 9.16732 5.00016 9.16732C4.53993 9.16732 4.16683 9.54041 4.16683 10.0007C4.16683 10.4609 4.53993 10.834 5.00016 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button> }] : []),
   ];
 
   return (
@@ -16986,7 +17089,7 @@ function InboxPage() {
           <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Inbox</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <PrimaryButton style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, marginRight: 6 }}><path d="M3.333 14.167v1.666A1.667 1.667 0 0 0 5 17.5h10a1.667 1.667 0 0 0 1.667-1.667v-1.666M13.333 6.667L10 3.333m0 0L6.667 6.667M10 3.333v8.334" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginRight: 6 }}><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round"/></svg>
               Upload documents
             </PrimaryButton>
           </div>
@@ -16994,8 +17097,8 @@ function InboxPage() {
 
         {/* Stat widgets */}
         {(() => {
-          const reviewCount    = ROWS.filter(r => r.status === "Review").length;
-          const readyCount     = ROWS.filter(r => r.status === "Ready").length;
+          const reviewCount    = inboxRows.filter(r => r.status === "Review").length;
+          const readyCount     = inboxRows.filter(r => r.status === "Ready").length;
           const publishedCount = 0;
           const widgets = [
             {
@@ -17037,8 +17140,8 @@ function InboxPage() {
         {/* Tabs */}
         <div style={{ display: "flex", alignItems: "flex-end", padding: "0", borderBottom: "1px solid #ECECEC" }}>
           {["Received", "Archived"].map((tab, i) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              style={{ height: 40, padding: "0 14px", border: activeTab === tab ? "1px solid #ECECEC" : "none", borderBottom: activeTab === tab ? "1px solid #F5F5F5" : "none", marginBottom: activeTab === tab ? -1 : 0, borderRadius: "8px 8px 0 0", background: activeTab === tab ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: activeTab === tab ? 600 : 400, color: activeTab === tab ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
+            <button key={tab} onClick={() => { setActiveTab(tab); setStatusFilter(null); setDocTypeFilter(new Set()); setStatusDropOpen(false); setDocTypeDropOpen(false); setAddFilterOpen(false); }}
+              style={{ height: 40, padding: "0 14px", border: activeTab === tab ? "1px solid #ECECEC" : "none", borderBottom: activeTab === tab ? "1px solid #F5F5F5" : "none", marginBottom: activeTab === tab ? -1 : 0, borderRadius: "8px 8px 0 0", background: activeTab === tab ? "#ECECEC" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: activeTab === tab ? 500 : 400, color: activeTab === tab ? "#080908" : "#7C7C7C", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
               {tab}
             </button>
           ))}
@@ -17053,18 +17156,177 @@ function InboxPage() {
               style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#080908", background: "transparent", fontFamily: "'Inter', sans-serif" }} />
           </div>
           {/* Filter row */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", gap: 8 }}>
-            <button style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0 }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <line x1="6" y1="1" x2="6" y2="11" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="1" y1="6" x2="11" y2="6" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/>
+          {(() => {
+            const statusOpts = activeTab === "Archived" ? ["All statuses", "Archived", "Published"] : ["All statuses", "Review", "Ready"];
+            const chevron = (open) => (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+                <path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Add filter
-            </button>
-          </div>
+            );
+            const pill = (label) => (
+              <span style={{ background: "#EBEBEB", borderRadius: 5, padding: "2px 7px", fontSize: 13, fontWeight: 500, color: "#080908", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" }}>{label}</span>
+            );
+            const plusPill = (n) => (
+              <span style={{ background: "#EBEBEB", borderRadius: 5, padding: "2px 7px", fontSize: 13, fontWeight: 500, color: "#080908", flexShrink: 0 }}>+{n}</span>
+            );
+            const anyFilterActive = !!statusFilter || docTypeFilter.size > 0;
+            const btnBase = (isOpen) => ({ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px 0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: isOpen ? "#F5F5F5" : "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0, fontFamily: "'Inter',sans-serif", boxSizing: "border-box" });
+            const docTypeSel = [...docTypeFilter];
+            return (
+              <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", gap: 8, position: "relative" }}>
+                {/* Add filter */}
+                <div style={{ position: "relative" }}>
+                  <button ref={addFilterBtnRef} onClick={() => { setAddFilterOpen(v => !v); setStatusDropOpen(false); setDocTypeDropOpen(false); }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: addFilterOpen ? "#F5F5F5" : "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", flexShrink: 0, fontFamily: "'Inter',sans-serif" }}
+                    onMouseEnter={e => { if (!addFilterOpen) e.currentTarget.style.background = "#F5F5F5"; }}
+                    onMouseLeave={e => { if (!addFilterOpen) e.currentTarget.style.background = "#FFFFFF"; }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="1" x2="6" y2="11" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Add filter
+                  </button>
+                  {addFilterOpen && (() => {
+                    const [addCat, setAddCat] = [addFilterCategory, setAddFilterCategory];
+                    const statusOpts2 = activeTab === "Archived" ? ["Any status", "Archived", "Published"] : ["Any status", "Review", "Ready"];
+                    return (
+                      <div ref={addFilterDropRef} style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 500, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", width: 540, overflow: "hidden", fontFamily: "'Inter',sans-serif" }}>
+                        <div style={{ display: "flex", borderBottom: "1px solid #E9E9EB" }}>
+                          {/* Left: categories */}
+                          <div style={{ width: 160, borderRight: "1px solid #E9E9EB", padding: "8px 8px", flexShrink: 0 }}>
+                            {["Status", "Document type"].map(cat => (
+                              <button key={cat} onClick={() => setAddCat(cat)}
+                                style={{ width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderRadius: 8, background: addCat === cat ? "#F0F0F0" : "transparent", cursor: "pointer", fontSize: 14, fontWeight: addCat === cat ? 600 : 400, color: "#080908", fontFamily: "'Inter',sans-serif" }}
+                                onMouseEnter={e => { if (addCat !== cat) e.currentTarget.style.background = "#F7F7F7"; }}
+                                onMouseLeave={e => { if (addCat !== cat) e.currentTarget.style.background = "transparent"; }}>
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Right: options */}
+                          <div style={{ flex: 1, padding: "16px 20px" }}>
+                            {addCat === "Status" && (
+                              <>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: "#8C8C8B", marginBottom: 12 }}>Select status</div>
+                                {statusOpts2.map(opt => {
+                                  const sel = opt === "Any status" ? !statusFilter : statusFilter === opt;
+                                  return (
+                                    <label key={opt} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: "pointer" }} onClick={() => setStatusFilter(opt === "Any status" ? null : opt)}>
+                                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: sel ? "6px solid #05A105" : "2px solid #CFCFD1", background: "#FFFFFF", flexShrink: 0, boxSizing: "border-box", transition: "border 0.1s" }} />
+                                      <span style={{ fontSize: 14, color: "#080908" }}>{opt}</span>
+                                    </label>
+                                  );
+                                })}
+                              </>
+                            )}
+                            {addCat === "Document type" && (
+                              <>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: "#8C8C8B", marginBottom: 12 }}>Select document type</div>
+                                {DOC_TYPES.map(opt => {
+                                  const sel = docTypeFilter.has(opt);
+                                  return (
+                                    <label key={opt} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: "pointer" }} onClick={() => { const n = new Set(docTypeFilter); sel ? n.delete(opt) : n.add(opt); setDocTypeFilter(n); }}>
+                                      <div style={{ width: 20, height: 20, borderRadius: 5, border: sel ? "none" : "1.5px solid #CFCFD1", background: sel ? "#05A105" : "#FFFFFF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        {sel && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                      </div>
+                                      <span style={{ fontSize: 14, color: "#080908" }}>{opt}</span>
+                                    </label>
+                                  );
+                                })}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {/* Footer */}
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 16px" }}>
+                          <button onClick={() => setAddFilterOpen(false)}
+                            style={{ height: 40, padding: "0 20px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter',sans-serif" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>Cancel</button>
+                          <button onClick={() => setAddFilterOpen(false)}
+                            style={{ height: 40, padding: "0 20px", border: "none", borderRadius: 8, background: "#05A105", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", fontFamily: "'Inter',sans-serif" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#048A04"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>Apply</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Status filter button */}
+                <div style={{ position: "relative" }}>
+                  <button ref={statusBtnRef} onClick={() => { setStatusDropOpen(v => !v); setStatusDraft(statusFilter); setDocTypeDropOpen(false); }}
+                    style={btnBase(statusDropOpen)}
+                    onMouseEnter={e => { if (!statusDropOpen) e.currentTarget.style.background = "#F5F5F5"; }}
+                    onMouseLeave={e => { if (!statusDropOpen) e.currentTarget.style.background = "#FFFFFF"; }}>
+                    <span>Status</span>
+                    {statusFilter && pill(statusFilter)}
+                    {chevron(statusDropOpen)}
+                  </button>
+                  {statusDropOpen && (
+                    <div ref={statusDropRef} style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 500, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", minWidth: 200, overflow: "hidden", fontFamily: "'Inter',sans-serif" }}>
+                      <div style={{ padding: "6px 6px" }}>
+                        {statusOpts.map(opt => {
+                          const sel = opt === "All statuses" ? !statusFilter : statusFilter === opt;
+                          return (
+                            <button key={opt} onClick={() => { setStatusFilter(opt === "All statuses" ? null : (sel ? null : opt)); }}
+                              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", border: "none", borderRadius: 7, background: "transparent", cursor: "pointer", fontSize: 14, color: "#080908", fontFamily: "'Inter',sans-serif", textAlign: "left" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <div style={{ width: 16, height: 16, borderRadius: "50%", border: sel ? "5px solid #05A105" : "1.5px solid #CFCFD1", flexShrink: 0, boxSizing: "border-box" }} />
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Document type filter button */}
+                <div style={{ position: "relative" }}>
+                  <button ref={docTypeBtnRef} onClick={() => { setDocTypeDropOpen(v => !v); setStatusDropOpen(false); }}
+                    style={btnBase(docTypeDropOpen)}
+                    onMouseEnter={e => { if (!docTypeDropOpen) e.currentTarget.style.background = "#F5F5F5"; }}
+                    onMouseLeave={e => { if (!docTypeDropOpen) e.currentTarget.style.background = "#FFFFFF"; }}>
+                    <span>Document type</span>
+                    {docTypeSel.length > 0 && pill(docTypeSel[0])}
+                    {docTypeSel.length > 1 && plusPill(docTypeSel.length - 1)}
+                    {chevron(docTypeDropOpen)}
+                  </button>
+                  {docTypeDropOpen && (
+                    <div ref={docTypeDropRef} style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 500, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", minWidth: 220, overflow: "hidden", fontFamily: "'Inter',sans-serif" }}>
+                      <div style={{ padding: "6px 6px" }}>
+                        {DOC_TYPES.map(opt => {
+                          const sel = docTypeFilter.has(opt);
+                          return (
+                            <button key={opt} onClick={() => { const n = new Set(docTypeFilter); sel ? n.delete(opt) : n.add(opt); setDocTypeFilter(n); }}
+                              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", border: "none", borderRadius: 7, background: "transparent", cursor: "pointer", fontSize: 14, color: "#080908", fontFamily: "'Inter',sans-serif", textAlign: "left" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F7F7F7"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <div style={{ width: 16, height: 16, borderRadius: 4, border: sel ? "none" : "1.5px solid #CFCFD1", background: sel ? "#05A105" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {sel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                              </div>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Reset button — shown when any filter is active */}
+                {anyFilterActive && (
+                  <button
+                    onClick={() => { setStatusFilter(null); setDocTypeFilter(new Set()); }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter',sans-serif" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Reset
+                  </button>
+                )}
+              </div>
+            );
+          })()}
           {/* Table */}
           {(() => {
             const shadow = tableShadow;
@@ -17103,11 +17365,14 @@ function InboxPage() {
                   </div>
                   {/* Rows */}
                   {rows.map((row, ri) => (
-                    <div key={ri} style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background: "#FFFFFF" }}
+                    <div key={ri} style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer" }}
                       onMouseEnter={e => e.currentTarget.querySelectorAll("[data-sticky]").forEach(el => el.style.background="#FAFAFA") || (e.currentTarget.style.background="#FAFAFA")}
-                      onMouseLeave={e => e.currentTarget.querySelectorAll("[data-sticky]").forEach(el => el.style.background="#FFFFFF") || (e.currentTarget.style.background="#FFFFFF")}>
+                      onMouseLeave={e => e.currentTarget.querySelectorAll("[data-sticky]").forEach(el => el.style.background="#FFFFFF") || (e.currentTarget.style.background="#FFFFFF")}
+                      onClick={() => openInboxPreview(row._raw || row)}>
                       {cols.map((col, ci) => (
-                        <div key={col.key} data-sticky={ci===lastI||undefined} data-sticky-col={ci===lastI||undefined} style={{ display:"flex", alignItems:"center", justifyContent: col.align==="right"?"flex-end":col.align==="center"?"center":"flex-start", fontSize:14, color:"#000", padding: col.cellPadding||"12px 16px", borderRight: ci<lastI?"1px solid #E9E9EB":"none", overflow:"hidden", whiteSpace:"nowrap", height:56, boxSizing:"border-box", ...stickyStyle(ci, "#FFFFFF") }}>
+                        <div key={col.key} data-sticky={ci===lastI||undefined} data-sticky-col={ci===lastI||undefined}
+                          onClick={col.key === "check" ? e => e.stopPropagation() : undefined}
+                          style={{ display:"flex", alignItems:"center", justifyContent: col.align==="right"?"flex-end":col.align==="center"?"center":"flex-start", fontSize:14, color:"#000", padding: col.cellPadding||"12px 16px", borderRight: ci<lastI?"1px solid #E9E9EB":"none", overflow:"hidden", whiteSpace:"nowrap", height:56, boxSizing:"border-box", cursor: col.key === "check" ? "default" : "pointer", ...stickyStyle(ci, "#FFFFFF") }}>
                           {col.render ? col.render(row[col.key], row._raw||row, ri) : row[col.key]}
                         </div>
                       ))}
@@ -17153,6 +17418,32 @@ function InboxPage() {
         </div>
       </div>
     </div>
+    {/* Inbox document preview sidebar */}
+    {inboxPreviewRow && (
+      <ReviewPublishPanel
+        contact={inboxPreviewRow.contact}
+        amount={inboxPreviewRow.amount}
+        date={inboxPreviewRow.date}
+        fileName={inboxPreviewRow.fileName || (inboxPreviewRow.contact || "document") + " invoice.pdf"}
+        docStatus={inboxPreviewRow.status}
+        bankMatch={inboxPreviewRow.bankMatch}
+        bankMatchAccount={inboxPreviewRow.bankMatchAccount}
+        bankMatchAccountNo={inboxPreviewRow.bankMatchAccountNo}
+        onClose={closeInboxPreview}
+        onPublish={() => {
+          const row = inboxPreviewRow;
+          if (row) {
+            const now = new Date();
+            const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const publishedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+            setArchivedRows(prev => [{ ...row, status: "Published", uploadedDate: publishedDate }, ...prev]);
+            setInboxRows(prev => prev.filter(r => r.ref !== row.ref));
+            showInboxToast("Document published successfully");
+          }
+          closeInboxPreview();
+        }}
+      />
+    )}
     {inboxChecked.size > 0 && (() => {
       const selectedRows = [...inboxChecked].map(i => rows[i]).filter(Boolean);
       const anyReview = selectedRows.some(r => r.status === "Review");
@@ -17163,15 +17454,60 @@ function InboxPage() {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 5L5 11M5 5l6 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <span style={{ fontSize:14, fontWeight:500, color:"#2A2A2A", whiteSpace:"nowrap", paddingRight:4 }}>{inboxChecked.size} document{inboxChecked.size !== 1 ? "s" : ""} selected</span>
-          <button style={{ height:40, background:"#F5F5F5", border:"none", borderRadius:8, padding:"0 16px", cursor:"pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif" }} onMouseEnter={e=>e.currentTarget.style.background="#EBEBEB"} onMouseLeave={e=>e.currentTarget.style.background="#F5F5F5"}>
-            Archive all
+          <button onClick={() => {
+            if (isArchivingAll) return;
+            setIsArchivingAll(true);
+            setTimeout(() => {
+              const allChecked = [...inboxChecked].map(i => rows[i]).filter(Boolean);
+              const checkedRefs = new Set(allChecked.map(r => r.ref));
+              const now = new Date();
+              const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const archivedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+              const newArchived = allChecked.map(r => ({ ...(r._raw || r), status: "Archived", uploadedDate: archivedDate }));
+              setArchivedRows(prev => [...newArchived, ...prev]);
+              setInboxRows(prev => prev.filter(r => !checkedRefs.has(r.ref)));
+              setInboxChecked(new Set());
+              setIsArchivingAll(false);
+              const count = allChecked.length;
+              showInboxToast(`${count} document${count !== 1 ? "s" : ""} archived successfully`);
+            }, 1500);
+          }} style={{ height:40, minWidth:110, background:"#F5F5F5", border:"none", borderRadius:8, padding:"0 16px", cursor: isArchivingAll ? "default" : "pointer", color:"#2A2A2A", fontSize:14, fontWeight:500, whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }} onMouseEnter={e=>{ if(!isArchivingAll) e.currentTarget.style.background="#EBEBEB"; }} onMouseLeave={e=>e.currentTarget.style.background="#F5F5F5"}>
+            <span style={{ visibility: isArchivingAll ? "hidden" : "visible" }}>Archive all</span>
+            {isArchivingAll && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="#2A2A2A" strokeWidth="3.5" strokeLinecap="round"/></svg>}
           </button>
-          <button disabled={!canPublish} style={{ height:40, background: canPublish ? "#05A105" : "#E5E5E5", border:"none", borderRadius:8, padding:"0 16px", cursor: canPublish ? "pointer" : "not-allowed", color: canPublish ? "#FFFFFF" : "#ABABAB", fontSize:14, fontWeight:500, whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif", transition:"background 0.15s" }} onMouseEnter={e=>{ if(canPublish) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(canPublish) e.currentTarget.style.background="#05A105"; }}>
-            Publish all
+          <button disabled={!canPublish || isPublishingAll} onClick={() => {
+            if (!canPublish || isPublishingAll) return;
+            setIsPublishingAll(true);
+            setTimeout(() => {
+              const readyChecked = [...inboxChecked].map(i => rows[i]).filter(r => r && r.status === "Ready");
+              const readyRefs = new Set(readyChecked.map(r => r.ref));
+              const now = new Date();
+              const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const publishedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+              const newArchived = readyChecked.map(r => ({ ...(r._raw || r), status: "Published", uploadedDate: publishedDate }));
+              setArchivedRows(prev => [...newArchived, ...prev]);
+              setInboxRows(prev => prev.filter(r => !readyRefs.has(r.ref)));
+              setInboxChecked(new Set());
+              setIsPublishingAll(false);
+              const count = readyChecked.length;
+              showInboxToast(`${count} document${count !== 1 ? "s" : ""} published successfully`);
+            }, 1500);
+          }} style={{ height:40, minWidth:120, background: canPublish ? "#05A105" : "#E5E5E5", border:"none", borderRadius:8, padding:"0 16px", cursor: canPublish && !isPublishingAll ? "pointer" : "not-allowed", color: canPublish ? "#FFFFFF" : "#ABABAB", fontSize:14, fontWeight:500, whiteSpace:"nowrap", fontFamily:"'Inter',sans-serif", transition:"background 0.15s", display:"flex", alignItems:"center", justifyContent:"center", gap:8, position:"relative" }} onMouseEnter={e=>{ if(canPublish && !isPublishingAll) e.currentTarget.style.background="#048A04"; }} onMouseLeave={e=>{ if(canPublish) e.currentTarget.style.background="#05A105"; }}>
+            <span style={{ visibility: isPublishingAll ? "hidden" : "visible" }}>Publish all</span>
+            {isPublishingAll && <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", position:"absolute", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="white" strokeWidth="3.5" strokeLinecap="round"/></svg>}
           </button>
         </div>
       );
     })()}
+
+    {/* Inbox toast */}
+    <style>{`@keyframes inboxToastIn{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}} @keyframes inboxToastOut{from{opacity:1;transform:translateX(-50%) translateY(0)}to{opacity:0;transform:translateX(-50%) translateY(-12px)}} @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    {inboxToast && (
+      <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", background:"#05A105", color:"#FFFFFF", padding:"12px 20px", borderRadius:10, fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:10, zIndex:9999, animation: inboxToastLeaving ? "inboxToastOut 0.35s ease forwards" : "inboxToastIn 0.35s ease", fontFamily:"'Inter',sans-serif", whiteSpace:"nowrap" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {inboxToast}
+      </div>
+    )}
     </div>
   );
 }
