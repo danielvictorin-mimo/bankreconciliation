@@ -6096,7 +6096,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       )}
 
       {/* Standalone textarea — visible when no action card is showing and not in thinking/loading phase */}
-      {thinkingDone && !((isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) || (uploadedFiles && !prepDone) || (prepDone && !line4Done) || (line4Done && !line5Done) || (startClicked && !resultsVisible) || (line3Trigger && !line3ThinkingDone) || (line3ThinkingDone && !line3Done)) && (
+      {thinkingDone && !((isPicker && line2Done && !accountSelected) || (line5Done && !startClicked) || (line3Done && !uploadedFiles && !reuploadPhase && !resultsVisible) || reuploadPhase || replaceStatementMode || (isNoFeedAccount && line3Done && !feedProceedChoice && !resultsVisible) || (feedProceedChoice === "convert" && uploadedFiles && !resultsVisible) || (uploadedFiles && !prepDone) || (prepDone && !line4Done) || (line4Done && !line5Done) || (startClicked && !resultsVisible) || (line3Trigger && !line3ThinkingDone) || (line3ThinkingDone && !line3Done)) && (
           <div style={{ padding: resultsVisible ? "60px 12px 16px" : "0 12px 16px", flexShrink: 0, background: resultsVisible ? "linear-gradient(to bottom, rgba(251,251,251,0) 0%, rgba(251,251,251,1) 60px)" : undefined, marginTop: resultsVisible ? -60 : 0 }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
               {/* Action buttons — shown when results are visible (sidebar mode), hidden while replace flow is open */}
