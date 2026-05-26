@@ -17009,7 +17009,7 @@ function InboxPage() {
   const totalInboxPages = Math.max(1, Math.ceil(totalInboxRows / inboxPageSize));
   const safeInboxPage = Math.min(inboxPage, totalInboxPages);
   const pagedSorted = sorted.slice((safeInboxPage - 1) * inboxPageSize, safeInboxPage * inboxPageSize);
-  const rows = pagedSorted.map((r, i) => { const sortedIndex = (safeInboxPage - 1) * inboxPageSize + i; return { check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot: sortedIndex < 9, _raw: r }; });
+  const rows = pagedSorted.map((r, i) => { const sortedIndex = (safeInboxPage - 1) * inboxPageSize + i; const dot = sortedIndex < 9; return { check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot, _raw: { ...r, dot } }; });
 
   const cols = [
     { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", align: "center", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
