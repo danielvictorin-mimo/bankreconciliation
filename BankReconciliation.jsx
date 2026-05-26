@@ -4585,6 +4585,15 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [ignoredCards, setIgnoredCards] = useState(initialIgnoredCards ? new Set(initialIgnoredCards) : new Set());
   const [markCompleteDrawerOpen, setMarkCompleteDrawerOpen] = useState(false);
   const [markCompleteComment, setMarkCompleteComment] = useState("");
+  const [periodChosen, setPeriodChosen] = useState(showResults ? { key: "full", label: "Full accounting period", sub: "Apr 1 – Apr 30" } : null);
+  const [highlightedPeriod, setHighlightedPeriod] = useState(0);
+  const cardOptions = [
+    { key: "jeremy",  label: "Jeremy Smith **** 1039" },
+    { key: "anna",    label: "Anna Larson **** 1054"  },
+    { key: "all",     label: "All statement transactions" },
+  ];
+  const [cardChosen, setCardChosen] = useState(showResults ? cardOptions[0] : null);
+  const [highlightedCard, setHighlightedCard] = useState(0);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [auditEntries, setAuditEntries] = useState([]);
   const auditCounterRef = React.useRef(0);
@@ -4879,6 +4888,19 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   }, [line3Trigger]);
   const { done: line3Done } = useTypewriter(line3ThinkingDone ? line3Full : "", 18, showResults);
 
+  // Line 3b — period selection question (AmEx only, after line3 finishes)
+  const line3bText = "The statement period does not match with the financial close. Which period would you like to reconcile?";
+  const { done: line3bDone } = useTypewriter(isNoFeedAccount && line3Done ? line3bText : "", 18, showResults);
+
+  // Line 3c — AI confirmation after period is chosen
+  const periodOptions = [
+    { key: "full",        label: "Full accounting period",  sub: "Apr 1 – Apr 30" },
+    { key: "overlapping", label: "Overlapping period",       sub: "Apr 5 – Apr 30" },
+    { key: "statement",   label: "Statement period",         sub: "Apr 5 – May 5"  },
+  ];
+  const line3cText = periodChosen ? `Got it. Please upload the bank statement for the ${periodChosen.label.toLowerCase()} (${periodChosen.sub}).` : "";
+  const { done: line3cDone } = useTypewriter(line3cText, 18, showResults);
+
   // Convert-path AI response (after user picks "Convert my bank statement to CSV and download")
   const convertRespText = "Upload your PDF or image statement and I'll convert it to CSV for you before running the reconciliation.";
   const { done: convertRespDone } = useTypewriter(feedProceedChoice === "convert" ? convertRespText : "", 18, showResults);
@@ -4901,23 +4923,46 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     { text: ".",                                      bold: false },
   ];
   const line4Full = line4Segments.map(s => s.text).join("");
-  const { done: line4Done } = useTypewriter(prepDone ? line4Full : "", 18, showResults);
+  // Line 4a — AmEx only: brief message after upload, before card picker
+  const line4aText = "I've processed the bank statement. I can see it contains transactions for multiple credit cards.";
+  const { done: line4aDone } = useTypewriter(isNoFeedAccount && prepDone ? line4aText : "", 18, showResults);
+
+  const { done: line4Done } = useTypewriter(prepDone && (!isNoFeedAccount || cardChosen) ? line4Full : "", 18, showResults);
 
   // Line 5 — after line 4
   const line5Text = "Tell me whenever you're ready to start.";
   const { done: line5Done } = useTypewriter(line4Done ? line5Text : "", 18, showResults);
 
+  // Reconciliation summary data per account
+  const RECON_SUMMARIES = {
+    "Lloyds Bank - Business":       { openingBalance: 34210.00, closingBalance: 41890.75, transactions: 83 },
+    "Lloyds Bank - Operations GBP": { openingBalance: 89350.00, closingBalance: 94120.40, transactions: 118 },
+    "HSBC - Business Transactions": { openingBalance: 22780.50, closingBalance: 19450.25, transactions: 64 },
+    "Barclays - Operations":        { openingBalance: 67100.00, closingBalance: 71580.90, transactions: 29 },
+    "American Express OP GBP":      { openingBalance: 12450.00, closingBalance: 18230.50, transactions: 47 },
+    "Mastercard Business":          { openingBalance: 8920.75,  closingBalance: 11340.00, transactions: 38 },
+  };
+  const reconSummary = RECON_SUMMARIES[effectiveAccountName] || { openingBalance: 10000, closingBalance: 12000, transactions: 40 };
+  const reconMovement = reconSummary.closingBalance - reconSummary.openingBalance;
+  const fmtGBP = (n) => (n < 0 ? "-£" : "£") + Math.abs(n).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const reconDateRange = isNoFeedAccount && periodChosen ? periodChosen.sub : "Apr 1 – Apr 30, 2026";
+  const [reconFrom, reconTo] = reconDateRange.includes("–") ? reconDateRange.split("–").map(s => s.trim()) : [reconDateRange, reconDateRange];
+
+  // Line 5b — reconciliation summary (shown after line5, gates the "proceed?" card)
+  const line5bIntroText = `For the bank account ${effectiveAccountName} we will reconcile:`;
+  const { done: line5bDone } = useTypewriter(line5Done && !clientUpload ? line5bIntroText : "", 18, showResults);
+
   // Replace statement AI response — types when replace mode is active
   const replaceRespText = "Sure! Upload a new bank statement and I'll re-run the reconciliation against it.";
   const { chars: replaceRespChars, done: replaceRespDone } = useTypewriter(replaceStatementMode ? replaceRespText : "", 18);
 
-  // Arrow key + Enter navigation for "Ready to start?" card
+  // Arrow key + Enter navigation for "Do you wish to proceed?" card
   const startOptions = [
-    { label: "Start reconciliation", primary: true },
-    { label: "Upload another bank statement", primary: false },
+    { label: "Yes, continue with suggested reconciliation", primary: true },
+    { label: "No, change the reconciliation", primary: false },
   ];
   useEffect(() => {
-    if (!line5Done || startClicked) return;
+    if (!line5bDone || startClicked) return;
     const handler = (e) => {
       if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedStart(i => Math.min(i + 1, startOptions.length - 1)); }
       else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedStart(i => Math.max(i - 1, 0)); }
@@ -4926,6 +4971,30 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [line5Done, startClicked, highlightedStart]);
+
+  // Arrow key + Enter navigation for period picker
+  useEffect(() => {
+    if (!isNoFeedAccount || !line3bDone || periodChosen) return;
+    const handler = (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedPeriod(i => Math.min(i + 1, periodOptions.length - 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedPeriod(i => Math.max(i - 1, 0)); }
+      else if (e.key === "Enter") { e.preventDefault(); setPeriodChosen(periodOptions[highlightedPeriod]); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isNoFeedAccount, line3bDone, periodChosen, highlightedPeriod]);
+
+  // Arrow key + Enter navigation for card picker
+  useEffect(() => {
+    if (!isNoFeedAccount || !line4aDone || cardChosen) return;
+    const handler = (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedCard(i => Math.min(i + 1, cardOptions.length - 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedCard(i => Math.max(i - 1, 0)); }
+      else if (e.key === "Enter") { e.preventDefault(); setCardChosen(cardOptions[highlightedCard]); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isNoFeedAccount, prepDone, cardChosen, highlightedCard]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -4948,7 +5017,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       }
     }, 120);
     return () => clearTimeout(t);
-  }, [line1Done, line2Done, line3Done, line4Done, line5Done, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps]);
+  }, [line1Done, line2Done, line3Done, line3bDone, line3cDone, line4aDone, line4Done, line5Done, line5bDone, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps, periodChosen, cardChosen]);
 
   // Track whether the chat is scrolled to the bottom
   useEffect(() => {
@@ -5379,6 +5448,37 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </>
           )}
 
+          {/* AI line 3b — period question (AmEx only) */}
+          {isNoFeedAccount && line3Done && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+              <p style={{ margin: 0 }}><StreamingMessage key="line3b" segments={[{ text: line3bText, bold: false }]} speed={18} instant={showResults} /></p>
+            </div>
+          )}
+
+          {/* User bubble — period selection */}
+          {isNoFeedAccount && periodChosen && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <div style={{
+                maxWidth: 400,
+                background: "#EAF2E2",
+                borderRadius: "12px 12px 2px 12px",
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "#080908",
+                lineHeight: "22px",
+              }}>
+                {periodChosen.label} · {periodChosen.sub}
+              </div>
+            </div>
+          )}
+
+          {/* AI line 3c — confirmation after period chosen */}
+          {isNoFeedAccount && periodChosen && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+              <p style={{ margin: 0 }}><StreamingMessage key="line3c" segments={[{ text: line3cText, bold: false }]} speed={18} instant={showResults} /></p>
+            </div>
+          )}
+
           {/* User bubble — file preview after upload */}
           {uploadedFiles && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
@@ -5485,17 +5585,48 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </>
           )}
 
+          {/* AI line 4a — AmEx: processed statement message before card picker */}
+          {isNoFeedAccount && prepDone && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+              <p style={{ margin: 0 }}><StreamingMessage key="line4a" segments={[{ text: line4aText, bold: false }]} speed={18} instant={showResults} /></p>
+            </div>
+          )}
+
+          {/* User bubble — card selection */}
+          {isNoFeedAccount && cardChosen && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                {cardChosen.label}
+              </div>
+            </div>
+          )}
+
           {/* AI line 4 — has everything needed (normal flow only) */}
-          {prepDone && feedProceedChoice !== "convert" && (
+          {prepDone && feedProceedChoice !== "convert" && (!isNoFeedAccount || cardChosen) && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
               <p><StreamingMessage key="line4" segments={line4Segments} speed={18} instant={showResults} /></p>
             </div>
           )}
 
-          {/* AI line 5 — ready to start (normal flow only) */}
-          {line4Done && feedProceedChoice !== "convert" && !clientUpload && (
-            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 6, width: "70%" }}>
-              <p><StreamingMessage key="line5" segments={[{ text: line5Text, bold: false }]} speed={18} instant={showResults} /></p>
+          {/* AI line 5b — reconciliation summary before proceed card */}
+          {line5Done && !clientUpload && (
+            <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+              <p style={{ margin: "0 0 10px" }}>
+                <StreamingMessage key="line5b" segments={[
+                  { text: "For the bank account ", bold: false },
+                  { text: effectiveAccountName, bold: true },
+                  { text: " we will reconcile:", bold: false },
+                ]} speed={18} instant={showResults} />
+              </p>
+              {line5bDone && (
+                <ul style={{ margin: 0, padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <li>From <strong>{reconFrom}</strong> to <strong>{reconTo}</strong></li>
+                  <li>Opening balance: <strong>{fmtGBP(reconSummary.openingBalance)}</strong></li>
+                  <li>Closing balance: <strong>{fmtGBP(reconSummary.closingBalance)}</strong></li>
+                  <li>Movement: <strong>{fmtGBP(reconMovement)}</strong></li>
+                  <li>Transactions: <strong>{reconSummary.transactions} transactions</strong></li>
+                </ul>
+              )}
             </div>
           )}
 
@@ -5528,7 +5659,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 lineHeight: "22px",
                 fontStyle: clientUpload ? "italic" : "normal",
               }}>
-                {clientUpload ? "Reconciliation triggered automatically" : "Start reconciliation"}
+                {clientUpload ? "Reconciliation triggered automatically" : "Yes, continue with suggested reconciliation"}
               </div>
             </div>
           )}
@@ -5637,9 +5768,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               || thinkingDone && (!line1Done
               || (isPicker && line1Done && !line2Done))
               || (line3ThinkingDone && !line3Done && (isPicker ? (line2Done && accountSelected) : line1Done))
+              || (isNoFeedAccount && line3Done && !line3bDone)
+              || (isNoFeedAccount && periodChosen && !line3cDone)
               || (uploadedFiles && !prepDone)
-              || (prepDone && !line4Done)
-              || (line4Done && !line5Done);
+              || (isNoFeedAccount && prepDone && !line4aDone)
+              || (prepDone && (!isNoFeedAccount || cardChosen) && !line4Done)
+              || (line4Done && !line5Done)
+              || (line5Done && !clientUpload && !line5bDone);
             return isStreaming ? (
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
                 <svg className="mimo-loader mimo-loader--spinning" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
@@ -5677,8 +5812,104 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         </div>
       )}
 
+      {/* Period picker — pinned at the bottom (AmEx only) */}
+      {isNoFeedAccount && line3bDone && !periodChosen && (
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{
+              background: "#FFFFFF",
+              border: "1px solid #E9E9EB",
+              borderRadius: 8,
+              padding: "24px 24px 16px",
+              width: "100%",
+              boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Which period would you like to reconcile?</p>
+              {periodOptions.map((opt, i) => {
+                const isActive = i === highlightedPeriod;
+                return (
+                  <div
+                    key={opt.key}
+                    onClick={() => setPeriodChosen(opt)}
+                    onMouseEnter={() => setHighlightedPeriod(i)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "14px 18px", marginBottom: 8,
+                      background: isActive ? "#E3E3E3" : "#F7F7F7",
+                      border: "none", borderRadius: 10, cursor: "pointer",
+                      fontSize: 14, fontWeight: isActive ? 600 : 400, color: "#080908",
+                      boxSizing: "border-box", transition: "background 0.1s",
+                    }}
+                  >
+                    <span>{opt.label} <span style={{ fontWeight: 400, color: "#080908" }}>{opt.sub}</span></span>
+                    {isActive && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                        <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>↑↓ to navigate</span>
+              <span style={{ fontSize: 12, color: "#CFCFD1" }}>·</span>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>Enter to select</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card picker — pinned at the bottom (AmEx only, after upload prep) */}
+      {isNoFeedAccount && line4aDone && !cardChosen && (
+        <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{
+              background: "#FFFFFF",
+              border: "1px solid #E9E9EB",
+              borderRadius: 8,
+              padding: "24px 24px 16px",
+              width: "100%",
+              boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>We've detected multiple credit cards in the bank statement. Which card would you like to reconcile?</p>
+              {cardOptions.map((opt, i) => {
+                const isActive = i === highlightedCard;
+                return (
+                  <div
+                    key={opt.key}
+                    onClick={() => setCardChosen(opt)}
+                    onMouseEnter={() => setHighlightedCard(i)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "14px 18px", marginBottom: 8,
+                      background: isActive ? "#E3E3E3" : "#F7F7F7",
+                      border: "none", borderRadius: 10, cursor: "pointer",
+                      fontSize: 14, fontWeight: isActive ? 600 : 400, color: "#080908",
+                      boxSizing: "border-box", transition: "background 0.1s",
+                    }}
+                  >
+                    <span>{opt.label}</span>
+                    {isActive && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginLeft: 8, opacity: 0.45 }}>
+                        <path d="M3.69714 14.804L7.69604 18.8029C7.758 18.8653 7.83171 18.9149 7.91293 18.9487C7.99415 18.9826 8.08126 19 8.16924 19C8.25723 19 8.34434 18.9826 8.42556 18.9487C8.50677 18.9149 8.58049 18.8653 8.64245 18.8029C8.70491 18.7409 8.7545 18.6672 8.78833 18.586C8.82217 18.5047 8.83959 18.4176 8.83959 18.3297C8.83959 18.2417 8.82217 18.1546 8.78833 18.0733C8.7545 17.9921 8.70491 17.9184 8.64245 17.8565L5.77657 14.9972H17.5C18.3838 14.9972 19.2314 14.6461 19.8564 14.0212C20.4813 13.3962 20.8324 12.5486 20.8324 11.6648V5.66648C20.8324 5.48972 20.7622 5.3202 20.6372 5.19521C20.5122 5.07022 20.3427 5 20.1659 5C19.9892 5 19.8196 5.07022 19.6947 5.19521C19.5697 5.3202 19.4994 5.48972 19.4994 5.66648V11.6648C19.4994 12.1951 19.2888 12.7037 18.9138 13.0786C18.5389 13.4536 18.0303 13.6643 17.5 13.6643H5.77657L8.64245 10.8051C8.76795 10.6796 8.83845 10.5093 8.83845 10.3319C8.83845 10.1544 8.76795 9.98416 8.64245 9.85866C8.51694 9.73316 8.34673 9.66265 8.16924 9.66265C7.99176 9.66265 7.82154 9.73316 7.69604 9.85866L3.69714 13.8576C3.63468 13.9195 3.58509 13.9932 3.55126 14.0744C3.51742 14.1557 3.5 14.2428 3.5 14.3308C3.5 14.4187 3.51742 14.5059 3.55126 14.5871C3.58509 14.6683 3.63468 14.742 3.69714 14.804Z" fill="black"/>
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>↑↓ to navigate</span>
+              <span style={{ fontSize: 12, color: "#CFCFD1" }}>·</span>
+              <span style={{ fontSize: 12, color: "#8C8C8B" }}>Enter to select</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upload card — pinned at the bottom */}
-      {!clientUpload && line3Done && !uploadedFiles && !reuploadPhase && !replaceStatementMode && (
+      {!clientUpload && line3Done && (!isNoFeedAccount || line3cDone) && !uploadedFiles && !reuploadPhase && !replaceStatementMode && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <UploadCard
@@ -5738,8 +5969,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
         </div>
       )}
 
-      {/* Ready to start card — pinned at the bottom */}
-      {line5Done && !startClicked && feedProceedChoice !== "convert" && (
+      {/* Do you wish to proceed? card — pinned at the bottom */}
+      {line5bDone && !startClicked && feedProceedChoice !== "convert" && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{
@@ -5750,13 +5981,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               width: "100%",
               boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)",
             }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Ready to start?</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>Do you wish to proceed?</p>
               {startOptions.map(({ label, primary }, i) => {
                 const isKeyActive = i === highlightedStart;
                 return (
                   <div
                     key={label}
-                    onClick={() => { if (label === "Start reconciliation") setStartClicked(true); }}
+                    onClick={() => { if (i === 0) setStartClicked(true); }}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       width: "100%", padding: "14px 18px", marginBottom: 8,
