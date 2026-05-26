@@ -3819,9 +3819,12 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
     { description: "Omitted",            issues: 1, total: "£800.00"   },
     { description: "General",            issues: 1, total: "£400.00"   },
   ] : accountName === "American Express OP GBP" ? [
-    { description: "Missing entries",    issues: 1, total: "£940.00"   },
+    { description: "Missing entries",    issues: 2, total: "£1,330.00" },
     { description: "Date differences",   issues: 2, total: "£560.00"   },
-    { description: "Duplicates",         issues: 1, total: "£280.00"   },
+    { description: "Duplicates",         issues: 1, total: "£1,150.00" },
+    { description: "Omitted",            issues: 1, total: "£620.00"   },
+    { description: "Anomalies",          issues: 1, total: "£4,800.00" },
+    { description: "General",            issues: 1, total: "£215.00"   },
   ] : accountName === "Mastercard Business" ? [
     { description: "Missing entries",    issues: 1, total: "£1,250.00" },
     { description: "Anomalies",          issues: 1, total: "£850.00"   },
@@ -3911,10 +3914,20 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       { idx: 4, cat: "general",   contact: "Unclassified",         state: "Open",   date: "20 Mar 2026", amount: "£400.00",   email: "19 Mar, 16:45", description: "A transaction of £140.00 on 20 Mar 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
     ],
     "American Express OP GBP": [
-      { idx: 0, cat: "missing",   contact: "Vantage Digital",      state: "Open",   date: "19 Mar 2026", amount: "£940.00",   email: "18 Mar, 10:00", description: "A bank statement line for Vantage Digital (£890.00) dated 19 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
-      { idx: 1, cat: "date",      contact: "Apex Consulting",       state: "Open",   date: "13 Mar 2026", amount: "£280.00", email: "12 Mar, 09:30", description: "A bank statement entry for Apex Consulting dated 13 Mar 2026 is matched to a GL entry dated 18 Mar 2026 — a 5-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
-      { idx: 2, cat: "date",      contact: "BlueSky Events",        state: "Open",   date: "7 Mar 2026",  amount: "£280.00",   email: "6 Mar, 15:20",  description: "A bank statement entry for BlueSky Events dated 7 Mar 2026 is matched to a GL entry dated 10 Mar 2026 — a 3-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
-      { idx: 3, cat: "duplicate", contact: "Vantage Digital",       state: "Open",   date: "19 Mar 2026", amount: "£280.00",   email: "18 Mar, 10:00", description: "Two identical transactions of £890.00 from Vantage Digital were recorded on 19 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      // Missing entries (idx 0–1, navCats baseIdx 0)
+      { idx: 0, cat: "missing",   contact: "Vantage Digital",        state: "Open",   date: "19 Mar 2026", amount: "£940.00",   email: "18 Mar, 10:00", description: "A bank statement line for Vantage Digital (£890.00) dated 19 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      { idx: 1, cat: "missing",   contact: "Oxton Supply Co",        state: "Open",   date: "3 Apr 2026",  amount: "£390.00",   email: "2 Apr, 09:00",  description: "A bank statement line for Oxton Supply Co (£390.00) dated 3 Apr 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
+      // Date differences (idx 2–3, navCats baseIdx 2)
+      { idx: 2, cat: "date",      contact: "Apex Consulting",        state: "Open",   date: "13 Mar 2026", amount: "£280.00",   email: "12 Mar, 09:30", description: "A bank statement entry for Apex Consulting dated 13 Mar 2026 is matched to a GL entry dated 18 Mar 2026 — a 5-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
+      { idx: 3, cat: "date",      contact: "BlueSky Events",         state: "Open",   date: "7 Mar 2026",  amount: "£280.00",   email: "6 Mar, 15:20",  description: "A bank statement entry for BlueSky Events dated 7 Mar 2026 is matched to a GL entry dated 10 Mar 2026 — a 3-day discrepancy.", primaryLabel: "Acknowledge", external: false, fileAction: null },
+      // Duplicates (idx 4, navCats baseIdx 4)
+      { idx: 4, cat: "duplicate", contact: "Nexcore Technologies",   state: "Open",   date: "21 Mar 2026", amount: "£1,150.00", email: "20 Mar, 11:15", description: "Two identical transactions of £1,150.00 from Nexcore Technologies were recorded on 21 Mar 2026. One entry may be a duplicate in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      // Omitted (idx 5, navCats baseIdx 5)
+      { idx: 5, cat: "omitted",   contact: "Stratton Media Group",   state: "Open",   date: "25 Mar 2026", amount: "£620.00",   email: "24 Mar, 08:45", description: "A bank statement line for Stratton Media Group (£620.00) on 25 Mar 2026 has no corresponding GL entry in Xero. This transaction may have been omitted.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      // Anomalies (idx 6, navCats baseIdx 6)
+      { idx: 6, cat: "anomaly",   contact: "Clearfield Associates",  state: "Open",   date: "28 Mar 2026", amount: "£4,800.00", email: "27 Mar, 14:00", description: "A transaction of £4,800.00 from Clearfield Associates is significantly above the account average. This unusual amount may require manual review.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
+      // General (idx 7, navCats baseIdx 7)
+      { idx: 7, cat: "general",   contact: "Unclassified",           state: "Open",   date: "11 Apr 2026", amount: "£215.00",   email: "10 Apr, 17:30", description: "A transaction of £215.00 on 11 Apr 2026 could not be automatically classified. Manual review is required to assign the correct account code in Xero.", primaryLabel: "Remove in Xero", external: true, fileAction: null },
     ],
     "Mastercard Business": [
       { idx: 0, cat: "missing",   contact: "Harrison & Webb",       state: "Open",   date: "16 Mar 2026", amount: "£1,250.00",   email: "15 Mar, 11:00", description: "A bank statement line for Harrison & Webb (£730.00) dated 16 Mar 2026 was found with no matching GL entry in Xero.", primaryLabel: "Create spend money", external: false, fileAction: null },
@@ -4576,7 +4589,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     "Lloyds Bank - Business": 8,
     "HSBC - Business Transactions": 58,
     "Barclays - Operations": 5,
-    "American Express OP GBP": 4,
+    "American Express OP GBP": 8,
     "Mastercard Business": 3,
   };
   const totalSuggestions = ACCOUNT_TOTAL_SUGGESTIONS[accountName] ?? 8;
@@ -4653,14 +4666,13 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [allDocsOpen, spendMoneySidebar, batchDraftSidebar, canvasReady, resolvedCards, ignoredCards, totalSuggestions, effectiveAccountName]);
 
-  // Delay canvas content until panel has slid in; auto-open sidebar
+  // Delay canvas content until panel has slid in
   useEffect(() => {
     if (!resultsVisible) return;
-    if (showResults) { setCanvasReady(true); setBoxesOpen(true); return; }
+    if (showResults) { setCanvasReady(true); return; }
     setCanvasReady(false);
     const t1 = setTimeout(() => setCanvasReady(true), 3200);
-    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); };
   }, [resultsVisible]);
 
   useEffect(() => {
@@ -6137,40 +6149,6 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       }}>
         {canvasReady ? (
           <div style={{ animation: "resultsFadeIn 0.4s ease 0.1s both", height: "100%", overflowY: "auto" }}>
-            {/* Credit card statement warning banner */}
-            {effectiveAccountName === "American Express OP GBP" && !creditCardBannerDismissed && (() => {
-              const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-              const parts = selectedPeriod.split(" ");
-              const mIdx = MONTHS.indexOf(parts[0]);
-              const yr = parseInt(parts[1]);
-              const prevM = MONTHS[(mIdx - 1 + 12) % 12];
-              const nextM = MONTHS[(mIdx + 1) % 12];
-              const nextY = mIdx === 11 ? yr + 1 : yr;
-              const period1 = `${prevM} 15 – ${parts[0]} 14, ${yr}`;
-              const period2 = `${parts[0]} 15 – ${nextM} 14, ${nextY}`;
-              return (
-                <div style={{ padding: `48px 48px 0 48px` }}><div style={{ maxWidth: 800, margin: "0 auto", background: "#FDF8EE", border: "1px solid #F5E1B5", borderRadius: 8, padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
-                  {/* info-circle icon */}
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M9.99984 13.3334V10.0001M9.99984 6.66675H10.0082M18.3332 10.0001C18.3332 14.6025 14.6022 18.3334 9.99984 18.3334C5.39746 18.3334 1.6665 14.6025 1.6665 10.0001C1.6665 5.39771 5.39746 1.66675 9.99984 1.66675C14.6022 1.66675 18.3332 5.39771 18.3332 10.0001Z" stroke="#EAB758" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p style={{ flex: 1, fontSize: 14, fontWeight: 400, color: "#2A2A2A", margin: 0, lineHeight: "22px" }}>
-                    Credit card statements cover a mid-month to mid-month period. To reconcile <strong>{parts[0]} {yr}</strong> in full, upload two files: <strong>{period1}</strong> and <strong>{period2}</strong>.
-                  </p>
-                  <input ref={addStatementInputRef} type="file" accept=".pdf,.csv,.xlsx,.xls" style={{ display: "none" }} onChange={handleAddStatementFile} />
-                  <button onClick={() => addStatementInputRef.current?.click()} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#05A105", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", whiteSpace: "nowrap", transition: "background 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#058F05"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#05A105"}>
-                    Add statement
-                  </button>
-                  <button onClick={() => setCreditCardBannerDismissed(true)} style={{ flexShrink: 0, height: 36, padding: "0 14px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#2A2A2A", whiteSpace: "nowrap", transition: "border-color 0.15s", boxSizing: "border-box" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "#CFCFD1"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "#DBDBDB"}>
-                    Dismiss
-                  </button>
-                </div></div>
-              );
-            })()}
             {false ? null : (
               <ResultsPanel
                 accountName={effectiveAccountName}
@@ -6224,9 +6202,12 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               { key: "general", label: "General",         baseIdx: 4, items: [{ contact: "Unclassified" }] },
             ]
             : effectiveAccountName === "American Express OP GBP" ? [
-              { key: "missing",   label: "Missing entries",   baseIdx: 0, items: [{ contact: "Vantage Digital" }] },
-              { key: "date",      label: "Date differences",  baseIdx: 1, items: [{ contact: "Apex Consulting" }, { contact: "BlueSky Events" }] },
-              { key: "duplicate", label: "Duplicates",        baseIdx: 3, items: [{ contact: "Vantage Digital" }] },
+              { key: "missing",   label: "Missing entries",   baseIdx: 0, items: [{ contact: "Vantage Digital" }, { contact: "Oxton Supply Co" }] },
+              { key: "date",      label: "Date differences",  baseIdx: 2, items: [{ contact: "Apex Consulting" }, { contact: "BlueSky Events" }] },
+              { key: "duplicate", label: "Duplicates",        baseIdx: 4, items: [{ contact: "Nexcore Technologies" }] },
+              { key: "omitted",   label: "Omitted",           baseIdx: 5, items: [{ contact: "Stratton Media Group" }] },
+              { key: "anomaly",   label: "Anomalies",         baseIdx: 6, items: [{ contact: "Clearfield Associates" }] },
+              { key: "general",   label: "General",           baseIdx: 7, items: [{ contact: "Unclassified" }] },
             ]
             : effectiveAccountName === "Mastercard Business" ? [
               { key: "missing",   label: "Missing entries", baseIdx: 0, items: [{ contact: "Harrison & Webb" }] },
@@ -11442,13 +11423,12 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
     if (stepsComplete) setResultsVisible(true);
   }, [stepsComplete]);
 
-  // Canvas content ready after slide-in animation — suggestion box slides in shortly after
+  // Canvas content ready after slide-in animation
   useEffect(() => {
     if (!resultsVisible) return;
-    if (showResults && rerunKey === 0) { setCanvasReady(true); setBoxesOpen(true); return; }
+    if (showResults && rerunKey === 0) { setCanvasReady(true); return; }
     const t1 = setTimeout(() => setCanvasReady(true), 3200);
-    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); };
   }, [resultsVisible]);
 
   // Spin keyframe
@@ -13277,8 +13257,7 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
   useEffect(() => {
     if (!resultsVisible) return;
     const t1 = setTimeout(() => setCanvasReady(true), 3200);
-    const t2 = setTimeout(() => setBoxesOpen(true), 3800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); };
   }, [resultsVisible]);
 
   useEffect(() => {
