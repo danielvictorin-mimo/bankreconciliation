@@ -11803,6 +11803,17 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", width: resultsVisible ? "90%" : "70%" }}>
                   <p style={{ margin: 0 }}><StreamingMessage segments={introSegments} speed={18} instant={showResults} /></p>
                 </div>
+                {/* Writing spinner while intro is typing */}
+                {rerunKey === 0 && !introDone && !showResults && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
+                    <svg className="vat-mimo-loader" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Writing">
+                      <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                      <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                      <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                    </svg>
+                    <span style={{ fontSize: 14, display: "inline-block", background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "thinkingShimmer 2.4s linear infinite" }}>Writing...</span>
+                  </div>
+                )}
 
                 {/* Pattern themes info — shown after intro on first run, with typewriter animation */}
                 {rerunKey === 0 && introDone && (
@@ -11820,6 +11831,17 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       speed={18}
                       instant={showResults}
                     />
+                  </div>
+                )}
+                {/* Writing spinner while pattern themes is typing */}
+                {rerunKey === 0 && introDone && !patternThemesDone && !showResults && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
+                    <svg className="vat-mimo-loader" viewBox="0 0 22 20" xmlns="http://www.w3.org/2000/svg" aria-label="Writing">
+                      <path className="m-right" d="M21.2948 0.314453H16.2686V19.8217H21.2948V0.314453Z"/>
+                      <path className="m-diag"  d="M3.55406 0L0 3.55406L10.9144 14.4685L14.4685 10.9144L3.55406 0Z"/>
+                      <path className="m-left"  d="M5.56185 10.7432H0.535645V19.8207H5.56185V10.7432Z"/>
+                    </svg>
+                    <span style={{ fontSize: 14, display: "inline-block", background: "linear-gradient(90deg, #8C8C8B 0%, #8C8C8B 25%, #D4D4D4 50%, #8C8C8B 75%, #8C8C8B 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "thinkingShimmer 2.4s linear infinite" }}>Writing...</span>
                   </div>
                 )}
 
