@@ -4600,6 +4600,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const [markCompleteComment, setMarkCompleteComment] = useState("");
   const [periodChosen, setPeriodChosen] = useState(showResults ? { key: "full", label: "Full accounting period", sub: "Apr 1 – Apr 30" } : null);
   const [highlightedPeriod, setHighlightedPeriod] = useState(0);
+  const [changeFlow, setChangeFlow] = useState(false);
   const cardOptions = [
     { key: "jeremy",  label: "Jeremy Smith **** 1039" },
     { key: "anna",    label: "Anna Larson **** 1054"  },
@@ -4964,6 +4965,10 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
   const line5bIntroText = `For the bank account ${effectiveAccountName} we will reconcile:`;
   const { done: line5bDone } = useTypewriter(line5Done && !clientUpload ? line5bIntroText : "", 18, showResults);
 
+  // Change flow — restart after "No, change the reconciliation"
+  const changeAIText = "Which period would you like to reconcile?";
+  const { done: changeAIDone } = useTypewriter(changeFlow ? changeAIText : "", 18);
+
   // Replace statement AI response — types when replace mode is active
   const replaceRespText = "Sure! Upload a new bank statement and I'll re-run the reconciliation against it.";
   const { chars: replaceRespChars, done: replaceRespDone } = useTypewriter(replaceStatementMode ? replaceRespText : "", 18);
@@ -4978,11 +4983,15 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     const handler = (e) => {
       if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedStart(i => Math.min(i + 1, startOptions.length - 1)); }
       else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedStart(i => Math.max(i - 1, 0)); }
-      else if (e.key === "Enter") { e.preventDefault(); if (highlightedStart === 0) setStartClicked(true); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightedStart === 0) { setStartClicked(true); }
+        else { setChangeFlow(true); setPeriodChosen(null); setCardChosen(null); setHighlightedCard(0); setHighlightedPeriod(0); setUploadedFiles(null); setPrepDone(false); setStartClicked(false); }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [line5Done, startClicked, highlightedStart]);
+  }, [line5bDone, startClicked, highlightedStart]);
 
   // Arrow key + Enter navigation for period picker
   useEffect(() => {
@@ -5006,7 +5015,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isNoFeedAccount, prepDone, cardChosen, highlightedCard]);
+  }, [isNoFeedAccount, line4aDone, cardChosen, highlightedCard]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -5029,7 +5038,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       }
     }, 120);
     return () => clearTimeout(t);
-  }, [line1Done, line2Done, line3Done, line3bDone, line3cDone, line4aDone, line4Done, line5Done, line5bDone, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps, periodChosen, cardChosen]);
+  }, [line1Done, line2Done, line3Done, line3bDone, line3cDone, line4aDone, line4Done, line5Done, line5bDone, prepDone, startClicked, stepStatuses, userMessages, accountSelected, replaceStatementMode, replaceRespDone, visibleSteps, periodChosen, cardChosen, changeFlow, changeAIDone]);
 
   // Track whether the chat is scrolled to the bottom
   useEffect(() => {
@@ -5460,8 +5469,24 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             </>
           )}
 
+          {/* Change flow — user bubble + new period question */}
+          {changeFlow && (
+            <>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
+                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                  No, change the reconciliation
+                </div>
+              </div>
+              {changeAIDone !== undefined && (
+                <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
+                  <p style={{ margin: 0 }}><StreamingMessage key="changeAI" segments={[{ text: changeAIText, bold: false }]} speed={18} /></p>
+                </div>
+              )}
+            </>
+          )}
+
           {/* AI line 3b — period question (AmEx only) */}
-          {isNoFeedAccount && line3Done && (
+          {isNoFeedAccount && line3Done && !changeFlow && (
             <div style={{ fontSize: 14, color: "#080908", lineHeight: "22px", marginTop: 20, width: "70%" }}>
               <p style={{ margin: 0 }}><StreamingMessage key="line3b" segments={[{ text: line3bText, bold: false }]} speed={18} instant={showResults} /></p>
             </div>
@@ -5780,7 +5805,8 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
               || thinkingDone && (!line1Done
               || (isPicker && line1Done && !line2Done))
               || (line3ThinkingDone && !line3Done && (isPicker ? (line2Done && accountSelected) : line1Done))
-              || (isNoFeedAccount && line3Done && !line3bDone)
+              || (isNoFeedAccount && line3Done && !line3bDone && !changeFlow)
+              || (changeFlow && !changeAIDone)
               || (isNoFeedAccount && periodChosen && !line3cDone)
               || (uploadedFiles && !prepDone)
               || (isNoFeedAccount && prepDone && !line4aDone)
@@ -5825,7 +5851,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       )}
 
       {/* Period picker — pinned at the bottom (AmEx only) */}
-      {isNoFeedAccount && line3bDone && !periodChosen && (
+      {isNoFeedAccount && (changeFlow ? changeAIDone : line3bDone) && !periodChosen && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{
@@ -5873,7 +5899,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
       )}
 
       {/* Card picker — pinned at the bottom (AmEx only, after upload prep) */}
-      {isNoFeedAccount && line4aDone && !cardChosen && (
+      {isNoFeedAccount && prepDone && line4aDone && !cardChosen && (
         <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{
@@ -5999,7 +6025,19 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
                 return (
                   <div
                     key={label}
-                    onClick={() => { if (i === 0) setStartClicked(true); }}
+                    onClick={() => {
+                      if (i === 0) { setStartClicked(true); }
+                      else {
+                        setChangeFlow(true);
+                        setPeriodChosen(null);
+                        setCardChosen(null);
+                        setHighlightedCard(0);
+                        setHighlightedPeriod(0);
+                        setUploadedFiles(null);
+                        setPrepDone(false);
+                        setStartClicked(false);
+                      }
+                    }}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       width: "100%", padding: "14px 18px", marginBottom: 8,
@@ -16780,8 +16818,13 @@ export default function BankReconciliation() {
     try {
       if (reconciling && typeof reconciling === "string" && SLUG_FROM_ACCOUNT[reconciling]) {
         window.location.hash = "rec/" + SLUG_FROM_ACCOUNT[reconciling];
-      } else if (!reconciling && !NAV_SLUG_FROM_NAME[activeNav]) {
-        history.replaceState(null, "", window.location.pathname + window.location.search);
+      } else if (!reconciling) {
+        const navSlug = NAV_SLUG_FROM_NAME[activeNav];
+        if (navSlug) {
+          window.location.hash = navSlug;
+        } else {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
       }
     } catch (e) { /* srcdoc iframe — URL routing not available */ }
   }, [reconciling]);
