@@ -17862,7 +17862,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
         bankMatchAccountNo={inboxPreviewRow.bankMatchAccountNo}
         account={inboxPreviewRow.account}
         type={inboxPreviewRow.type}
-        isDuplicate={!!inboxPreviewRow.dot}
+        isDuplicate={!!inboxPreviewRow.dot && inboxPreviewRow.status !== "Ready" && inboxPreviewRow.contact !== "NorthStar Media Group"}
         onClose={closeInboxPreview}
         onDelete={() => {
           const row = inboxPreviewRow;
