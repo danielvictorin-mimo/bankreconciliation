@@ -11397,26 +11397,35 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
 
 const VAT_QUESTIONS = [
   {
-    identified: "We identified 4 related pattern(s) affecting about 106 journal(s) where account 1018051 is coded as NONE instead of the historical typical INPUT2.",
-    question: "Does your firm always code account 1018051 as NONE for this client rather than INPUT2?",
+    identified: "We identified 4 related pattern(s) affecting about 106 journal(s) where Lloyds Bank - Operations GBP (12-5561-12344-27) is coded as NONE instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code Lloyds Bank - Operations GBP (12-5561-12344-27) as NONE for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 4 related pattern(s) affecting about 104 journal(s) where account 01013606 is coded as EXEMPTINPUT instead of the historical typical NONE.",
-    question: "Does your firm always code account 01013606 as EXEMPTINPUT for this client rather than NONE?",
+    identified: "We identified 4 related pattern(s) affecting about 104 journal(s) where Barclays - Business Account (20-44-51-81935027) is coded as Standard rate (20%) instead of the historical typical NONE.",
+    question: "Does your firm always code Barclays - Business Account (20-44-51-81935027) as Standard rate (20%) for this client rather than NONE?",
   },
   {
-    identified: "We identified 2 related pattern(s) affecting about 102 journal(s) where account 01051009 is coded as ZERORATEDOUTPUT instead of the historical typical OUTPUT2.",
-    question: "Does your firm always code account 01051009 as ZERORATEDOUTPUT for this client rather than OUTPUT2?",
+    identified: "We identified 2 related pattern(s) affecting about 102 journal(s) where HSBC - Business Transactions (40-12-78-73521894) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code HSBC - Business Transactions (40-12-78-73521894) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 2 related pattern(s) affecting about 84 journal(s) where account 01011001 is coded as ZERORATEDOUTPUT instead of the historical typical OUTPUT2.",
-    question: "Does your firm always code account 01011001 as ZERORATEDOUTPUT for this client rather than OUTPUT2?",
+    identified: "We identified 2 related pattern(s) affecting about 84 journal(s) where American Express OP GBP (3782-822463-51004) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code American Express OP GBP (3782-822463-51004) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 4 related pattern(s) affecting about 78 journal(s) where account 01013118 is coded as ZERORATEDINPUT instead of the historical typical NONE.",
-    question: "Does your firm always code account 01013118 as ZERORATEDINPUT for this client rather than NONE?",
+    identified: "We identified 4 related pattern(s) affecting about 78 journal(s) where Mastercard Business (5101-8451-2345-6789) is coded as Zero Rate (0%) instead of the historical typical NONE.",
+    question: "Does your firm always code Mastercard Business (5101-8451-2345-6789) as Zero Rate (0%) for this client rather than NONE?",
   },
 ];
+
+const VAT_BOLD_TERMS = ["Standard rate (20%)", "Zero Rate (0%)", "NONE"];
+const vatBoldSegments = (text) => {
+  const regex = new RegExp(`(${VAT_BOLD_TERMS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
+  return text.split(regex).map(part => ({ text: part, bold: VAT_BOLD_TERMS.includes(part) }));
+};
+const vatBoldJSX = (text) => text.split(new RegExp(`(${VAT_BOLD_TERMS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g")).map((part, i) =>
+  VAT_BOLD_TERMS.includes(part) ? <strong key={i}>{part}</strong> : part
+);
 
 function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, setResolvedCards, ignoredCards, setIgnoredCards, showResults = false }) {
   const [stepStatuses, setStepStatuses] = useState(showResults ? VAT_STEPS.map(() => "done") : []);
@@ -11881,7 +11890,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                   return (
                     <React.Fragment key={i}>
                       <div style={{ marginTop: 20, width: resultsVisible ? "90%" : "70%", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
-                        <p style={{ margin: 0 }}><StreamingMessage key={`vat-q-${i}`} segments={[{ text: q.identified, bold: false }]} speed={18} instant={showResults} /></p>
+                        <p style={{ margin: 0 }}><StreamingMessage key={`vat-q-${i}`} segments={vatBoldSegments(q.identified)} speed={18} instant={showResults} /></p>
                       </div>
                       {/* Writing spinner — shown while this question's identified text is still typing */}
                       {i === revealedCount - 1 && !qTextDones[i] && !showResults && (
@@ -11987,7 +11996,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
             <div style={{ padding: "28px 24px 24px", flexShrink: 0 }}>
               <div style={{ maxWidth: 680, margin: "0 auto" }}>
                 <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "24px 24px 16px", width: "100%", boxShadow: "0 12px 24px 0 rgba(0,0,0,0.04)" }}>
-                  <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>{VAT_QUESTIONS[vatAnswers.length].question}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 16, marginTop: 0 }}>{vatBoldJSX(VAT_QUESTIONS[vatAnswers.length].question)}</p>
                   {[{ key: "yes", label: "Yes" }, { key: "no", label: "No" }].map((opt, i) => {
                     const isActive = i === highlightedVatOption;
                     return (
