@@ -11397,24 +11397,24 @@ function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = 
 
 const VAT_QUESTIONS = [
   {
-    identified: "We identified 4 related pattern(s) affecting about 106 journal(s) where Lloyds Bank - Operations GBP (12-5561-12344-27) is coded as NONE instead of the historical typical Standard rate (20%).",
-    question: "Does your firm always code Lloyds Bank - Operations GBP (12-5561-12344-27) as NONE for this client rather than Standard rate (20%)?",
+    identified: "We identified 4 related pattern(s) affecting about 106 journal(s) where Direct Expenses (325) is coded as NONE instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code Direct Expenses (325) as NONE for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 4 related pattern(s) affecting about 104 journal(s) where Barclays - Business Account (20-44-51-81935027) is coded as Standard rate (20%) instead of the historical typical NONE.",
-    question: "Does your firm always code Barclays - Business Account (20-44-51-81935027) as Standard rate (20%) for this client rather than NONE?",
+    identified: "We identified 4 related pattern(s) affecting about 104 journal(s) where Advertising & Marketing (400) is coded as Standard rate (20%) instead of the historical typical NONE.",
+    question: "Does your firm always code Advertising & Marketing (400) as Standard rate (20%) for this client rather than NONE?",
   },
   {
-    identified: "We identified 2 related pattern(s) affecting about 102 journal(s) where HSBC - Business Transactions (40-12-78-73521894) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
-    question: "Does your firm always code HSBC - Business Transactions (40-12-78-73521894) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
+    identified: "We identified 2 related pattern(s) affecting about 102 journal(s) where Consulting (412) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code Consulting (412) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 2 related pattern(s) affecting about 84 journal(s) where American Express OP GBP (3782-822463-51004) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
-    question: "Does your firm always code American Express OP GBP (3782-822463-51004) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
+    identified: "We identified 2 related pattern(s) affecting about 84 journal(s) where General Expenses (429) is coded as Zero Rate (0%) instead of the historical typical Standard rate (20%).",
+    question: "Does your firm always code General Expenses (429) as Zero Rate (0%) for this client rather than Standard rate (20%)?",
   },
   {
-    identified: "We identified 4 related pattern(s) affecting about 78 journal(s) where Mastercard Business (5101-8451-2345-6789) is coded as Zero Rate (0%) instead of the historical typical NONE.",
-    question: "Does your firm always code Mastercard Business (5101-8451-2345-6789) as Zero Rate (0%) for this client rather than NONE?",
+    identified: "We identified 4 related pattern(s) affecting about 78 journal(s) where Motor Vehicle Expenses (449) is coded as Zero Rate (0%) instead of the historical typical NONE.",
+    question: "Does your firm always code Motor Vehicle Expenses (449) as Zero Rate (0%) for this client rather than NONE?",
   },
 ];
 
@@ -11451,6 +11451,12 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
   const stepRowRefs   = useRef([]);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [rerunKey, setRerunKey] = useState(0);
@@ -16867,6 +16873,15 @@ function InboxPage() {
   const [addFilterCategory, setAddFilterCategory] = useState("Status");
   const [isPublishingAll, setIsPublishingAll] = useState(false);
   const [isArchivingAll, setIsArchivingAll] = useState(false);
+  const [rowActionsOpen, setRowActionsOpen] = useState(null); // row ref string
+  const [rowActionsPos, setRowActionsPos] = useState({ top: 0, right: 0 });
+  const rowActionsRef = useRef(null);
+  useEffect(() => {
+    if (rowActionsOpen === null) return;
+    const h = (e) => { if (rowActionsRef.current && !rowActionsRef.current.contains(e.target)) setRowActionsOpen(null); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [rowActionsOpen]);
   const addFilterBtnRef = useRef(null);
   const addFilterDropRef = useRef(null);
   useEffect(() => {
@@ -17084,7 +17099,33 @@ function InboxPage() {
     }},
     { key: "tax",     label: "Tax",        width: "110px", align: "right" },
     { key: "amount",  label: "Amount",     width: "120px", align: "right", render: v => <span style={{ fontWeight: 400, color: "#000" }}>{v}</span> },
-    ...(activeTab !== "Archived" ? [{ key: "actions", label: "",           width: "40px",  fixedWidth: true, cellPadding: "14px 0px", align: "center", render: () => <button style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10.0002 10.834C10.4604 10.834 10.8335 10.4609 10.8335 10.0007C10.8335 9.54041 10.4604 9.16732 10.0002 9.16732C9.53993 9.16732 9.16683 9.54041 9.16683 10.0007C9.16683 10.4609 9.53993 10.834 10.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M15.0002 10.834C15.4604 10.834 15.8335 10.4609 15.8335 10.0007C15.8335 9.54041 15.4604 9.16732 15.0002 9.16732C14.5399 9.16732 14.1668 9.54041 14.1668 10.0007C14.1668 10.4609 14.5399 10.834 15.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.00016 10.834C5.46040 10.834 5.8335 10.4609 5.8335 10.0007C5.8335 9.54041 5.46040 9.16732 5.00016 9.16732C4.53993 9.16732 4.16683 9.54041 4.16683 10.0007C4.16683 10.4609 4.53993 10.834 5.00016 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></button> }] : []),
+    ...(activeTab !== "Archived" ? [{ key: "actions", label: "", width: "40px", fixedWidth: true, cellPadding: "14px 0px", align: "center", render: (v, row) => (
+      <div style={{ position: "relative" }}>
+        <button onClick={e => { e.stopPropagation(); if (rowActionsOpen === row.ref) { setRowActionsOpen(null); } else { const r = e.currentTarget.getBoundingClientRect(); setRowActionsPos({ top: r.bottom + 4, right: window.innerWidth - r.right }); setRowActionsOpen(row.ref); } }}
+          style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 4 }}
+          onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="none"}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10.0002 10.834C10.4604 10.834 10.8335 10.4609 10.8335 10.0007C10.8335 9.54041 10.4604 9.16732 10.0002 9.16732C9.53993 9.16732 9.16683 9.54041 9.16683 10.0007C9.16683 10.4609 9.53993 10.834 10.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M15.0002 10.834C15.4604 10.834 15.8335 10.4609 15.8335 10.0007C15.8335 9.54041 15.4604 9.16732 15.0002 9.16732C14.5399 9.16732 14.1668 9.54041 14.1668 10.0007C14.1668 10.4609 14.5399 10.834 15.0002 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.00016 10.834C5.46040 10.834 5.8335 10.4609 5.8335 10.0007C5.8335 9.54041 5.46040 9.16732 5.00016 9.16732C4.53993 9.16732 4.16683 9.54041 4.16683 10.0007C4.16683 10.4609 4.53993 10.834 5.00016 10.834Z" fill="#2A2A2A" stroke="#2A2A2A" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        {rowActionsOpen === row.ref && (
+          <div ref={rowActionsRef} style={{ position: "fixed", top: rowActionsPos.top, right: rowActionsPos.right, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 9999, minWidth: 140, padding: "4px", fontFamily: "'Inter',sans-serif" }}>
+            <button onClick={e => {
+              e.stopPropagation();
+              setRowActionsOpen(null);
+              const now = new Date();
+              const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const archivedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+              setArchivedRows(prev => [{ ...row, status: "Archived", uploadedDate: archivedDate }, ...prev]);
+              setInboxRows(prev => prev.filter(r => r.ref !== row.ref));
+              showInboxToast("Document archived successfully");
+            }} style={{ width: "100%", textAlign: "left", padding: "8px 10px", border: "none", borderRadius: 6, background: "transparent", cursor: "pointer", fontSize: 14, color: "#080908", fontFamily: "'Inter',sans-serif", display: "flex", alignItems: "center", gap: 8 }}
+              onMouseEnter={e => e.currentTarget.style.background="#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#2A2A2A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Archive
+            </button>
+          </div>
+        )}
+      </div>
+    )}] : []),
   ];
 
   return (
@@ -17108,7 +17149,7 @@ function InboxPage() {
         {(() => {
           const reviewCount    = inboxRows.filter(r => r.status === "Review").length;
           const readyCount     = inboxRows.filter(r => r.status === "Ready").length;
-          const publishedCount = 0;
+          const publishedCount = archivedRows.filter(r => r.status === "Published").length;
           const widgets = [
             {
               label: "Requires attention",
