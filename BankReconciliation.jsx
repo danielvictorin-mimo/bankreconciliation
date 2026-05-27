@@ -6656,6 +6656,12 @@ function MainMenu({
     { label: "Balance sheet",       icon: "rows" },
   ],
 }) {
+  const EXTERNAL_NAV_URLS = {
+    "Adjustments":   "https://ionerozhin.github.io/mimo-prototype/#/adjustments",
+    "Profit & Loss": "https://ionerozhin.github.io/mimo-prototype/#/profit-and-loss",
+    "Balance sheet": "https://ionerozhin.github.io/mimo-prototype/#/balance-sheet",
+  };
+
   const [associateOpen, setAssociateOpen] = useState(true);
   const [paymentsOpen, setPaymentsOpen]   = useState(false);
   const [collapsed, setCollapsed]         = useState(false);
@@ -6825,7 +6831,7 @@ function MainMenu({
                 onMouseLeave={hideTip}
               >
                 <button
-                  onClick={() => onNavChange?.(item.label)}
+                  onClick={() => EXTERNAL_NAV_URLS[item.label] ? window.location.assign(EXTERNAL_NAV_URLS[item.label]) : onNavChange?.(item.label)}
                   style={{ width: 39, height: 40, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: active ? "#F5F5F5" : "transparent" }}
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? "#F5F5F5" : "transparent"; }}
@@ -6839,7 +6845,7 @@ function MainMenu({
           return (
             <button
               key={item.label}
-              onClick={() => onNavChange?.(item.label)}
+              onClick={() => EXTERNAL_NAV_URLS[item.label] ? window.location.assign(EXTERNAL_NAV_URLS[item.label]) : onNavChange?.(item.label)}
               style={{ display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, width: "calc(100% - 16px)", borderRadius: 6, border: "none", cursor: "pointer", background: active ? "#F5F5F5" : "transparent", textAlign: "left", boxShadow: "none" }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
@@ -6875,7 +6881,7 @@ function MainMenu({
             onMouseEnter={e => { showTip(e, "Settings"); }}
             onMouseLeave={hideTip}
           >
-            <button style={{ width: 44, height: 40, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+            <button onClick={() => window.location.assign("https://ionerozhin.github.io/mimo-prototype/#/settings")} style={{ width: 44, height: 40, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
@@ -6885,6 +6891,7 @@ function MainMenu({
           </div>
         ) : (
           <button
+            onClick={() => window.location.assign("https://ionerozhin.github.io/mimo-prototype/#/settings")}
             style={{ width: "calc(100% - 16px)", display: "flex", alignItems: "center", gap: 12, height: 40, padding: "0 16px", marginLeft: 8, marginRight: 8, borderRadius: 6, border: "none", cursor: "pointer", background: "transparent", textAlign: "left", boxShadow: "none" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -6895,79 +6902,6 @@ function MainMenu({
         )}
       </nav>
 
-      {/* Collapse / expand button */}
-      <div style={{ padding: "8px 8px 12px", flexShrink: 0, position: "relative" }}>
-        {collapsed ? (
-          /* Icon-only expand button — stays as icon even during hover animation to avoid text flying in */
-          <button
-            onClick={() => {
-              if (hoverMenu) {
-                // hovering: permanently expand
-                userCollapsedRef.current = false;
-                setCollapsed(false);
-                setHoverMenu(false);
-                setNoWrapTransition(true);
-                onExpandFromHover?.();
-                setTimeout(() => setNoWrapTransition(false), 50);
-              } else {
-                userCollapsedRef.current = true;
-                setCollapsed(true);
-                setHoverMenu(false);
-              }
-            }}
-            title="Expand"
-            style={{
-              display: "flex", alignItems: "center",
-              justifyContent: hoverMenu ? "flex-start" : "center",
-              height: 42,
-              padding: hoverMenu ? "0 12px" : "0",
-              border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF",
-              cursor: "pointer", boxSizing: "border-box",
-              margin: hoverMenu ? "0 8px" : "0 auto",
-              width: hoverMenu ? "calc(100% - 16px)" : 39,
-              fontSize: 14, fontWeight: 400, color: "#4F4F4F",
-              transition: "background 0.1s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; if (!hoverMenu) setHoverMenu(true); }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
-          >
-            {hoverMenu ? (
-              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
-                  <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span>Expand</span>
-                <span style={{ fontSize: 12, color: "#8C8C8B", position: "absolute", right: 4 }}>⌘+B</span>
-              </div>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M21 21V3M3 12H17M17 12L10 5M17 12L10 19" stroke="#545453" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </button>
-        ) : (
-          /* Collapse button — visible when fully expanded */
-          <button
-            onClick={() => {
-              userCollapsedRef.current = true;
-              setCollapsed(true);
-              setHoverMenu(false);
-            }}
-            title="Collapse"
-            style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 0, height: 42, padding: "0 12px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 400, color: "#4F4F4F", whiteSpace: "nowrap", transition: "background 0.1s", boxSizing: "border-box", margin: "0 8px", width: "calc(100% - 16px)" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; }}
-          >
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", left: 0, flexShrink: 0 }}>
-                <path d="M9 3V21M7.8 3H16.2C17.8802 3 18.7202 3 19.362 3.32698C19.9265 3.6146 20.3854 4.07354 20.673 4.63803C21 5.27976 21 6.11984 21 7.8V16.2C21 17.8802 21 18.7202 20.673 19.362C20.3854 19.9265 19.9265 20.3854 19.362 20.673C18.7202 21 17.8802 21 16.2 21H7.8C6.11984 21 5.27976 21 4.63803 20.673C4.07354 20.3854 3.6146 19.9265 3.32698 19.362C3 18.7202 3 17.8802 3 16.2V7.8C3 6.11984 3 5.27976 3.32698 4.63803C3.6146 4.07354 4.07354 3.6146 4.63803 3.32698C5.27976 3 6.11984 3 7.8 3Z" stroke="#4F4F4F" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Collapse</span>
-              <span style={{ fontSize: 12, color: "#8C8C8B", position: "absolute", right: 4 }}>⌘+B</span>
-            </div>
-          </button>
-        )}
-      </div>
 
       {/* Divider above user */}
       <div style={{ height: 1, background: "#E9E9EB", margin: "0 16px", flexShrink: 0 }} />
