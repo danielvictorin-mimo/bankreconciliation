@@ -15231,7 +15231,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                 const STATUS_TIPS = { Open: "Request is pending documents", Review: "Documents require review", Ready: "Document ready for publish", Archived: "Request has been archived", Closed: "All documents has been published to Xero", Received: "Document received" };
                 return <Tooltip text={STATUS_TIPS[s] || s}><span style={{ fontSize: 12, fontWeight: 500, color: cfg.color, background: cfg.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", cursor: "default" }}>{s}</span></Tooltip>;
               }}] : []),
-              { key: "ref",     label: "Request title",  width: "1fr",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && !archivedRefs.has(r.ref) && tableTab !== "Received" && tableTab !== "Excluded" && <Tooltip text="New request since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
+              { key: "ref",     label: "Request title",  width: "minmax(200px, 1fr)",   render: (v, r) => <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>{r.dot && !archivedRefs.has(r.ref) && tableTab !== "Received" && tableTab !== "Excluded" && <Tooltip text="New request since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, color: "#1F2024" }}>{v}</span></div> },
               ...(!isMissing && tableTab === "Received" ? [{ key: "resolved", label: "Resolved", width: "120px", render: () => <span style={{ fontSize: 14, color: "#BCBCBC" }}>—</span> }] : []),
               { key: "date",    label: isMissing ? "Date" : "Closing period", width: tableTab === "Excluded" ? "140px" : isMissing ? "120px" : "150px", render: (v) => {
                 if (!isMissing && v) { const m = String(v).match(/\d+\s+(\w+)\s+(\d{4})/); if (m) return <span style={{ fontSize:14, color:"#1F2024" }}>{m[1]} {m[2]}</span>; }
@@ -15258,7 +15258,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
                   </span></Tooltip>;
                 }
                 return <Tooltip text={tip}><span style={{ fontSize: 12, fontWeight: 500, color: s.color, background: s.bg, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{b.status}</span></Tooltip>; } }] : []),
-              ...(tableTab !== "Excluded" ? [{ key: "from",    label: isMissing ? "Requested from" : "Assigned to client member", width: isMissing ? "180px" : "1fr", render: (v, r) => { const fromVal = isMissing ? (rowFromMap[r.ref] || v) : rowFromMap[r.ref]; return <span style={{ color: fromVal ? "#000000" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fromVal || "Not assigned"}</span>; } }] : []),
+              ...(tableTab !== "Excluded" ? [{ key: "from",    label: isMissing ? "Requested from" : "Assigned to client member", width: isMissing ? "180px" : "minmax(180px, 1fr)", render: (v, r) => { const fromVal = isMissing ? (rowFromMap[r.ref] || v) : rowFromMap[r.ref]; return <span style={{ color: fromVal ? "#000000" : "#BCBCBC", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fromVal || "Not assigned"}</span>; } }] : []),
               ...(isMissing ? [{ key: "account", label: "Bank account", width: tableTab === "Excluded" ? "1fr" : "180px", render: (v) => <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 14, color: v ? "#080908" : "#BCBCBC" }}>{v || "—"}</span> }] : []),
               ...(tableTab !== "Excluded" ? [{ key: "upload",  label: tableTab === "Received" ? "Uploaded document" : "Upload file", width: tableTab === "Received" ? "220px" : "150px", render: (v, r) => {
                 const RECEIVED_DOCS = {
@@ -15352,7 +15352,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
             const stickyCStyle = (i, bg) => i === lastIC && isScrollableC ? { position:"sticky", right:0, background: bg, zIndex:2 } : {};
             return (
               <div ref={collectScrollRef} style={{ overflowX:"auto", border:"1px solid #E9E9EB", borderRadius:"0 0 16px 16px", borderTop:"none", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
-                <div style={{ minWidth: 1260 }}>
+                <div style={{ minWidth: 1400 }}>
                   <div style={{ display:"grid", gridTemplateColumns: gridTplC, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF" }}>
                     {cols.map((col, ci) => {
                       const SORTABLE = ["status","ref","date","amount","account"];
