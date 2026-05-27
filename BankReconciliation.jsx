@@ -6978,13 +6978,11 @@ function MainMenu({
         onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
       >
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#F0F5FC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#4C71DF" }}>{userName.charAt(0)}</span>
-        </div>
+        <img src="avatars/laurabennett.png" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt={userName} />
         {!collapsedView && (
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: "#080908", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
-            <div style={{ fontSize: 14, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userRole}</div>
+            <div style={{ fontSize: 14, color: "#8C8C8B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{userRole}</div>
           </div>
         )}
       </div>
@@ -14554,7 +14552,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
   return (
     <div style={{ flex: 1, overflowY: "auto", background: "#FFFFFF" }}>
       <div style={{ padding: "32px 48px 0", background: "#FFFFFF" }}>
-        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+        <div>
         {/* Title row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
           <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Collect documents</h1>
@@ -14600,7 +14598,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
         </div>
 
       <div style={{ padding: "32px 48px" }}>
-        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+        <div>
 
         {/* Recurring requests — notification scheduler banner */}
         {!isMissing && (() => {
@@ -16862,7 +16860,7 @@ function InboxPage() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
-  const [inboxSortKey, setInboxSortKey] = useState("date");
+  const [inboxSortKey, setInboxSortKey] = useState("uploadedDate");
   const [inboxSortDir, setInboxSortDir] = useState("desc");
   const [inboxPage, setInboxPage] = useState(1);
   const [inboxPageSize, setInboxPageSize] = useState(20);
@@ -16882,6 +16880,93 @@ function InboxPage() {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [rowActionsOpen]);
+  // Drag-and-drop upload
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadingRows, setUploadingRows] = useState([]);
+  const DROP_ACCOUNTS = [
+    "Advertising & Marketing", "Consulting", "General Expenses", "Legal Fees",
+    "Office Supplies", "Postage, Freight & Courier", "Professional Fees",
+    "Purchases", "Rent", "Repairs & Maintenance", "Subscriptions",
+  ];
+  const DROP_TYPES = ["Invoice", "Credit note", "Bank statement"];
+  const DROP_CONTACTS = [
+    "Beaumont & Nash Ltd", "Clerkenwell Supplies Co", "Fenton Digital Agency",
+    "Greyford Solutions Ltd", "Halcyon Interiors Ltd", "Ironside Freight Ltd",
+    "Juniper Tech Services", "Kelston & Merritt LLP", "Lynwood Consulting Ltd",
+    "Marlowe & Partners Ltd", "Norbury Office Supplies", "Oakfield Ventures Ltd",
+    "Pelham Industries Ltd", "Quinton Advisory Ltd", "Rushmore Logistics Ltd",
+  ];
+  const DROP_REFS = ["INV","DOC","UPL","REF","BIL"];
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (activeTab !== "Received") return;
+    const files = Array.from(e.dataTransfer.files);
+    if (!files.length) return;
+    const now = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const uploadDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+    const pad = n => String(n).padStart(2, "0");
+    const uploadDateTime = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}, ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const fmtGBP = n => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const newUploading = files.map((file, idx) => {
+      const contactIdx = Math.floor(Math.random() * DROP_CONTACTS.length);
+      const refPrefix = DROP_REFS[Math.floor(Math.random() * DROP_REFS.length)];
+      const refNum = Math.floor(1000 + Math.random() * 9000);
+      // Issue date: random day in April or early May 2026
+      const issueDay = Math.floor(1 + Math.random() * 26);
+      const issueMonth = Math.random() > 0.4 ? "04" : "05";
+      const issueDate = `${pad(issueDay)}/${issueMonth}/2026`;
+      // Amount: realistic invoice value, tax at 20%
+      const netAmount = Math.round((50 + Math.random() * 4950) * 100) / 100;
+      const taxAmount = Math.round(netAmount * 0.2 * 100) / 100;
+      const grossAmount = Math.round((netAmount + taxAmount) * 100) / 100;
+      // Status: randomly Review or Ready
+      const status = Math.random() > 0.45 ? "Review" : "Ready";
+      // Account + type: always set for Ready; randomly set or null for Review
+      const alwaysFill = status === "Ready";
+      const fillFields = alwaysFill || Math.random() > 0.4;
+      const account = fillFields ? DROP_ACCOUNTS[Math.floor(Math.random() * DROP_ACCOUNTS.length)] : null;
+      const type = fillFields ? DROP_TYPES[Math.floor(Math.random() * DROP_TYPES.length)] : null;
+      return {
+        id: `UPL-${Date.now()}-${idx}`,
+        fileName: file.name,
+        contact: DROP_CONTACTS[contactIdx],
+        ref: `${refPrefix}-${now.getFullYear()}-${refNum}`,
+        issueDate,
+        amount: fmtGBP(grossAmount),
+        tax: fmtGBP(taxAmount),
+        status,
+        account,
+        type,
+        uploadDate,
+        uploadDateTime,
+      };
+    });
+    setUploadingRows(prev => [...newUploading, ...prev]);
+    newUploading.forEach((uRow, idx) => {
+      setTimeout(() => {
+        const inboxRow = {
+          status: uRow.status,
+          contact: uRow.contact,
+          date: uRow.issueDate,
+          account: uRow.account,
+          ref: uRow.ref,
+          type: uRow.type,
+          tax: uRow.tax,
+          amount: uRow.amount,
+          uploadedBy: "accountant",
+          uploadedByName: "Laura Bennett",
+          uploadedDate: uRow.uploadDate,
+          uploadedDateTime: uRow.uploadDateTime,
+          dot: true,
+        };
+        setUploadingRows(prev => prev.filter(r => r.id !== uRow.id));
+        setInboxRows(prev => [inboxRow, ...prev]);
+      }, 2000 + idx * 400);
+    });
+  };
+
   const addFilterBtnRef = useRef(null);
   const addFilterDropRef = useRef(null);
   useEffect(() => {
@@ -16938,53 +17023,53 @@ function InboxPage() {
   };
 
   const [inboxRows, setInboxRows] = useState([
-    { status: "Review", contact: "Harrington & Co Ltd",                date: "29/04/2026", account: null,                              ref: "DOC-2026-0511",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "11 May, 2026", uploadedDateTime: "11/05/2026, 08:14:03", dot: true },
-    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Postage, Freight & Courier",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          bankMatchAccount: "Lloyds Bank - Business",        bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "20 Apr, 2026", uploadedDateTime: "20/04/2026, 14:32:47", dot: true },
-    { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "16 Apr, 2026", uploadedDateTime: "16/04/2026, 09:05:22", dot: true },
-    { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "14 Apr, 2026", uploadedDateTime: "14/04/2026, 11:48:59", dot: true },
-    { status: "Review", contact: "Calendly LLC",                       date: "21/03/2026", account: "Subscriptions",                   ref: "F7A7C97A-000212",    type: "Bank statement",tax: "US$0.00",      amount: "US$12.00",     uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "21 Mar, 2026", uploadedDateTime: "21/03/2026, 16:20:11", dot: true },
-    { status: "Review", contact: "Fenwick Supplies Ltd",               date: "20/03/2026", account: null,                              ref: "UPL-0320-7741",      type: null,            tax: "£0.92",        amount: "£236.11",      uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "20 Mar, 2026", uploadedDateTime: "20/03/2026, 10:03:38", dot: true },
-    { status: "Review", contact: "Andrews Sykes Hire Solutions",       date: "11/03/2026", account: "Rent",                            ref: "510-81135000",       bankMatch: true, openRequestName: "Andrews Sykes – Q1 hire invoice",        bankMatchAccount: "Barclays - Business Account",   bankMatchAccountNo: "20-44-51-81935027", type: "Invoice",       tax: "£67.44",       amount: "£404.64",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "11 Mar, 2026", uploadedDateTime: "11/03/2026, 13:55:04", dot: true },
-    { status: "Ready",  contact: "Gorgias Inc",                        date: "11/03/2026", account: "General Expenses",                ref: "INC-03-2026-634",    type: "Credit note",   tax: "US$0.00",      amount: "US$3,100.00",  uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "11 Mar, 2026", uploadedDateTime: "11/03/2026, 09:41:27", dot: true },
-    { status: "Review", contact: "Able Plumbing Solutions Ltd",        date: "10/03/2026", account: null,                              ref: "U005521710dddd",     type: "Invoice",       tax: "£41.23",       amount: "£247.36",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "10 Mar, 2026", uploadedDateTime: "10/03/2026, 15:17:50", dot: true },
-    { status: "Review", contact: "Acme Solutions Inc.",                date: "05/03/2026", account: "Consulting",                      ref: "INV-2608",           type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00", uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "5 Mar, 2026",  uploadedDateTime: "05/03/2026, 08:59:14" },
-    { status: "Review", contact: "MM Timber & Windows Ltd",            date: "03/03/2026", account: "Repairs & Maintenance",           ref: "FA/3/03/2026",       type: "Bank statement",tax: "£0.05",        amount: "£1,296.05",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "3 Mar, 2026",  uploadedDateTime: "03/03/2026, 12:30:06" },
-    { status: "Ready",  contact: "Northgate Financial Ltd",            date: "28/03/2026", account: "Professional Fees",               ref: "NF-2026-0228",       type: "Invoice",       tax: "£320.00",      amount: "£1,920.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "28 Feb, 2026", uploadedDateTime: "28/02/2026, 10:22:44" },
-    { status: "Review", contact: "Riverside Digital Agency",           date: "26/03/2026", account: null,                              ref: "RDA-0225-114",       type: null,            tax: "£0.00",        amount: "£540.00",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "25 Feb, 2026", uploadedDateTime: "25/02/2026, 14:09:17" },
-    { status: "Review", contact: "Stonegate Ventures Ltd",             date: "25/03/2026", account: "Consulting",                      ref: "SV-INV-0334",        type: "Invoice",       tax: "£880.00",      amount: "£5,280.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "22 Feb, 2026", uploadedDateTime: "22/02/2026, 09:33:05" },
-    { status: "Ready",  contact: "Elmwood Trading Co",                 date: "24/03/2026", account: "Purchases",                       ref: "ET-2026-0820",       type: "Invoice",       tax: "£112.50",      amount: "£675.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "20 Feb, 2026", uploadedDateTime: "20/02/2026, 16:41:30" },
-    { status: "Review", contact: "Bridgewater Associates",             date: "23/03/2026", account: "Subscriptions",                   ref: "BWA-FEB26-001",      type: "Bank statement",tax: "US$0.00",      amount: "US$299.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "18 Feb, 2026", uploadedDateTime: "18/02/2026, 11:15:52" },
-    { status: "Review", contact: "Coppergate Partners LLP",            date: "27/04/2026", account: null,                              ref: "CPG-2026-0214",      type: "Invoice",       tax: "£460.00",      amount: "£2,760.00",    uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "14 Feb, 2026", uploadedDateTime: "14/02/2026, 08:50:29" },
-    { status: "Ready",  contact: "Templeton & Ward Ltd",               date: "25/04/2026", account: "General Expenses",                ref: "TW-0212-2026",       type: "Credit note",   tax: "£34.00",       amount: "£204.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "12 Feb, 2026", uploadedDateTime: "12/02/2026, 13:07:18" },
-    { status: "Review", contact: "Fairfield Logistics Solutions",      date: "23/04/2026", account: "Postage, Freight & Courier",      ref: "FL-26-0210-88",      type: "Invoice",       tax: "£195.60",      amount: "£1,173.60",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "10 Feb, 2026", uploadedDateTime: "10/02/2026, 15:44:00" },
-    { status: "Review", contact: "Greystone Technologies Inc",         date: "19/04/2026", account: null,                              ref: "GT-US-20260207",     type: null,            tax: "US$0.00",      amount: "US$3,450.00",  uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "7 Feb, 2026",  uploadedDateTime: "07/02/2026, 09:28:44" },
-    { status: "Review", contact: "Pinecroft Consulting Ltd",           date: "17/04/2026", account: "Professional Fees",               ref: "PC-2026-1102",       type: "Invoice",       tax: "£640.00",      amount: "£3,840.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "4 Feb, 2026",  uploadedDateTime: "04/02/2026, 10:55:36" },
-    { status: "Ready",  contact: "Lakewood Solutions Pty Ltd",         date: "15/04/2026", account: "Consulting",                      ref: "LW-2026-0131",       type: "Invoice Split", tax: "A$540.00",     amount: "A$3,240.00",   uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "31 Jan, 2026", uploadedDateTime: "31/01/2026, 14:19:52" },
-    { status: "Review", contact: "Ashford & Clarke Solicitors",        date: "09/04/2026", account: "Legal Fees",                      ref: "ACS-0128-2026",      type: "Invoice",       tax: "£1,200.00",    amount: "£7,200.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "28 Jan, 2026", uploadedDateTime: "28/01/2026, 11:02:07" },
-    { status: "Review", contact: "Whitmore Creative Agency",           date: "07/04/2026", account: null,                              ref: "WCA-JAN26-055",      type: "Credit note",   tax: "£80.00",       amount: "£480.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "25 Jan, 2026", uploadedDateTime: "25/01/2026, 08:40:15" },
-    { status: "Review", contact: "Queensbury Engineering Ltd",         date: "04/04/2026", account: "Repairs & Maintenance",           ref: "QE-2026-0122",       type: "Invoice",       tax: "£730.00",      amount: "£4,380.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "22 Jan, 2026", uploadedDateTime: "22/01/2026, 16:33:41" },
-    { status: "Ready",  contact: "Hartley & Sons Supplies Ltd",        date: "02/04/2026", account: "Purchases",                       ref: "HSS-26-0119",        type: "Invoice",       tax: "£88.00",       amount: "£528.00",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "19 Jan, 2026", uploadedDateTime: "19/01/2026, 12:48:20" },
-    { status: "Review", contact: "Meridian Freight Ltd",               date: "30/03/2026", account: "Postage, Freight & Courier",      ref: "MF-2026-0116",       type: "Bank statement",tax: "£0.00",        amount: "£2,105.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "16 Jan, 2026", uploadedDateTime: "16/01/2026, 09:14:57" },
-    { status: "Review", contact: "NorthStar Media Group",              date: "27/03/2026", account: null,                              ref: "NSM-2026-013",       type: null,            tax: "US$0.00",      amount: "US$890.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "13 Jan, 2026", uploadedDateTime: "13/01/2026, 15:22:33" },
-    { status: "Ready",  contact: "Hillcrest Imports Ltd",              date: "25/03/2026", account: "Purchases",                       ref: "HCI-0110-2026",      type: "Invoice",       tax: "£215.00",      amount: "£1,290.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "10 Jan, 2026", uploadedDateTime: "10/01/2026, 10:05:44" },
-    { status: "Review", contact: "Vantage Digital Solutions",          date: "18/03/2026", account: "Subscriptions",                   ref: "VDS-2026-0108",      type: "Invoice",       tax: "US$120.00",    amount: "US$720.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "8 Jan, 2026",  uploadedDateTime: "08/01/2026, 13:37:50" },
-    { status: "Review", contact: "Oxton Supply Co Ltd",                date: "16/03/2026", account: null,                              ref: "OSC-26-0006",        type: "Invoice",       tax: "£52.40",       amount: "£314.40",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "6 Jan, 2026",  uploadedDateTime: "06/01/2026, 08:58:11" },
-    { status: "Ready",  contact: "Harrison & Webb Accountants",        date: "14/03/2026", account: "Professional Fees",               ref: "HWA-2026-0104",      type: "Invoice",       tax: "£560.00",      amount: "£3,360.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "4 Jan, 2026",  uploadedDateTime: "04/01/2026, 14:51:08" },
-    { status: "Review", contact: "Yorkshire Tea Estates Ltd",          date: "12/03/2026", account: "Purchases",                       ref: "YTE-DEC25-441",      type: "Invoice",       tax: "£28.00",       amount: "£168.00",      uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "31 Dec, 2025", uploadedDateTime: "31/12/2025, 11:20:29" },
-    { status: "Review", contact: "Clifton & Harrow Supplies",          date: "09/03/2026", account: null,                              ref: "CHS-2025-1229",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "29 Dec, 2025", uploadedDateTime: "29/12/2025, 09:05:37" },
-    { status: "Ready",  contact: "Meridian Office Solutions Ltd",      date: "07/03/2026", account: "Office Supplies",                 ref: "MOS-25-1222",        type: "Invoice",       tax: "£74.00",       amount: "£444.00",      uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "22 Dec, 2025", uploadedDateTime: "22/12/2025, 15:44:03" },
-    { status: "Review", contact: "Redwood Consulting Group",           date: "06/03/2026", account: "Consulting",                      ref: "RCG-DEC25-209",      type: "Credit note",   tax: "£200.00",      amount: "£1,200.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "18 Dec, 2025", uploadedDateTime: "18/12/2025, 10:30:55" },
-    { status: "Review", contact: "Westbrook Services Ltd",             date: "04/03/2026", account: null,                              ref: "WBS-1512-2025",      type: "Invoice Split", tax: "£390.00",      amount: "£2,340.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "15 Dec, 2025", uploadedDateTime: "15/12/2025, 13:18:22" },
-    { status: "Ready",  contact: "Lakewood Digital Ltd",               date: "02/03/2026", account: "General Expenses",                ref: "LDL-2025-1210",      type: "Invoice",       tax: "£145.00",      amount: "£870.00",      uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "10 Dec, 2025", uploadedDateTime: "10/12/2025, 09:47:16" },
-    { status: "Review", contact: "Pendleton & Fox Ltd",                date: "26/04/2026", account: "Rent",                            ref: "PF-DEC25-0015",      type: "Invoice",       tax: "£680.00",      amount: "£4,080.00",    uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "5 Dec, 2025",  uploadedDateTime: "05/12/2025, 14:02:39" },
-    { status: "Review", contact: "Castleton Media Ltd",                date: "24/04/2026", account: null,                              ref: "CML-2025-1201",      type: null,            tax: "£0.00",        amount: "£760.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "1 Dec, 2025",  uploadedDateTime: "01/12/2025, 08:33:44" },
-    { status: "Ready",  contact: "Bramblewood Interiors Ltd",          date: "22/04/2026", account: "Office Supplies",                 ref: "BWI-NOV25-302",      type: "Invoice",       tax: "£96.00",       amount: "£576.00",      uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "27 Nov, 2025", uploadedDateTime: "27/11/2025, 11:38:50" },
-    { status: "Review", contact: "Dunmore & Ashby LLP",                date: "18/04/2026", account: null,                              ref: "DA-2025-1124",       type: "Invoice",       tax: "£840.00",      amount: "£5,040.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "24 Nov, 2025", uploadedDateTime: "24/11/2025, 09:17:03" },
-    { status: "Review", contact: "Foxfield Technology Ltd",            date: "16/04/2026", account: "Subscriptions",                   ref: "FTL-NOV25-117",      type: "Bank statement",tax: "US$0.00",      amount: "US$149.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "20 Nov, 2025", uploadedDateTime: "20/11/2025, 14:44:29" },
-    { status: "Ready",  contact: "Kestrel Freight Services",           date: "08/04/2026", account: "Postage, Freight & Courier",      ref: "KFS-25-1117",        type: "Invoice",       tax: "£183.60",      amount: "£1,101.60",    uploadedBy: "client",      uploadedByName: "James Clarke",    uploadedDate: "17 Nov, 2025", uploadedDateTime: "17/11/2025, 15:52:14" },
-    { status: "Review", contact: "Marlowe Consulting Group",           date: "06/04/2026", account: null,                              ref: "MCG-2025-1113",      type: null,            tax: "£0.00",        amount: "£2,880.00",    uploadedBy: "client",      uploadedByName: "Oliver Bennett",  uploadedDate: "13 Nov, 2025", uploadedDateTime: "13/11/2025, 08:29:47" },
-    { status: "Review", contact: "Pennbrook Property Group",           date: "03/04/2026", account: "Rent",                            ref: "PPG-NOV25-008",      type: "Invoice Split", tax: "£1,200.00",    amount: "£7,200.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "10 Nov, 2025", uploadedDateTime: "10/11/2025, 13:06:55" },
-    { status: "Ready",  contact: "Silvergate Analytics Ltd",           date: "01/04/2026", account: "Professional Fees",               ref: "SAL-2025-1105",      type: "Credit note",   tax: "£280.00",      amount: "£1,680.00",    uploadedBy: "client",      uploadedByName: "Sara Thompson",   uploadedDate: "5 Nov, 2025",  uploadedDateTime: "05/11/2025, 10:41:32" },
+    { status: "Review", contact: "Harrington & Co Ltd",                date: "29/04/2026", account: null,                              ref: "DOC-2026-0511",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
+    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Postage, Freight & Courier",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          bankMatchAccount: "Lloyds Bank - Business",        bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 14:32:47", dot: true },
+    { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 09:05:22", dot: true },
+    { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "23 May, 2026", uploadedDateTime: "23/05/2026, 11:48:59", dot: true },
+    { status: "Review", contact: "Calendly LLC",                       date: "21/03/2026", account: "Subscriptions",                   ref: "F7A7C97A-000212",    type: "Bank statement",tax: "US$0.00",      amount: "US$12.00",     uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "22 May, 2026", uploadedDateTime: "22/05/2026, 16:20:11", dot: true },
+    { status: "Review", contact: "Fenwick Supplies Ltd",               date: "20/03/2026", account: null,                              ref: "UPL-0320-7741",      type: null,            tax: "£0.92",        amount: "£236.11",      uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "21 May, 2026", uploadedDateTime: "21/05/2026, 10:03:38", dot: true },
+    { status: "Review", contact: "Andrews Sykes Hire Solutions",       date: "11/03/2026", account: "Rent",                            ref: "510-81135000",       bankMatch: true, openRequestName: "Andrews Sykes – Q1 hire invoice",        bankMatchAccount: "Barclays - Business Account",   bankMatchAccountNo: "20-44-51-81935027", type: "Invoice",       tax: "£67.44",       amount: "£404.64",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "20 May, 2026", uploadedDateTime: "20/05/2026, 13:55:04", dot: true },
+    { status: "Ready",  contact: "Gorgias Inc",                        date: "11/03/2026", account: "General Expenses",                ref: "INC-03-2026-634",    type: "Credit note",   tax: "US$0.00",      amount: "US$3,100.00",  uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "19 May, 2026", uploadedDateTime: "19/05/2026, 09:41:27", dot: true },
+    { status: "Review", contact: "Able Plumbing Solutions Ltd",        date: "10/03/2026", account: null,                              ref: "U005521710dddd",     type: "Invoice",       tax: "£41.23",       amount: "£247.36",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "18 May, 2026", uploadedDateTime: "18/05/2026, 15:17:50", dot: true },
+    { status: "Review", contact: "Acme Solutions Inc.",                date: "05/03/2026", account: "Consulting",                      ref: "INV-2608",           type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00", uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "17 May, 2026",  uploadedDateTime: "17/05/2026, 08:59:14" },
+    { status: "Review", contact: "MM Timber & Windows Ltd",            date: "03/03/2026", account: "Repairs & Maintenance",           ref: "FA/3/03/2026",       type: "Bank statement",tax: "£0.05",        amount: "£1,296.05",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "16 May, 2026",  uploadedDateTime: "16/05/2026, 12:30:06" },
+    { status: "Ready",  contact: "Northgate Financial Ltd",            date: "28/03/2026", account: "Professional Fees",               ref: "NF-2026-0228",       type: "Invoice",       tax: "£320.00",      amount: "£1,920.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "15 May, 2026", uploadedDateTime: "15/05/2026, 10:22:44" },
+    { status: "Review", contact: "Riverside Digital Agency",           date: "26/03/2026", account: null,                              ref: "RDA-0225-114",       type: null,            tax: "£0.00",        amount: "£540.00",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "14 May, 2026", uploadedDateTime: "14/05/2026, 14:09:17" },
+    { status: "Review", contact: "Stonegate Ventures Ltd",             date: "25/03/2026", account: "Consulting",                      ref: "SV-INV-0334",        type: "Invoice",       tax: "£880.00",      amount: "£5,280.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "13 May, 2026", uploadedDateTime: "13/05/2026, 09:33:05" },
+    { status: "Ready",  contact: "Elmwood Trading Co",                 date: "24/03/2026", account: "Purchases",                       ref: "ET-2026-0820",       type: "Invoice",       tax: "£112.50",      amount: "£675.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "12 May, 2026", uploadedDateTime: "12/05/2026, 16:41:30" },
+    { status: "Review", contact: "Bridgewater Associates",             date: "23/03/2026", account: "Subscriptions",                   ref: "BWA-FEB26-001",      type: "Bank statement",tax: "US$0.00",      amount: "US$299.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "11 May, 2026", uploadedDateTime: "11/05/2026, 11:15:52" },
+    { status: "Review", contact: "Coppergate Partners LLP",            date: "27/04/2026", account: null,                              ref: "CPG-2026-0214",      type: "Invoice",       tax: "£460.00",      amount: "£2,760.00",    uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "10 May, 2026", uploadedDateTime: "10/05/2026, 08:50:29" },
+    { status: "Ready",  contact: "Templeton & Ward Ltd",               date: "25/04/2026", account: "General Expenses",                ref: "TW-0212-2026",       type: "Credit note",   tax: "£34.00",       amount: "£204.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "9 May, 2026", uploadedDateTime: "09/05/2026, 13:07:18" },
+    { status: "Review", contact: "Fairfield Logistics Solutions",      date: "23/04/2026", account: "Postage, Freight & Courier",      ref: "FL-26-0210-88",      type: "Invoice",       tax: "£195.60",      amount: "£1,173.60",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "8 May, 2026", uploadedDateTime: "08/05/2026, 15:44:00" },
+    { status: "Review", contact: "Greystone Technologies Inc",         date: "19/04/2026", account: null,                              ref: "GT-US-20260207",     type: null,            tax: "US$0.00",      amount: "US$3,450.00",  uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "7 May, 2026",  uploadedDateTime: "07/05/2026, 09:28:44" },
+    { status: "Review", contact: "Pinecroft Consulting Ltd",           date: "17/04/2026", account: "Professional Fees",               ref: "PC-2026-1102",       type: "Invoice",       tax: "£640.00",      amount: "£3,840.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "6 May, 2026",  uploadedDateTime: "06/05/2026, 10:55:36" },
+    { status: "Ready",  contact: "Lakewood Solutions Pty Ltd",         date: "15/04/2026", account: "Consulting",                      ref: "LW-2026-0131",       type: "Invoice Split", tax: "A$540.00",     amount: "A$3,240.00",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "5 May, 2026", uploadedDateTime: "05/05/2026, 14:19:52" },
+    { status: "Review", contact: "Ashford & Clarke Solicitors",        date: "09/04/2026", account: "Legal Fees",                      ref: "ACS-0128-2026",      type: "Invoice",       tax: "£1,200.00",    amount: "£7,200.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "4 May, 2026", uploadedDateTime: "04/05/2026, 11:02:07" },
+    { status: "Review", contact: "Whitmore Creative Agency",           date: "07/04/2026", account: null,                              ref: "WCA-JAN26-055",      type: "Credit note",   tax: "£80.00",       amount: "£480.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "3 May, 2026", uploadedDateTime: "03/05/2026, 08:40:15" },
+    { status: "Review", contact: "Queensbury Engineering Ltd",         date: "04/04/2026", account: "Repairs & Maintenance",           ref: "QE-2026-0122",       type: "Invoice",       tax: "£730.00",      amount: "£4,380.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "2 May, 2026", uploadedDateTime: "02/05/2026, 16:33:41" },
+    { status: "Ready",  contact: "Hartley & Sons Supplies Ltd",        date: "02/04/2026", account: "Purchases",                       ref: "HSS-26-0119",        type: "Invoice",       tax: "£88.00",       amount: "£528.00",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "1 May, 2026", uploadedDateTime: "01/05/2026, 12:48:20" },
+    { status: "Review", contact: "Meridian Freight Ltd",               date: "30/03/2026", account: "Postage, Freight & Courier",      ref: "MF-2026-0116",       type: "Bank statement",tax: "£0.00",        amount: "£2,105.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 09:14:57" },
+    { status: "Review", contact: "NorthStar Media Group",              date: "27/03/2026", account: null,                              ref: "NSM-2026-013",       type: null,            tax: "US$0.00",      amount: "US$890.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 15:22:33" },
+    { status: "Ready",  contact: "Hillcrest Imports Ltd",              date: "25/03/2026", account: "Purchases",                       ref: "HCI-0110-2026",      type: "Invoice",       tax: "£215.00",      amount: "£1,290.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 10:05:44" },
+    { status: "Review", contact: "Vantage Digital Solutions",          date: "18/03/2026", account: "Subscriptions",                   ref: "VDS-2026-0108",      type: "Invoice",       tax: "US$120.00",    amount: "US$720.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "23 May, 2026",  uploadedDateTime: "23/05/2026, 13:37:50" },
+    { status: "Review", contact: "Oxton Supply Co Ltd",                date: "16/03/2026", account: null,                              ref: "OSC-26-0006",        type: "Invoice",       tax: "£52.40",       amount: "£314.40",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "22 May, 2026",  uploadedDateTime: "22/05/2026, 08:58:11" },
+    { status: "Ready",  contact: "Harrison & Webb Accountants",        date: "14/03/2026", account: "Professional Fees",               ref: "HWA-2026-0104",      type: "Invoice",       tax: "£560.00",      amount: "£3,360.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "21 May, 2026",  uploadedDateTime: "21/05/2026, 14:51:08" },
+    { status: "Review", contact: "Yorkshire Tea Estates Ltd",          date: "12/03/2026", account: "Purchases",                       ref: "YTE-DEC25-441",      type: "Invoice",       tax: "£28.00",       amount: "£168.00",      uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "20 May, 2026", uploadedDateTime: "20/05/2026, 11:20:29" },
+    { status: "Review", contact: "Clifton & Harrow Supplies",          date: "09/03/2026", account: null,                              ref: "CHS-2025-1229",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "19 May, 2026", uploadedDateTime: "19/05/2026, 09:05:37" },
+    { status: "Ready",  contact: "Meridian Office Solutions Ltd",      date: "07/03/2026", account: "Office Supplies",                 ref: "MOS-25-1222",        type: "Invoice",       tax: "£74.00",       amount: "£444.00",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "18 May, 2026", uploadedDateTime: "18/05/2026, 15:44:03" },
+    { status: "Review", contact: "Redwood Consulting Group",           date: "06/03/2026", account: "Consulting",                      ref: "RCG-DEC25-209",      type: "Credit note",   tax: "£200.00",      amount: "£1,200.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "17 May, 2026", uploadedDateTime: "17/05/2026, 10:30:55" },
+    { status: "Review", contact: "Westbrook Services Ltd",             date: "04/03/2026", account: null,                              ref: "WBS-1512-2025",      type: "Invoice Split", tax: "£390.00",      amount: "£2,340.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "16 May, 2026", uploadedDateTime: "16/05/2026, 13:18:22" },
+    { status: "Ready",  contact: "Lakewood Digital Ltd",               date: "02/03/2026", account: "General Expenses",                ref: "LDL-2025-1210",      type: "Invoice",       tax: "£145.00",      amount: "£870.00",      uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "15 May, 2026", uploadedDateTime: "15/05/2026, 09:47:16" },
+    { status: "Review", contact: "Pendleton & Fox Ltd",                date: "26/04/2026", account: "Rent",                            ref: "PF-DEC25-0015",      type: "Invoice",       tax: "£680.00",      amount: "£4,080.00",    uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "14 May, 2026",  uploadedDateTime: "14/05/2026, 14:02:39" },
+    { status: "Review", contact: "Castleton Media Ltd",                date: "24/04/2026", account: null,                              ref: "CML-2025-1201",      type: null,            tax: "£0.00",        amount: "£760.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "13 May, 2026",  uploadedDateTime: "13/05/2026, 08:33:44" },
+    { status: "Ready",  contact: "Bramblewood Interiors Ltd",          date: "22/04/2026", account: "Office Supplies",                 ref: "BWI-NOV25-302",      type: "Invoice",       tax: "£96.00",       amount: "£576.00",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "12 May, 2026", uploadedDateTime: "12/05/2026, 11:38:50" },
+    { status: "Review", contact: "Dunmore & Ashby LLP",                date: "18/04/2026", account: null,                              ref: "DA-2025-1124",       type: "Invoice",       tax: "£840.00",      amount: "£5,040.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "11 May, 2026", uploadedDateTime: "11/05/2026, 09:17:03" },
+    { status: "Review", contact: "Foxfield Technology Ltd",            date: "16/04/2026", account: "Subscriptions",                   ref: "FTL-NOV25-117",      type: "Bank statement",tax: "US$0.00",      amount: "US$149.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "10 May, 2026", uploadedDateTime: "10/05/2026, 14:44:29" },
+    { status: "Ready",  contact: "Kestrel Freight Services",           date: "08/04/2026", account: "Postage, Freight & Courier",      ref: "KFS-25-1117",        type: "Invoice",       tax: "£183.60",      amount: "£1,101.60",    uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "9 May, 2026", uploadedDateTime: "09/05/2026, 15:52:14" },
+    { status: "Review", contact: "Marlowe Consulting Group",           date: "06/04/2026", account: null,                              ref: "MCG-2025-1113",      type: null,            tax: "£0.00",        amount: "£2,880.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "8 May, 2026", uploadedDateTime: "08/05/2026, 08:29:47" },
+    { status: "Review", contact: "Pennbrook Property Group",           date: "03/04/2026", account: "Rent",                            ref: "PPG-NOV25-008",      type: "Invoice Split", tax: "£1,200.00",    amount: "£7,200.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "7 May, 2026", uploadedDateTime: "07/05/2026, 13:06:55" },
+    { status: "Ready",  contact: "Silvergate Analytics Ltd",           date: "01/04/2026", account: "Professional Fees",               ref: "SAL-2025-1105",      type: "Credit note",   tax: "£280.00",      amount: "£1,680.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "6 May, 2026",  uploadedDateTime: "06/05/2026, 10:41:32" },
   ]);
 
   const [archivedRows, setArchivedRows] = useState([
@@ -17008,13 +17093,13 @@ function InboxPage() {
     return matchSearch && matchStatus && matchDocType;
   });
 
-  const INBOX_SORTABLE = ["date", "contact", "amount", "uploaded", "status", "account", "type"];
+  const INBOX_SORTABLE = ["date", "contact", "amount", "status", "account", "type", "uploadedDate"];
   const sorted = inboxSortKey ? [...filtered].sort((a, b) => {
     let av, bv;
     if (inboxSortKey === "date") {
       av = a.date ? a.date.split("/").reverse().join("") : "";
       bv = b.date ? b.date.split("/").reverse().join("") : "";
-    } else if (inboxSortKey === "uploaded") {
+    } else if (inboxSortKey === "uploaded" || inboxSortKey === "uploadedDate") {
       av = a.uploadedDateTime || "";
       bv = b.uploadedDateTime || "";
     } else if (inboxSortKey === "amount") {
@@ -17033,11 +17118,11 @@ function InboxPage() {
   const totalInboxPages = Math.max(1, Math.ceil(totalInboxRows / inboxPageSize));
   const safeInboxPage = Math.min(inboxPage, totalInboxPages);
   const pagedSorted = sorted.slice((safeInboxPage - 1) * inboxPageSize, safeInboxPage * inboxPageSize);
-  const rows = pagedSorted.map((r, i) => { const sortedIndex = (safeInboxPage - 1) * inboxPageSize + i; const dot = sortedIndex < 9; return { check: null, status: r.status, contact: r.contact, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot, _raw: { ...r, dot } }; });
+  const rows = pagedSorted.map((r, i) => { const sortedIndex = (safeInboxPage - 1) * inboxPageSize + i; const dot = sortedIndex < 9; return { check: null, status: r.status, contact: r.contact, uploadedDate: r.uploadedDate, date: r.date, account: r.account, ref: r.ref, type: r.type, uploaded: r, tax: r.tax, amount: r.amount, actions: null, bankMatch: r.bankMatch, openRequestName: r.openRequestName, dot, _raw: { ...r, dot } }; });
 
   const cols = [
     { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", align: "center", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
-    { key: "status",  label: "Status",     width: "100px", render: (v, r) => {
+    { key: "status",  label: "Status",     width: uploadingRows.length > 0 ? "150px" : "100px", render: (v, r) => {
       const docType = r.type && r.type !== "Invoice Split" ? r.type : r.type === "Invoice Split" ? "Invoice" : "Document";
       const tipText = r.status === "Ready"
         ? `${docType} ready to be published to Xero`
@@ -17066,11 +17151,30 @@ function InboxPage() {
         )}
       </div>
     ) },
-    { key: "date",     label: "Issue Date",   width: "130px", render: v => { if (!v) return "-"; const [d, m, y] = v.split("/"); const mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m,10)-1]; return `${parseInt(d,10)} ${mon}, ${y}`; } },
-    { key: "account",  label: "Account",    width: "1fr",   render: v => v
+    { key: "uploadedDate", label: "Uploaded", width: "160px", render: (v, r) => {
+      const byName = r?.uploadedByName || "";
+      const isAccountant = r?.uploadedBy === "accountant";
+      const tooltipText = (() => {
+        const [datePart, timePart] = (r?.uploadedDateTime || "").split(", ");
+        const [d, m, y] = (datePart || "").split("/");
+        const mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m,10)-1] || "";
+        const formattedDate = d && mon && y ? `${parseInt(d,10)} ${mon}, ${y}` : datePart;
+        const formattedTime = timePart ? timePart.slice(0,5) : "";
+        const role = isAccountant ? "Accountant" : "Client";
+        const via = isAccountant ? "manually" : "via client portal";
+        return `Uploaded by ${role} ${byName} on ${formattedDate} at ${formattedTime} ${via}`;
+      })();
+      return (
+        <Tooltip text={tooltipText}>
+          <span style={{ fontSize: 14, color: v ? "#000" : "#BCBCBC" }}>{v || "-"}</span>
+        </Tooltip>
+      );
+    } },
+    { key: "account",  label: "Account",    width: "220px", render: v => v
       ? <span style={{ fontSize: 14, color: "#000" }}>{v}</span>
       : <Tooltip text="Unable to identify account"><span style={{ fontSize: 12, fontWeight: 500, color: "#C8543A", background: "#FCEFEC", borderRadius: 6, padding: "0 10px", height: 25, display: "inline-flex", alignItems: "center", cursor: "default" }}>Missing</span></Tooltip>
     },
+    { key: "date",     label: "Issue Date", width: "130px", render: v => { if (!v) return "-"; const [d, m, y] = v.split("/"); const mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m,10)-1]; return `${parseInt(d,10)} ${mon}, ${y}`; } },
     { key: "ref",      label: "Reference",  width: "160px", render: v => <span style={{ fontSize: 14, color: v ? "#000" : "#BCBCBC" }}>{v || "-"}</span> },
     { key: "type",     label: "Type",       width: "140px", render: v => {
       if (!v) return <Tooltip text="Unable to identify document type"><span style={{ fontSize: 12, fontWeight: 500, color: "#C8543A", background: "#FCEFEC", borderRadius: 6, padding: "0 10px", height: 25, display: "inline-flex", alignItems: "center", cursor: "default" }}>Missing</span></Tooltip>;
@@ -17082,21 +17186,6 @@ function InboxPage() {
       );
       return <span style={{ fontSize: 14, color: "#000" }}>{v}</span>;
     } },
-    { key: "uploaded", label: "Uploaded by", width: "180px", render: (v) => {
-      const isClient = v?.uploadedBy === "client";
-      const avatarStyle = isClient ? { bg: "#FDF8EE", color: "#D5A750" } : { bg: "#EEF2FF", color: "#4A6CF7" };
-      const avatarLabel = isClient ? "C" : "A";
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Tooltip text={(() => { const [datePart, timePart] = (v?.uploadedDateTime || "").split(", "); const [d, m, y] = (datePart || "").split("/"); const mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m,10)-1] || ""; const formattedDate = d && mon && y ? `${parseInt(d,10)} ${mon}, ${y}` : datePart; const formattedTime = timePart ? timePart.slice(0,5) : ""; const via = v?.uploadedBy === "client" ? "via client portal" : "manually"; return `Uploaded by ${v?.uploadedBy} ${v?.uploadedByName} on ${formattedDate} at ${formattedTime} ${via}`; })()}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: avatarStyle.bg, color: avatarStyle.color, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "'Inter',sans-serif" }}>
-              {avatarLabel}
-            </div>
-          </Tooltip>
-          <span style={{ fontSize: 14, color: "#000" }}>{v?.uploadedByName}</span>
-        </div>
-      );
-    }},
     { key: "tax",     label: "Tax",        width: "110px", align: "right" },
     { key: "amount",  label: "Amount",     width: "120px", align: "right", render: v => <span style={{ fontWeight: 400, color: "#000" }}>{v}</span> },
     ...(activeTab !== "Archived" ? [{ key: "actions", label: "", width: "40px", fixedWidth: true, cellPadding: "14px 0px", align: "center", render: (v, row) => (
@@ -17132,7 +17221,7 @@ function InboxPage() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#FFFFFF" }}>
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 48px 48px" }}>
-        <div style={{ maxWidth: 1440, margin: "0 auto" }}>
+        <div>
         {/* Header */}
         <div style={{ padding: "32px 0 0" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -17163,12 +17252,6 @@ function InboxPage() {
               iconBg: "#F4F1FD",
               icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.8615 12.4115V6.75104C19.8615 5.08255 19.8615 4.24831 19.5368 3.61103C19.2512 3.05046 18.7955 2.59471 18.2349 2.30908C17.5976 1.98438 16.7634 1.98438 15.0949 1.98438H8.73932C7.07083 1.98438 6.23659 1.98438 5.59931 2.30908C5.03874 2.59471 4.58299 3.05046 4.29737 3.61103C3.97266 4.24831 3.97266 5.08255 3.97266 6.75104V17.0788C3.97266 18.7473 3.97266 19.5816 4.29737 20.2188C4.58299 20.7794 5.03874 21.2352 5.59931 21.5208C6.23659 21.8455 7.07083 21.8455 8.73932 21.8455H11.9171M13.9032 10.9219H7.94488M9.93099 14.8941H7.94488M15.8893 6.94965H7.94488M14.3997 18.8663L16.3859 20.8524L20.8546 16.3837" stroke="#6B4EE6" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
             },
-            {
-              label: "Published to Xero",
-              value: `${publishedCount} ${publishedCount === 1 ? "document" : "documents"}`,
-              iconBg: "#F1F8F0",
-              icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M7.44813 11.9149L10.4273 14.8941L16.3856 8.93576M21.8474 11.9149C21.8474 17.3994 17.4014 21.8455 11.9169 21.8455C6.43239 21.8455 1.98633 17.3994 1.98633 11.9149C1.98633 6.43044 6.43239 1.98438 11.9169 1.98438C17.4014 1.98438 21.8474 6.43044 21.8474 11.9149Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-            },
           ];
           return (
             <div style={{ display: "grid", gridTemplateColumns: winWidth < 640 ? "1fr" : winWidth < 960 ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
@@ -17183,6 +17266,21 @@ function InboxPage() {
                   </div>
                 </div>
               ))}
+              {/* Published widget — split into Manually + Auto */}
+              <div style={{ background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "#F1F8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M7.44813 11.9149L10.4273 14.8941L16.3856 8.93576M21.8474 11.9149C21.8474 17.3994 17.4014 21.8455 11.9169 21.8455C6.43239 21.8455 1.98633 17.3994 1.98633 11.9149C1.98633 6.43044 6.43239 1.98438 11.9169 1.98438C17.4014 1.98438 21.8474 6.43044 21.8474 11.9149Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, color: "#8C8C8B", marginBottom: 2 }}>Manually published</div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>{publishedCount} {publishedCount === 1 ? "document" : "documents"}</div>
+                </div>
+                <div style={{ width: 1, height: 36, background: "#E9E9EB", flexShrink: 0, alignSelf: "center" }} />
+                <div style={{ flex: 1, paddingLeft: 16 }}>
+                  <div style={{ fontSize: 14, color: "#8C8C8B", marginBottom: 2 }}>Auto-published</div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: "#080908" }}>4 documents</div>
+                </div>
+              </div>
             </div>
           );
         })()}
@@ -17198,7 +17296,21 @@ function InboxPage() {
         </div>
         </div>
 
-        <div style={{ background: "#FFFFFF" }}>
+        <div style={{ background: "#FFFFFF", position: "relative" }}
+          onDragOver={e => { e.preventDefault(); if (activeTab === "Received") setIsDragOver(true); }}
+          onDragEnter={e => { e.preventDefault(); if (activeTab === "Received") setIsDragOver(true); }}
+          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false); }}
+          onDrop={handleDrop}
+        >
+          {isDragOver && activeTab === "Received" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 100, background: "rgba(243,251,243,0.92)", border: "2px dashed #05A105", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7.5 8.5M12 4l4.5 4.5" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span style={{ fontSize: 16, fontWeight: 600, color: "#05A105", fontFamily: "'Inter',sans-serif" }}>Drop files to upload</span>
+                <span style={{ fontSize: 14, color: "#3A8A3A", fontFamily: "'Inter',sans-serif" }}>They'll be added to the top of your inbox</span>
+              </div>
+            </div>
+          )}
           {/* Search row */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 16px", height: 80, borderLeft: "1px solid #ECECEC", borderRight: "1px solid #ECECEC", borderBottom: "1px solid #ECECEC", gap: 10 }}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M17.5 17.5L13.875 13.875M15.833 9.167a6.667 6.667 0 1 1-13.333 0 6.667 6.667 0 0 1 13.333 0Z" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -17413,6 +17525,40 @@ function InboxPage() {
                       </div>
                     ))}
                   </div>
+                  {/* Uploading rows */}
+                  {uploadingRows.map(uRow => (
+                    <div key={uRow.id} style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF" }}>
+                      {cols.map((col, ci) => (
+                        <div key={col.key}
+                          style={{ display:"flex", alignItems:"center", justifyContent: col.align==="right"?"flex-end":col.align==="center"?"center":"flex-start", fontSize:14, padding: col.cellPadding||"12px 16px", borderRight: ci<lastI?"1px solid #E9E9EB":"none", overflow:"hidden", whiteSpace:"nowrap", height:56, boxSizing:"border-box" }}>
+                          {col.key === "check" && <input type="checkbox" className="mimo-cb" disabled style={{ opacity: 0.3 }} />}
+                          {col.key === "status" && (
+                            <span style={{ display:"inline-flex", alignItems:"center", gap:8, whiteSpace:"nowrap" }}>
+                              <svg width="18" height="18" viewBox="0 0 36 36" fill="none" style={{ animation:"spin 0.75s linear infinite", flexShrink:0 }}><path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="3.5" strokeLinecap="round"/></svg>
+                              <span style={{ fontSize:14, fontWeight:500, color:"#080908" }}>Processing...</span>
+                            </span>
+                          )}
+                          {col.key === "contact" && (
+                            <div style={{ display:"flex", alignItems:"center", gap:8, overflow:"hidden", minWidth:0 }}>
+                              <FileIcon file={{ name: uRow.fileName, type: "" }} width={16} height={19} />
+                              <span style={{ fontSize:14, color:"#000", overflow:"hidden", textOverflow:"ellipsis" }}>{uRow.fileName}</span>
+                            </div>
+                          )}
+                          {col.key === "uploaded" && (
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <div style={{ width:26, height:26, borderRadius:"50%", background:"#EEF2FF", color:"#4A6CF7", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Inter',sans-serif" }}>A</div>
+                              <span style={{ fontSize:14, color:"#7C7C7C" }}>Laura Bennett</span>
+                            </div>
+                          )}
+                          {col.key === "amount" && <span style={{ color:"#BCBCBC" }}>—</span>}
+                          {col.key === "tax" && <span style={{ color:"#BCBCBC" }}>—</span>}
+                          {!["check","status","contact","uploaded","amount","tax","actions"].includes(col.key) && (
+                            <span style={{ color:"#BCBCBC" }}>—</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                   {/* Rows */}
                   {rows.map((row, ri) => (
                     <div key={ri} style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background: "#FFFFFF", cursor: "pointer" }}
