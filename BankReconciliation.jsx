@@ -2321,7 +2321,7 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
               <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
-            <div style={{ fontSize: 20, fontWeight: 500, color: "#080908" }}>Uploading statements</div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: "#080908" }}>Uploading documents</div>
             <div style={{ fontSize: 14, color: "#8C8C8B" }}>Please wait while we're uploading your documents.</div>
           </div>
         ) : (<>
@@ -16830,7 +16830,7 @@ function CollectDocumentsPage({ selectedPeriod, bankStatements = {}, onUploadSta
 
 
 // ── Inbox Page ────────────────────────────────────────────────────────────────
-function InboxPage() {
+function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
   const [activeTab, setActiveTab] = useState("Received");
   const [inboxToast, setInboxToast] = useState(null);
   const [inboxToastLeaving, setInboxToastLeaving] = useState(false);
@@ -16897,6 +16897,77 @@ function InboxPage() {
     "Pelham Industries Ltd", "Quinton Advisory Ltd", "Rushmore Logistics Ltd",
   ];
   const DROP_REFS = ["INV","DOC","UPL","REF","BIL"];
+
+  // Shared file processing logic — used by both drag-and-drop and sidebar upload
+  const processFiles = (files) => {
+    if (!files || !files.length) return;
+    const now = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const uploadDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+    const pad = n => String(n).padStart(2, "0");
+    const uploadDateTime = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}, ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const fmtGBP = n => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const newUploading = Array.from(files).map((file, idx) => {
+      const contactIdx = Math.floor(Math.random() * DROP_CONTACTS.length);
+      const refPrefix = DROP_REFS[Math.floor(Math.random() * DROP_REFS.length)];
+      const refNum = Math.floor(1000 + Math.random() * 9000);
+      const issueDay = Math.floor(1 + Math.random() * 26);
+      const issueMonth = Math.random() > 0.4 ? "04" : "05";
+      const issueDate = `${pad(issueDay)}/${issueMonth}/2026`;
+      const netAmount = Math.round((50 + Math.random() * 4950) * 100) / 100;
+      const taxAmount = Math.round(netAmount * 0.2 * 100) / 100;
+      const grossAmount = Math.round((netAmount + taxAmount) * 100) / 100;
+      const status = Math.random() > 0.45 ? "Review" : "Ready";
+      const alwaysFill = status === "Ready";
+      const fillFields = alwaysFill || Math.random() > 0.4;
+      const account = fillFields ? DROP_ACCOUNTS[Math.floor(Math.random() * DROP_ACCOUNTS.length)] : null;
+      const type = fillFields ? DROP_TYPES[Math.floor(Math.random() * DROP_TYPES.length)] : null;
+      return {
+        id: `UPL-${Date.now()}-${idx}`,
+        fileName: file.name,
+        contact: DROP_CONTACTS[contactIdx],
+        ref: `${refPrefix}-${now.getFullYear()}-${refNum}`,
+        issueDate,
+        amount: fmtGBP(grossAmount),
+        tax: fmtGBP(taxAmount),
+        status,
+        account,
+        type,
+        uploadDate,
+        uploadDateTime,
+      };
+    });
+    setUploadingRows(prev => [...newUploading, ...prev]);
+    newUploading.forEach((uRow, idx) => {
+      setTimeout(() => {
+        const inboxRow = {
+          status: uRow.status,
+          contact: uRow.contact,
+          date: uRow.issueDate,
+          account: uRow.account,
+          ref: uRow.ref,
+          type: uRow.type,
+          tax: uRow.tax,
+          amount: uRow.amount,
+          uploadedBy: "accountant",
+          uploadedByName: "Laura Bennett",
+          uploadedDate: uRow.uploadDate,
+          uploadedDateTime: uRow.uploadDateTime,
+          dot: true,
+        };
+        setUploadingRows(prev => prev.filter(r => r.id !== uRow.id));
+        setInboxRows(prev => [inboxRow, ...prev]);
+      }, 5000 + idx * 600);
+    });
+  };
+
+  // Fire processFiles whenever the parent pushes new files from the sidebar
+  useEffect(() => {
+    if (!externalUploadedFiles || !externalUploadedFiles.files) return;
+    setActiveTab("Received");
+    processFiles(externalUploadedFiles.files);
+  }, [externalUploadedFiles]);
+
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -16963,8 +17034,9 @@ function InboxPage() {
         };
         setUploadingRows(prev => prev.filter(r => r.id !== uRow.id));
         setInboxRows(prev => [inboxRow, ...prev]);
-      }, 2000 + idx * 400);
+      }, 5000 + idx * 600);
     });
+
   };
 
   const addFilterBtnRef = useRef(null);
@@ -17227,7 +17299,7 @@ function InboxPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <h1 style={{ fontSize: 36, fontWeight: 500, color: "#2A2A2A", letterSpacing: "-0.5px", margin: 0 }}>Inbox</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <PrimaryButton style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
+            <PrimaryButton onClick={onUploadDocuments} style={{ height: 40, padding: "0 16px", fontSize: 14 }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginRight: 6 }}><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="1.75" strokeLinecap="round"/></svg>
               Upload documents
             </PrimaryButton>
@@ -17787,8 +17859,11 @@ export default function BankReconciliation() {
   }, [reconciling]);
   const [uploadStatementsSidebarOpen, setUploadStatementsSidebarOpen] = useState(false);
   const [uploadSidebarVisible, setUploadSidebarVisible] = useState(false);
+  const [uploadSidebarSource, setUploadSidebarSource] = useState('collect');
+  const [inboxExternalFiles, setInboxExternalFiles] = useState(null);
 
-  const openUploadSidebar = () => { setUploadStatementsSidebarOpen(true); requestAnimationFrame(() => setUploadSidebarVisible(true)); };
+  const openUploadSidebar = (source = 'collect') => { setUploadSidebarSource(source); setUploadStatementsSidebarOpen(true); requestAnimationFrame(() => setUploadSidebarVisible(true)); };
+  const openUploadSidebarFromInbox = () => openUploadSidebar('inbox');
   const closeUploadSidebar = () => { setUploadSidebarVisible(false); setTimeout(() => setUploadStatementsSidebarOpen(false), 320); };
   const [processingFiles, setProcessingFiles] = useState(null); // array of files being processed
   const [externalReconcilingAccounts, setExternalReconcilingAccounts] = useState(new Set());
@@ -18120,7 +18195,7 @@ export default function BankReconciliation() {
         ) : activeNav === "Inbox" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <TopBar period={selectedPeriod} onPeriodChange={setSelectedPeriod} onSyncClick={handleSyncAll} syncing={syncing} syncStatus={syncStatus} />
-            <InboxPage />
+            <InboxPage onUploadDocuments={openUploadSidebarFromInbox} externalUploadedFiles={inboxExternalFiles} />
           </div>
         ) : activeNav === "Collect documents" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -18206,7 +18281,7 @@ export default function BankReconciliation() {
       {uploadStatementsSidebarOpen && (
         <UploadStatementsSidebar
           onClose={closeUploadSidebar}
-          onUploaded={(files) => setProcessingFiles(files)}
+          onUploaded={(files) => { if (uploadSidebarSource === 'inbox') { setInboxExternalFiles({ files, ts: Date.now() }); } else { setProcessingFiles(files); } setUploadSidebarSource('collect'); }}
         />
       )}
 
