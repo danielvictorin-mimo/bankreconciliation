@@ -2465,8 +2465,38 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
 }
 
 // ── Custom select dropdown (reused inside ReviewPublishPanel) ─────────────────
-function CustomSelectDropdown({ value, onChange, options, placeholder, withStar = false, style }) {
+function DescriptionFieldWithStar({ defaultValue, inputStyle, labelStyle, requiredDot, aiReasoning }) {
+  const [starHovered, setStarHovered] = useState(false);
+  const starPath = "M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z";
+  return (
+    <div>
+      <label style={labelStyle}>Description{requiredDot}</label>
+      <div style={{ position: "relative" }}>
+        <input defaultValue={defaultValue} style={{ ...inputStyle, paddingLeft: 34 }} />
+        <div
+          style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", cursor: "pointer", zIndex: 10 }}
+          onMouseEnter={() => setStarHovered(true)}
+          onMouseLeave={() => setStarHovered(false)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+        {starHovered && aiReasoning && (
+          <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: 0, width: 450, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 9999, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#F0FAF0", border: "1px solid #D9EFD9", borderRadius: 8 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#1A5C1A" }}>AI reasoning</span>
+            </div>
+            <div style={{ fontSize: 14, color: "#1F2024", lineHeight: 1.55 }}>{aiReasoning}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomSelectDropdown({ value, onChange, options, placeholder, withStar = false, aiReasoning = null, error = false, style }) {
   const [open, setOpen] = useState(false);
+  const [starHovered, setStarHovered] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -2476,9 +2506,27 @@ function CustomSelectDropdown({ value, onChange, options, placeholder, withStar 
   const starPath = "M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z";
   return (
     <div ref={ref} style={{ position: "relative", ...style }}>
-      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: withStar ? "0 12px 0 32px" : "0 12px", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", position: "relative" }}
-        onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-        {withStar && <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
+      {withStar && starHovered && aiReasoning && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: 0, width: 450, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.13)", zIndex: 9999, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#F0FAF0", border: "1px solid #D9EFD9", borderRadius: 8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#1A5C1A" }}>AI reasoning</span>
+          </div>
+          <div style={{ fontSize: 14, color: "#1F2024", lineHeight: 1.55 }}>{aiReasoning}</div>
+        </div>
+      )}
+      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: withStar ? "0 12px 0 32px" : "0 12px", height: 40, border: error ? "1px solid #DC5C40" : "1px solid #E9E9EB", borderRadius: 8, background: error ? "#FEF2F0" : "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", position: "relative" }}
+        onMouseEnter={e => { if (!error) e.currentTarget.style.background = "#FAFAFA"; }} onMouseLeave={e => { e.currentTarget.style.background = error ? "#FEF2F0" : "#FFFFFF"; }}>
+        {withStar && (
+          <div
+            style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", cursor: "pointer", zIndex: 10 }}
+            onMouseEnter={e => { e.stopPropagation(); setStarHovered(true); }}
+            onMouseLeave={() => setStarHovered(false)}
+            onClick={e => e.stopPropagation()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d={starPath} stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        )}
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value || placeholder || "Select..."}</span>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </div>
@@ -2494,8 +2542,157 @@ function CustomSelectDropdown({ value, onChange, options, placeholder, withStar 
   );
 }
 
+// ── Duplicate Document Viewer ─────────────────────────────────────────────────
+function DuplicateReviewPanel({ onClose, renderInvoice }) {
+  const [visible, setVisible] = useState(false);
+  const [docReady, setDocReady] = useState(false);
+  const [docScale, setDocScale] = useState(1);
+  const docCanvasRef = useRef(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+    const t = setTimeout(() => setDocReady(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(onClose, 350); } };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, []);
+  useEffect(() => {
+    if (!docCanvasRef.current) return;
+    const BASE_W = 620, BASE_H = Math.round(620 * 297 / 210), MARGIN = 32;
+    const obs = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setDocScale(Math.min((width - MARGIN * 2) / BASE_W, (height - MARGIN * 2) / BASE_H));
+    });
+    obs.observe(docCanvasRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const handleClose = () => { setVisible(false); setTimeout(onClose, 350); };
+
+  const lblSt = { fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 6, display: "block" };
+  const disIn = (val) => (
+    <div style={{ width: "100%", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 12px", fontSize: 14, color: "#000000", fontFamily: "'Inter', sans-serif", background: "#F9F9F9", height: 40, display: "flex", alignItems: "center", boxSizing: "border-box" }}>{val}</div>
+  );
+  const SH = ({ label }) => (
+    <button style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F5F5", border: "none", borderRadius: 8, fontFamily: "'Inter', sans-serif" }}>
+      <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{label}</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 12.5L10 7.5L15 12.5" stroke="#080908" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </button>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 450, display: "flex", pointerEvents: visible ? "auto" : "none" }}>
+      {/* Left: document preview */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", transform: visible ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)" }}>
+        <div style={{ height: 44, background: "#404040", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", flexShrink: 0, gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DOC-2026-0214.pdf</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.1)", borderRadius: 6, padding: "2px 8px", height: 28 }}>
+              <span style={{ fontSize: 13, color: "#FFFFFF", minWidth: 32, textAlign: "center" }}>1 / 1</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "flex-end" }}>
+            <button onClick={handleClose} style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <div ref={docCanvasRef} style={{ flex: 1, background: "#ECECEC", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+          {!docReady && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite" }}>
+                <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          )}
+          <div style={{ opacity: docReady ? 1 : 0, transition: "opacity 0.4s ease", transform: `scale(${docScale})`, transformOrigin: "center center", flexShrink: 0 }}>
+            {renderInvoice()}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: disabled review panel */}
+      <div style={{ width: 600, background: "#FFFFFF", display: "flex", flexDirection: "column", position: "relative", transform: visible ? "translateX(0)" : "translateX(100%)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Existing document</div>
+            <div style={{ fontSize: 13, color: "#7C7C7C", marginTop: 5 }}>Published · 14 Feb 2026</div>
+          </div>
+          <button onClick={handleClose} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0, flexShrink: 0 }}>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "16px 20px 32px" }}>
+          {/* Who is it for */}
+          <div><SH label="Who is it for?" />
+            <div style={{ padding: "16px 16px 18px" }}>
+              <label style={lblSt}>Contact</label>{disIn("Harrington & Co Ltd")}
+            </div>
+          </div>
+          {/* Bank match */}
+          <div><SH label="Bank transaction" />
+            <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div><label style={lblSt}>Account</label>{disIn("NatWest Business — 5523")}</div>
+              <div><label style={lblSt}>Amount</label>{disIn("£588.00")}</div>
+              <div><label style={lblSt}>Date</label>{disIn("14 Feb 2026")}</div>
+            </div>
+          </div>
+          {/* Invoice details */}
+          <div><SH label="Invoice details" />
+            <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div><label style={lblSt}>Reference</label>{disIn("DOC-2026-0214")}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div><label style={lblSt}>Issue date</label>{disIn("14 / 02 / 2026")}</div>
+                <div><label style={lblSt}>Due date</label>{disIn("28 / 02 / 2026")}</div>
+              </div>
+              <div><label style={lblSt}>Currency</label>{disIn("GBP")}</div>
+            </div>
+          </div>
+          {/* Line items */}
+          <div><SH label="Line items" />
+            <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div><label style={lblSt}>Description</label>{disIn("General services — February 2026")}</div>
+              <div><label style={lblSt}>Amount</label>{disIn("£588.00")}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div><label style={lblSt}>Account</label>{disIn("General Expenses")}</div>
+                <div><label style={lblSt}>Tracking category</label>{disIn("—")}</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div><label style={lblSt}>Tax rate</label>{disIn("20% (VAT on Expenses)")}</div>
+                <div><label style={lblSt}>Tax amount</label>{disIn("£98.00")}</div>
+              </div>
+            </div>
+          </div>
+          {/* Summary */}
+          <div style={{ margin: "4px 16px 0", border: "1px solid #E9E9EB", borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ borderBottom: "1px solid #E9E9EB", background: "#F9F9F9", padding: "14px 14px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {[["Subtotal", "£588.00"], ["Tax", "£98.00"]].map(([k, v]) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#7C7C7C" }}>
+                  <span>{k}</span><span>{v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: "#F9F9F9", padding: "14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #E9E9EB" }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#080908" }}>Total</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>£686.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Review & Publish Panel ────────────────────────────────────────────────────
-function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish, bankMatch, bankMatchAccount, bankMatchAccountNo }) {
+function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish, bankMatch, bankMatchAccount, bankMatchAccountNo, account, type, isDuplicate, onDelete, onArchive, onKeep }) {
   const [visible, setVisible] = useState(false);
   const [docTab, setDocTab] = useState("Document");
   const [whoOpen, setWhoOpen] = useState(true);
@@ -2514,6 +2711,10 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   const [contactOpen, setContactOpen] = useState(false);
   const [docReady, setDocReady] = useState(false);
   const [docScale, setDocScale] = useState(1);
+  const [taxRateVal, setTaxRateVal] = useState("Reverse Charge Expenses (0%)");
+  const [showDuplicateView, setShowDuplicateView] = useState(false);
+  const [docTypeVal, setDocTypeVal] = useState(type !== undefined ? type : "Invoice");
+  const [accountVal, setAccountVal] = useState(account !== undefined ? account : "Postage, Freight & Courier");
   const contactRef = useRef(null);
   const docCanvasRef = useRef(null);
 
@@ -2523,6 +2724,11 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
     requestAnimationFrame(() => setVisible(true));
     const t = setTimeout(() => setDocReady(true), 1500);
     return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(onClose, 350); } };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
   }, []);
   useEffect(() => {
     if (!docCanvasRef.current) return;
@@ -2560,6 +2766,8 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   const absAmt = Math.abs(parseFloat((amount || "0").replace(/[£$€,\s]/g, "")) || 0);
   const fmtGBP = (n) => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const displayAmt = absAmt > 0 ? fmtGBP(absAmt) : "£0.00";
+  const getTaxPct = (r) => { const m = (r || "").match(/(\d+)%/); return m ? parseFloat(m[1]) / 100 : 0; };
+  const calcTaxAmt = fmtGBP(Math.round(absAmt * getTaxPct(taxRateVal) * 100) / 100);
   // Simulate a slight OCR extraction discrepancy (+5%) for the discrepancy banner
   const extractedAmt = Math.round(absAmt * 1.05 * 100) / 100;
   const diffAmt = Math.round((extractedAmt - absAmt) * 100) / 100;
@@ -2843,7 +3051,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", opacity: visible ? 1 : 0, transition: "opacity 0.25s ease" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", pointerEvents: visible ? "auto" : "none" }}>
       {/* Left: document preview area — slides in from left */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", transform: visible ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)" }}>
         {/* Toolbar */}
@@ -2947,6 +3155,25 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
         </div>
         {/* Scrollable content — tabs scroll with content, only header is fixed */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          {/* Duplicate detected banner */}
+          {isDuplicate && (
+            <div style={{ margin: "16px 36px 0", padding: "14px 16px", background: "#FEF2F0", border: "1px solid #F5D1C9", borderRadius: 10, display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="10" cy="10" r="9" stroke="#DC5C40" strokeWidth="1.5"/>
+                <path d="M10 6v5" stroke="#DC5C40" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="10" cy="14" r="0.75" fill="#DC5C40" stroke="#DC5C40" strokeWidth="0.5"/>
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#1F2024", marginBottom: 3 }}>Duplicate detected</div>
+                <div style={{ fontSize: 14, color: "#000", lineHeight: 1.5 }}>The uploaded document is an identical duplicate of an existing file.</div>
+              </div>
+              <button onClick={() => setShowDuplicateView(true)} style={{ flexShrink: 0, height: 36, padding: "0 16px", border: "1px solid #E2D9D7", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                View
+              </button>
+            </div>
+          )}
           {/* Tabs */}
           <div style={{ padding: "12px 36px 0", flexShrink: 0 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #ECECEC" }}>
@@ -3039,7 +3266,8 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               <div style={{ padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Document type{requiredDot}</label>
-                  <SelectRow value="Invoice" onChange={() => {}} options={["Invoice", "Credit note"]} />
+                  <CustomSelectDropdown value={docTypeVal} onChange={setDocTypeVal} options={["Invoice", "Credit note", "Bank statement", "Invoice Split"]} placeholder="Select type" error={!docTypeVal} />
+                  {!docTypeVal && <span style={{ fontSize: 14, color: "#DC5C40", marginTop: 4, display: "block" }}>This field is required</span>}
                 </div>
                 <div>
                   <label style={labelStyle}>Reference{requiredDot}</label>
@@ -3068,91 +3296,74 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
             <SectionHeader label="Line items" open={lineItemsOpen} onToggle={() => setLineItemsOpen(v => !v)} />
             {lineItemsOpen && (
               <div style={{ padding: "14px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
-                {/* Discrepancy banner */}
-                <div style={{ border: "1px solid #E8C77A", borderRadius: 10, overflow: "hidden" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "#FFFBF0" }}>
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#D5A750" strokeWidth="1.5"/><path d="M10 6v5M10 13.5v.5" stroke="#D5A750" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#A07A30" }}>Discrepancy detected</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid #E8C77A" }}>
-                    <div style={{ padding: "12px 14px", borderRight: "1px solid #E8C77A" }}>
-                      <div style={{ fontSize: 11, color: "#7C7C7C", marginBottom: 6 }}>Total amount</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: "#080908" }}>{displayAmt}</div>
+                {/* Line items container */}
+                <div style={{ border: "1px solid #E9E9EB", borderRadius: 10 }}>
+                  {/* Column headers */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", borderBottom: "1px solid #E9E9EB", background: "#FBFBFB", height: 40, borderRadius: "10px 10px 0 0" }}>
+                    <div style={{ display: "flex", alignItems: "center", paddingLeft: 14 }}>
+                      <span style={{ fontSize: 12, color: "#7C7C7C" }}>Description</span>
                     </div>
-                    <div style={{ padding: "12px 14px", background: "#FDF8EE" }}>
-                      <div style={{ fontSize: 11, color: "#7C7C7C", marginBottom: 6 }}>Extracted amount</div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: "#080908" }}>{fmtGBP(extractedAmt)}</div>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: "#D5A750", marginTop: 2 }}>+{fmtGBP(diffAmt)}</div>
+                    <div style={{ display: "flex", alignItems: "center", paddingLeft: 14, paddingRight: 14, borderLeft: "1px solid #E9E9EB" }}>
+                      <span style={{ fontSize: 12, color: "#7C7C7C" }}>Actions</span>
                     </div>
                   </div>
-                </div>
-                {/* Merge to one */}
-                <button style={{ width: "100%", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v14M6 7l4-4 4 4M6 13l4 4 4-4" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Merge to one
-                </button>
-                {/* Column headers */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", borderBottom: "1px solid #E9E9EB", paddingBottom: 8 }}>
-                  <span style={{ fontSize: 12, color: "#7C7C7C" }}>Description</span>
-                  <span style={{ fontSize: 12, color: "#7C7C7C" }}>Actions</span>
-                </div>
-                {/* Line item form */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label style={labelStyle}>Description{requiredDot}</label>
-                    <div style={{ position: "relative" }}>
-                      <input defaultValue="International freight and logistics services" style={{ ...inputStyle, paddingLeft: 34 }} />
-                      <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {/* Line item form */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 14px 0" }}>
+                    <DescriptionFieldWithStar defaultValue="International freight and logistics services" inputStyle={inputStyle} labelStyle={labelStyle} requiredDot={requiredDot} aiReasoning="The extracted text from the document reads 'International freight and logistics services'. This has been auto-filled as the line item description." />
+                    <div>
+                      <label style={labelStyle}>Amount{requiredDot}</label>
+                      <input defaultValue={amount || "£7,274.50"} style={inputStyle} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div>
+                        <label style={labelStyle}>Account{requiredDot}</label>
+                        <CustomSelectDropdown value={accountVal} onChange={setAccountVal} options={["Postage, Freight & Courier", "Office Expenses", "Consulting", "Travel & Accommodation", "General Expenses", "Repairs & Maintenance", "Subscriptions", "Professional Fees", "Legal Fees", "Rent", "Purchases"]} withStar={!!accountVal} aiReasoning={({
+                          "Postage, Freight & Courier": "The invoice description references international freight and courier services. The most fitting account code is 'Postage, Freight & Courier' (420).",
+                          "Office Expenses": "The document contains charges related to office supplies and general administrative costs. 'Office Expenses' (460) is the appropriate account code.",
+                          "Consulting": "The invoice describes professional advisory or consulting services rendered. 'Consulting' (480) is the correct account classification.",
+                          "Travel & Accommodation": "The document includes travel-related charges such as flights, hotels, or subsistence. 'Travel & Accommodation' (493) best fits this expense.",
+                          "General Expenses": "The charges on this document are broad operational expenses that don't fit a more specific category. 'General Expenses' (499) is the most appropriate account.",
+                          "Repairs & Maintenance": "The invoice covers maintenance work, repairs, or servicing of equipment or premises. 'Repairs & Maintenance' (441) is the correct account code.",
+                          "Subscriptions": "The document relates to a recurring subscription or software licence fee. 'Subscriptions' (461) is the appropriate account.",
+                          "Professional Fees": "This invoice is for professional services such as legal, financial, or specialist advisory work. 'Professional Fees' (475) is the correct classification.",
+                          "Legal Fees": "The document covers legal services, counsel, or solicitor fees. 'Legal Fees' (476) is the most appropriate account code.",
+                          "Rent": "The invoice or statement relates to property rent or lease payments. 'Rent' (469) is the correct account classification.",
+                          "Purchases": "This document covers the purchase of goods for resale or direct business use. 'Purchases' (300) is the appropriate account code.",
+                        })[accountVal] || null} error={!accountVal} />
+                        {!accountVal && <span style={{ fontSize: 14, color: "#DC5C40", marginTop: 4, display: "block" }}>This field is required</span>}
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Tracking category</label>
+                        <CustomSelectDropdown value="" onChange={() => {}} options={["Operations", "Marketing", "Finance", "Engineering"]} placeholder="Select category" />
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <label style={labelStyle}>Tax rate{requiredDot}</label>
+                        <CustomSelectDropdown value={taxRateVal} onChange={setTaxRateVal} options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]} withStar={true} aiReasoning="The supplier is based internationally, making this transaction subject to reverse charge VAT. 'Reverse Charge Expenses (0%)' is the correct tax treatment." />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <label style={{ ...labelStyle, color: "#000" }}>Tax amount{requiredDot}</label>
+                        <input value={calcTaxAmt} readOnly disabled style={{ ...inputStyle, width: "100%", boxSizing: "border-box", background: "#F9F9F9", color: "#000000", cursor: "not-allowed" }} />
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Amount{requiredDot}</label>
-                    <input defaultValue={amount || "£7,274.50"} style={inputStyle} />
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={labelStyle}>Account{requiredDot}</label>
-                      <CustomSelectDropdown value="Postage, Freight & Cou..." onChange={() => {}} options={["Postage, Freight & Courier", "Office Expenses", "Consulting", "Travel & Accommodation"]} withStar={true} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Tracking category</label>
-                      <CustomSelectDropdown value="" onChange={() => {}} options={["Operations", "Marketing", "Finance", "Engineering"]} placeholder="Select category" />
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={labelStyle}>Tax rate{requiredDot}</label>
-                      <CustomSelectDropdown value="Reverse Charge Expe..." onChange={() => {}} options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]} withStar={true} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Tax amount{requiredDot}</label>
-                      <input defaultValue="£0.00" style={inputStyle} />
-                    </div>
-                  </div>
-                </div>
-                {/* Add / Restore */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <button style={{ height: 38, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  {/* Add line item footer row */}
+                  <button style={{ width: "100%", height: 42, border: "none", borderTop: "1px solid #E9E9EB", marginTop: 14, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#545453" strokeWidth="1.75" strokeLinecap="round"/></svg>
                     Add line item
                   </button>
-                  <button style={{ height: 38, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Restore line items
-                  </button>
-                </div>
-                {/* Summary */}
-                <div style={{ borderTop: "1px solid #E9E9EB", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[["Subtotal", amount || "£7,274.50"], ["Tax", "£0.00"]].map(([k, v]) => (
-                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#7C7C7C" }}>
-                      <span>{k}</span><span>{v}</span>
+                  {/* Summary — inside the bordered container */}
+                  <div style={{ borderTop: "1px solid #E9E9EB", background: "#F9F9F9", padding: "14px 14px 16px", display: "flex", flexDirection: "column", gap: 8, borderRadius: "0 0 10px 10px" }}>
+                    {[["Subtotal", amount || "£7,274.50"], ["Tax", calcTaxAmt]].map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#7C7C7C" }}>
+                        <span>{k}</span><span>{v}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #E9E9EB", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#080908" }}>Total</span>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>{amount || "£7,274.50"}</span>
                     </div>
-                  ))}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#080908" }}>Total</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908", border: "1px solid #E9E9EB", borderRadius: 6, padding: "4px 10px" }}>{amount || "£7,274.50"}</span>
                   </div>
                 </div>
               </div>
@@ -3179,8 +3390,8 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               <div style={{ padding: "14px 16px 16px" }}>
                 <div style={{ border: "1px solid #E9E9EB", borderRadius: 10, padding: "14px 14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
                   {/* AI insight box */}
-                  <div style={{ background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div style={{ background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "center" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span style={{ fontSize: 14, color: "#1A5C1A", lineHeight: 1.5 }}>The invoice explicitly states 'Annual' and '12 Months', suggesting this may be a prepayment.</span>
                   </div>
                   {/* Toggle row */}
@@ -3201,30 +3412,48 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
 
         {/* Footer */}
         <div style={{ padding: "14px 20px", borderTop: "1px solid #E9E9EB", display: "flex", gap: 10, flexShrink: 0, background: "#FFFFFF" }}>
-          <button onClick={() => { setVisible(false); setTimeout(onClose, 280); }} style={{ flex: 1, height: 42, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-            Save changes
-          </button>
-          <button
-            onClick={() => {
-              if (publishing) return;
-              setPublishing(true);
-              setTimeout(() => { setPublishing(false); setVisible(false); setTimeout(() => { onPublish?.(); onClose(); }, 280); }, 2000);
-            }}
-            style={{ flex: 2, height: 42, border: "none", borderRadius: 8, background: publishing ? "#058F05" : "#05A105", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif", transition: "background 0.2s ease" }}
-            onMouseEnter={e => { if (!publishing) e.currentTarget.style.background = "#058F05"; }}
-            onMouseLeave={e => { if (!publishing) e.currentTarget.style.background = "#05A105"; }}
-          >
-            {publishing ? (
-              <>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
-                  <path d="M10 2A8 8 0 1 1 2 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Publishing...
-              </>
-            ) : "Publish to Xero"}
-          </button>
+          {isDuplicate ? (
+            <>
+              <button onClick={() => { setVisible(false); setTimeout(() => { onKeep?.(); onClose(); }, 280); }} style={{ height: 42, padding: "0 20px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Keep
+              </button>
+              <button onClick={() => { setVisible(false); setTimeout(() => { onArchive?.(); }, 280); }} style={{ height: 42, padding: "0 20px", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Archive
+              </button>
+              <button onClick={() => { setVisible(false); setTimeout(() => { onDelete?.(); }, 280); }} style={{ flex: 1, height: 42, border: "1px solid #F5D1C9", borderRadius: 8, background: "#FEF2F0", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#DC5C40", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#FDEAE7"} onMouseLeave={e => e.currentTarget.style.background = "#FEF2F0"}>
+                Delete this document
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => { setVisible(false); setTimeout(onClose, 280); }} style={{ flex: 1, height: 42, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Save changes
+              </button>
+              <button
+                disabled={!accountVal || !docTypeVal}
+                onClick={() => {
+                  if (publishing || !accountVal || !docTypeVal) return;
+                  setPublishing(true);
+                  setTimeout(() => { setPublishing(false); setVisible(false); setTimeout(() => { onPublish?.(); onClose(); }, 280); }, 2000);
+                }}
+                style={{ flex: 2, height: 42, border: "none", borderRadius: 8, background: (!accountVal || !docTypeVal) ? "#C8E6C8" : publishing ? "#058F05" : "#05A105", cursor: (!accountVal || !docTypeVal) ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif", transition: "background 0.2s ease" }}
+                onMouseEnter={e => { if (!publishing && accountVal && docTypeVal) e.currentTarget.style.background = "#058F05"; }}
+                onMouseLeave={e => { if (!publishing) e.currentTarget.style.background = (!accountVal || !docTypeVal) ? "#C8E6C8" : "#05A105"; }}
+              >
+                {publishing ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                      <path d="M10 2A8 8 0 1 1 2 10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Publishing...
+                  </>
+                ) : "Publish to Xero"}
+              </button>
+            </>
+          )}
         </div>
       </div>
+      {showDuplicateView && <DuplicateReviewPanel onClose={() => setShowDuplicateView(false)} renderInvoice={renderInvoice} />}
     </div>
   );
 }
@@ -17029,7 +17258,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
   };
 
   const [inboxRows, setInboxRows] = useState([
-    { status: "Review", contact: "Harrington & Co Ltd",                date: "29/04/2026", account: null,                              ref: "DOC-2026-0511",      type: null,            tax: "£0.00",        amount: "£0.00",        uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
+    { status: "Review", contact: "Harrington & Co Ltd",                date: "29/04/2026", account: "General Expenses",                ref: "DOC-2026-0511",      type: "Invoice",       tax: "£770.00",      amount: "£3,850.00",    uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
     { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Postage, Freight & Courier",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          bankMatchAccount: "Lloyds Bank - Business",        bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 14:32:47", dot: true },
     { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 09:05:22", dot: true },
     { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "23 May, 2026", uploadedDateTime: "23/05/2026, 11:48:59", dot: true },
@@ -17055,7 +17284,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
     { status: "Review", contact: "Whitmore Creative Agency",           date: "07/04/2026", account: null,                              ref: "WCA-JAN26-055",      type: "Credit note",   tax: "£80.00",       amount: "£480.00",      uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "3 May, 2026", uploadedDateTime: "03/05/2026, 08:40:15" },
     { status: "Review", contact: "Queensbury Engineering Ltd",         date: "04/04/2026", account: "Repairs & Maintenance",           ref: "QE-2026-0122",       type: "Invoice",       tax: "£730.00",      amount: "£4,380.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "2 May, 2026", uploadedDateTime: "02/05/2026, 16:33:41" },
     { status: "Ready",  contact: "Hartley & Sons Supplies Ltd",        date: "02/04/2026", account: "Purchases",                       ref: "HSS-26-0119",        type: "Invoice",       tax: "£88.00",       amount: "£528.00",      uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "1 May, 2026", uploadedDateTime: "01/05/2026, 12:48:20" },
-    { status: "Review", contact: "Meridian Freight Ltd",               date: "30/03/2026", account: "Postage, Freight & Courier",      ref: "MF-2026-0116",       type: "Bank statement",tax: "£0.00",        amount: "£2,105.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 09:14:57" },
+    { status: "Ready", contact: "Meridian Freight Ltd",               date: "30/03/2026", account: "Postage, Freight & Courier",      ref: "MF-2026-0116",       type: "Bank statement",tax: "£421.00",      amount: "£2,105.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 09:14:57", bankMatch: true, bankMatchAccount: "Lloyds Bank – Business", bankMatchAccountNo: "30-94-61 · 1048 9418" },
     { status: "Review", contact: "NorthStar Media Group",              date: "27/03/2026", account: null,                              ref: "NSM-2026-013",       type: null,            tax: "US$0.00",      amount: "US$890.00",    uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 15:22:33" },
     { status: "Ready",  contact: "Hillcrest Imports Ltd",              date: "25/03/2026", account: "Purchases",                       ref: "HCI-0110-2026",      type: "Invoice",       tax: "£215.00",      amount: "£1,290.00",    uploadedBy: "accountant",  uploadedByName: "Sara Thompson",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 10:05:44" },
     { status: "Review", contact: "Vantage Digital Solutions",          date: "18/03/2026", account: "Subscriptions",                   ref: "VDS-2026-0108",      type: "Invoice",       tax: "US$120.00",    amount: "US$720.00",    uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "23 May, 2026",  uploadedDateTime: "23/05/2026, 13:37:50" },
@@ -17143,7 +17372,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
     } },
     { key: "contact",  label: "Contact",    width: "1fr",   render: (v, row) => (
       <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden", minWidth: 0 }}>
-        {row.dot && <Tooltip text="New document since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}
+        {row.dot && activeTab !== "Archived" && <Tooltip text="New document since your last login"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, cursor: "default" }}><rect x="2" y="2" width="10" height="10" rx="5" fill="#05A105" stroke="#D0EFC8" strokeWidth="4"/></svg></Tooltip>}
         <Tooltip text={v || ""} wrapperStyle={{ overflow: "hidden", minWidth: 0, flex: 1 }}>
           <span style={{ fontSize: 14, color: v ? "#000" : "#BCBCBC", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", width: "100%" }}>{v || "-"}</span>
         </Tooltip>
@@ -17631,7 +17860,38 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
         bankMatch={inboxPreviewRow.bankMatch}
         bankMatchAccount={inboxPreviewRow.bankMatchAccount}
         bankMatchAccountNo={inboxPreviewRow.bankMatchAccountNo}
+        account={inboxPreviewRow.account}
+        type={inboxPreviewRow.type}
+        isDuplicate={!!inboxPreviewRow.dot}
         onClose={closeInboxPreview}
+        onDelete={() => {
+          const row = inboxPreviewRow;
+          if (row) {
+            setInboxRows(prev => prev.filter(r => r.ref !== row.ref));
+            showInboxToast("Document deleted");
+          }
+          closeInboxPreview();
+        }}
+        onArchive={() => {
+          const row = inboxPreviewRow;
+          if (row) {
+            const now = new Date();
+            const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const archivedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+            setArchivedRows(prev => [{ ...row, status: "Archived", uploadedDate: archivedDate }, ...prev]);
+            setInboxRows(prev => prev.filter(r => r.ref !== row.ref));
+            showInboxToast("Document archived");
+          }
+          closeInboxPreview();
+        }}
+        onKeep={() => {
+          const row = inboxPreviewRow;
+          if (row) {
+            setInboxRows(prev => prev.map(r => r.ref === row.ref ? { ...r, dot: false } : r));
+            showInboxToast("Duplicate status removed");
+          }
+          closeInboxPreview();
+        }}
         onPublish={() => {
           const row = inboxPreviewRow;
           if (row) {
