@@ -6903,18 +6903,18 @@ function MainMenu({
   const userCollapsedRef = useRef(false); // true only when user manually collapsed
 
   // Auto-collapse below 1280px; auto-expand above 1280px unless user manually collapsed
-  useEffect(() => {
-    const check = () => {
-      if (window.innerWidth < 1280) {
-        setCollapsed(true); // auto-collapse — never touch userCollapsedRef
-      } else {
-        if (!userCollapsedRef.current) setCollapsed(false); // auto-expand only if not manually collapsed
-      }
-    };
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  // useEffect(() => {
+  //   const check = () => {
+  //     if (window.innerWidth < 1280) {
+  //       setCollapsed(true); // auto-collapse — never touch userCollapsedRef
+  //     } else {
+  //       if (!userCollapsedRef.current) setCollapsed(false); // auto-expand only if not manually collapsed
+  //     }
+  //   };
+  //   check();
+  //   window.addEventListener("resize", check);
+  //   return () => window.removeEventListener("resize", check);
+  // }, []);
 
   // ⌘+B to toggle collapse/expand
   useEffect(() => {
