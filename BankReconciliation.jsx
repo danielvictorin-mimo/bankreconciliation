@@ -1445,11 +1445,6 @@ function UploadCard({ onFileSelected, onFilesSelected, onOpenAllDocs, title = "A
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/></svg>
             Upload document
           </button>
-          <button onClick={() => onOpenAllDocs?.()}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", background: "#FFFFFF", border: "1px solid #DBDBDB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", whiteSpace: "nowrap" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#F5F5F5"; e.currentTarget.style.borderColor = "#CFCFD1"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#DBDBDB"; }}
-          >All documents</button>
         </div>
       </div>
 
@@ -2418,13 +2413,6 @@ function UploadStatementsSidebar({ onClose, onUploaded }) {
                 <path d="M8 2v12M2 8h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               Upload document
-            </button>
-            <button
-              onClick={() => setAllDocsOpen(true)}
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 20px", background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
-              onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
-              All documents
             </button>
           </div>
           {droppedFiles.length > 0 && (
@@ -17482,7 +17470,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
               icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13.9032 10.9219H7.94488M9.93099 14.8941H7.94488M15.8893 6.94965H7.94488M19.8615 10.4253V6.75104C19.8615 5.08255 19.8615 4.24831 19.5368 3.61103C19.2512 3.05046 18.7955 2.59471 18.2349 2.30908C17.5976 1.98438 16.7634 1.98438 15.0949 1.98438H8.73932C7.07083 1.98438 6.23659 1.98438 5.59931 2.30908C5.03874 2.59471 4.58299 3.05046 4.29737 3.61103C3.97266 4.24831 3.97266 5.08255 3.97266 6.75104V17.0788C3.97266 18.7473 3.97266 19.5816 4.29737 20.2188C4.58299 20.7794 5.03874 21.2352 5.59931 21.5208C6.23659 21.8455 7.07083 21.8455 8.73932 21.8455H11.4206M21.8477 21.8455L20.3581 20.3559M21.3511 17.8733C21.3511 19.7928 19.795 21.349 17.8754 21.349C15.9559 21.349 14.3997 19.7928 14.3997 17.8733C14.3997 15.9537 15.9559 14.3976 17.8754 14.3976C19.795 14.3976 21.3511 15.9537 21.3511 17.8733Z" stroke="#D5A750" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
             },
             {
-              label: "Ready to be published",
+              label: "Ready for publish",
               value: `${readyCount} ${readyCount === 1 ? "document" : "documents"}`,
               iconBg: "#F4F1FD",
               icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.8615 12.4115V6.75104C19.8615 5.08255 19.8615 4.24831 19.5368 3.61103C19.2512 3.05046 18.7955 2.59471 18.2349 2.30908C17.5976 1.98438 16.7634 1.98438 15.0949 1.98438H8.73932C7.07083 1.98438 6.23659 1.98438 5.59931 2.30908C5.03874 2.59471 4.58299 3.05046 4.29737 3.61103C3.97266 4.24831 3.97266 5.08255 3.97266 6.75104V17.0788C3.97266 18.7473 3.97266 19.5816 4.29737 20.2188C4.58299 20.7794 5.03874 21.2352 5.59931 21.5208C6.23659 21.8455 7.07083 21.8455 8.73932 21.8455H11.9171M13.9032 10.9219H7.94488M9.93099 14.8941H7.94488M15.8893 6.94965H7.94488M14.3997 18.8663L16.3859 20.8524L20.8546 16.3837" stroke="#6B4EE6" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>,
