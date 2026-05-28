@@ -11049,7 +11049,7 @@ function HomePage({ reconciledAccounts = new Set(), reconciledStatuses = {}, rec
               <p style={{ fontSize: 15, color: "#8C8C8B", margin: 0, lineHeight: "24px" }}>The more you share about your client, the more relevant its suggestions and analysis will be.</p>
             </div>
             {/* Button */}
-            <SecondaryButton style={{ alignSelf: "flex-start" }}>Manage client context</SecondaryButton>
+            <SecondaryButton style={{ alignSelf: "flex-start" }} onClick={() => { window.location.href = "https://ionerozhin.github.io/mimo-prototype/#/settings"; }}>Manage client context</SecondaryButton>
           </div>
 
 
