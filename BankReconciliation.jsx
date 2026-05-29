@@ -4373,7 +4373,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
       {/* Matched box — shown at top for clean accounts */}
       {effectiveClean && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 24px", textAlign: "center", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", marginBottom: 28 }}>
-          <div style={{ width: 48, height: 80, borderRadius: "50%", background: "#EAF2E2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 48, height: 80, borderRadius: "50%", background: "#F1F8F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <path d="M4.5 11.5L8.5 15.5L17.5 7" stroke="#05A105" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -4518,7 +4518,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
                           title={`${CAT_LABELS[entry.cat] || entry.cat}: ${entry.contact}`}
                           description={entry.description}
                           statusLabel={isResolved ? "Resolved" : "Unresolved"}
-                          statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                          statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
                           collapsed={isResolved || isIgnored}
                           isIgnored={isIgnored}
                           tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
@@ -4558,7 +4558,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
               statusStyle={isResolved
-                ? { background: "#EAF2E2", border: "none", color: "#05A105" }
+                ? { background: "#F1F8F0", border: "none", color: "#05A105" }
                 : { background: "#FDF8EE", border: "none", color: "#D5A750" }
               }
               collapsed={isResolved || isIgnored}
@@ -4594,7 +4594,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               title={`Anomaly: ${entry.contact}`}
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
-              statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+              statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
               collapsed={isResolved || isIgnored}
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
@@ -4622,7 +4622,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               title={`Duplicate: ${entry.contact}`}
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
-              statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+              statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
               collapsed={isResolved || isIgnored}
               isIgnored={isIgnored}
               tableRows={[
@@ -4655,7 +4655,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               title={`Date difference: ${entry.contact}`}
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
-              statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+              statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
               collapsed={isResolved || isIgnored}
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
@@ -4685,7 +4685,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               title={`Omitted: ${entry.contact}`}
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
-              statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+              statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
               collapsed={isResolved || isIgnored}
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
@@ -4715,7 +4715,7 @@ function ResultsPanel({ accountName, onOpenSpendMoney, onOpenBatchDraft, resolve
               title={`General: ${entry.contact}`}
               description={entry.description}
               statusLabel={isResolved ? "Resolved" : "Unresolved"}
-              statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+              statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
               collapsed={isResolved || isIgnored}
               isIgnored={isIgnored}
               tableRow={{ state: entry.state, contact: entry.contact, date: entry.date, amount: entry.amount, email: entry.email }}
@@ -5761,7 +5761,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -5827,7 +5827,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {changeFlow && (
             <>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
-                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                   No, change the reconciliation
                 </div>
               </div>
@@ -5851,7 +5851,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -5986,7 +5986,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {/* User bubble — card selection */}
           {isNoFeedAccount && cardChosen && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
-              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+              <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                 {cardChosen.label}
               </div>
             </div>
@@ -6025,7 +6025,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           {userMessages.map((msg, i) => (
             <div key={i}>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                   {msg}
                 </div>
               </div>
@@ -6140,7 +6140,7 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
             <>
               {/* User bubble */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                   New statement
                 </div>
               </div>
@@ -8319,7 +8319,7 @@ function PayrollResultsPanel({ resolvedCards = new Set(), ignoredCards = new Set
               statusStyle={isIgnored
                 ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" }
                 : isResolved
-                  ? { background: "#EAF2E2", border: "none", color: "#05A105" }
+                  ? { background: "#F1F8F0", border: "none", color: "#05A105" }
                   : { background: "#FDF8EE", border: "none", color: "#D5A750" }
               }
               collapsed={isClosed}
@@ -8417,7 +8417,7 @@ function AccountResultsPanel({ config, resolvedCards = new Set(), ignoredCards =
               statusStyle={isIgnored
                 ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" }
                 : isResolved
-                  ? { background: "#EAF2E2", border: "none", color: "#05A105" }
+                  ? { background: "#F1F8F0", border: "none", color: "#05A105" }
                   : { background: "#FDF8EE", border: "none", color: "#D5A750" }
               }
               collapsed={isClosed}
@@ -8831,7 +8831,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 height: 36, padding: "0 14px", borderRadius: 8,
-                background: "#EAF2E2", fontSize: 14, fontWeight: 500, color: "#05A105",
+                background: "#F1F8F0", fontSize: 14, fontWeight: 500, color: "#05A105",
               }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M3 8.5L6.5 12L13 4" stroke="#05A105" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -8966,7 +8966,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               {/* User reply bubble for ready choice */}
               {readyChoice && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                  <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                     {readyChoice}
                   </div>
                 </div>
@@ -9029,7 +9029,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   {addMoreWaitingUpload && (
                     <>
                       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                        <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                        <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                           Add another document
                         </div>
                       </div>
@@ -9042,7 +9042,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               )}
               {readyChoice === "Add another document" && startAfterMore && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                  <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                     Start reconciliation
                   </div>
                 </div>
@@ -9137,7 +9137,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -9161,7 +9161,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -9198,7 +9198,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               return (
                 <>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                       View reconciliation results
                     </div>
                   </div>
@@ -9224,7 +9224,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               return (
                 <>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                       Restart reconciliation
                     </div>
                   </div>
@@ -9300,7 +9300,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           {/* User reply for start choice (picked BS account) */}
           {!isDirectFlow && pickedBSAccount && pickedAccountAction !== "View reconciliation results" && (pickedAccountAction === "Restart reconciliation" || !(bsReconciledData && bsReconciledData[pickedBSAccount.code] && (bsReconciledData[pickedBSAccount.code].status === "reconciled" || bsReconciledData[pickedBSAccount.code].status === "reviewing"))) && readyChoice && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+              <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                 {readyChoice}
               </div>
             </div>
@@ -9363,7 +9363,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               {addMoreWaitingUpload && (
                 <>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                       Add another document
                     </div>
                   </div>
@@ -9376,7 +9376,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
           {!isDirectFlow && pickedBSAccount && readyChoice === "Add another document" && startAfterMore && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+              <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                 Start reconciliation
               </div>
             </div>
@@ -9478,7 +9478,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -9545,7 +9545,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
               <div style={{
                 maxWidth: 400,
-                background: "#EAF2E2",
+                background: "#F1F8F0",
                 borderRadius: "12px 12px 2px 12px",
                 padding: "10px 14px",
                 fontSize: 14,
@@ -9614,7 +9614,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               {addMoreWaitingUpload && (
                 <>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                    <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                    <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                       Add another payroll report
                     </div>
                   </div>
@@ -9627,7 +9627,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
           )}
           {!isDirectFlow && !pickedBSAccount && readyChoice === "Add another payroll report" && startAfterMore && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-              <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+              <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                 Start reconciliation
               </div>
             </div>
@@ -9720,7 +9720,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
             <>
               {/* User bubble: Restart reconciliation */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                   Restart reconciliation
                 </div>
               </div>
@@ -9733,7 +9733,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               {/* User bubble for restart choice */}
               {restartChoice && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                  <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                  <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                     {restartChoice}
                   </div>
                 </div>
@@ -9875,7 +9875,7 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
                   {/* User bubble for start choice */}
                   {(restartReadyChoice === "Start reconciliation" || restartStartAfterMore) && (
                     <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-                      <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                      <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                         Start reconciliation
                       </div>
                     </div>
@@ -12010,7 +12010,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                   >
                     <span>{p}</span>
                     {isCompleted && (
-                      <span style={{ fontSize: 12, fontWeight: 500, color: "#05A105", background: "#EAF2E2", padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "#05A105", background: "#F1F8F0", padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0 }}>
                         Completed
                       </span>
                     )}
@@ -12182,7 +12182,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       )}
                       {vatAnswers[i] && !showResults && (
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, animation: "slideUpFade 0.4s cubic-bezier(0.16,1,0.3,1) both" }}>
-                          <div style={{ maxWidth: 400, background: "#EAF2E2", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
+                          <div style={{ maxWidth: 400, background: "#F1F8F0", borderRadius: "12px 12px 2px 12px", padding: "10px 14px", fontSize: 14, color: "#080908", lineHeight: "22px" }}>
                             {vatAnswers[i] === "yes" ? "Yes" : "No"}
                           </div>
                         </div>
@@ -12499,7 +12499,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                                 verticalTable={true}
                                 hideMore={true}
                                 statusLabel={isResolved ? "Resolved" : isIgnored ? "Ignored" : "Unresolved"}
-                                statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                                statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
                                 collapsed={isResolved || isIgnored}
                                 isIgnored={isIgnored}
                                 tableRow={card.tableRow}
@@ -14143,7 +14143,7 @@ function AccrualFlow({ onClose, selectedPeriod = "April 2026" }) {
                           title={card.title}
                           description={card.description}
                           statusLabel={isResolved ? "Posted" : isIgnored ? "Skipped" : "Pending"}
-                          statusStyle={isResolved ? { background: "#EAF2E2", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
+                          statusStyle={isResolved ? { background: "#F1F8F0", border: "none", color: "#05A105" } : isIgnored ? { background: "#F5F5F5", border: "none", color: "#8C8C8B" } : { background: "#FDF8EE", border: "none", color: "#D5A750" }}
                           collapsed={isResolved || isIgnored}
                           isIgnored={isIgnored}
                           verticalTable={true}
