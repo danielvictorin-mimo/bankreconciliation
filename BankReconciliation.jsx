@@ -868,11 +868,6 @@ function AccountTable({ title, rows, footerLabel, onRunReconciliation, onViewRes
                       <p style={{ fontSize: 14, color: "#080908", lineHeight: "22px", margin: "0 0 0 32px" }}>{c.text}</p>
                     </div>
                   ))}
-            <button onClick={() => { setSelectedBankAccounts(new Set()); setBankFilterCount(0); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif", opacity: bankFilterCount > 0 ? 1 : 0, pointerEvents: bankFilterCount > 0 ? "auto" : "none" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="#080908" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                Reset
-              </button>
 
                   <div style={{ height: 1, background: "#E9E9EB" }} />
                 </div>
@@ -5622,23 +5617,21 @@ function ReconciliationFlow({ accountName, onClose, showResults = false, allReso
           <>
             <div onClick={() => setMarkCompleteDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.15)", zIndex: 200 }} />
             <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 600, background: "#FFFFFF", zIndex: 201, display: "flex", flexDirection: "column", animation: "slideInFromRight 0.25s ease both" }}>
-              <div style={{ height: 48, padding: "0 16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F5F5F5" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
-                <button onClick={() => setMarkCompleteDrawerOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <div style={{ height: 112, padding: "0 24px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #ECECEC", boxSizing: "border-box" }}>
+                <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Review suggestions before reconciling</h2>
+                <button onClick={() => setMarkCompleteDrawerOpen(false)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
               </div>
               <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
-                <p style={{ fontSize: 14, color: "#545453", lineHeight: "22px", margin: "0 0 24px" }}>
-                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>. You can go back and review them, or mark all suggestions as resolved with a comment explaining why.
+                <p style={{ fontSize: 14, color: "#000", lineHeight: "22px", margin: "0 0 24px" }}>
+                  This account has <strong style={{ color: "#000" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>. You can go back and review them, or mark all suggestions as resolved with a comment explaining why.
                 </p>
-                <label style={{ display: "block", fontSize: 12, color: "#8C8C8B", marginBottom: 4 }}>Comment</label>
+                <label style={{ display: "block", fontSize: 14, color: "#000", marginBottom: 4 }}>Comment</label>
                 <textarea
                   value={markCompleteComment}
                   onChange={e => setMarkCompleteComment(e.target.value)}
-                  placeholder="Explain why this account is being marked as complete with unreviewed suggestions…"
+                  placeholder="Explain why this account is being marked as complete without taking action on all suggestions."
                   style={{ width: "100%", minHeight: 120, padding: "8px 10px", border: "1px solid #E9E9EB", borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", color: "#080908", lineHeight: "22px", resize: "vertical", outline: "none", boxSizing: "border-box", background: "#FFFFFF" }}
                   onFocus={e => e.currentTarget.style.borderColor = "#CFCFD1"}
                   onBlur={e => e.currentTarget.style.borderColor = "#E9E9EB"}
@@ -10481,39 +10474,26 @@ function BSReconciliationFlow({ onClose, onMarkReconciled, onSwitchAccount, dire
               animation: "drawerSlideIn 0.25s ease both",
             }}>
               {/* Drawer header */}
-              <div style={{
-                height: 48, padding: "0 16px", flexShrink: 0,
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                borderBottom: "1px solid #F5F5F5",
-              }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#080908", margin: 0 }}>Review suggestions before reconciling</h3>
-                <button onClick={() => setDrawerOpen(false)} style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 28, height: 28, borderRadius: 6, border: "none",
-                  background: "transparent", cursor: "pointer",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path d="M12 4L4 12M4 4L12 12" stroke="#8C8C8B" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              <div style={{ height: 112, padding: "0 24px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #ECECEC", boxSizing: "border-box" }}>
+                <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: 0, letterSpacing: "-0.3px" }}>Review suggestions before reconciling</h2>
+                <button onClick={() => setDrawerOpen(false)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
               </div>
 
               {/* Drawer body */}
               <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
-                <p style={{ fontSize: 14, color: "#545453", lineHeight: "22px", margin: "0 0 24px" }}>
-                  This account has <strong style={{ color: "#080908" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>
-                  {hasVariance && <> and a balance discrepancy of <strong style={{ color: "#080908" }}>{variance}</strong></>}
+                <p style={{ fontSize: 14, color: "#000", lineHeight: "22px", margin: "0 0 24px" }}>
+                  This account has <strong style={{ color: "#000" }}>{unreviewed} unreviewed {unreviewed === 1 ? "suggestion" : "suggestions"}</strong>
+                  {hasVariance && <> and a balance discrepancy of <strong style={{ color: "#000" }}>{variance}</strong></>}
                   . You can go back and review them, or mark the account as reconciled with a comment explaining why.
                 </p>
 
-                <label style={{ display: "block", fontSize: 12, color: "#8C8C8B", marginBottom: 4 }}>Comment</label>
+                <label style={{ display: "block", fontSize: 14, color: "#000", marginBottom: 4 }}>Comment</label>
                 <textarea
                   value={drawerComment}
                   onChange={e => setDrawerComment(e.target.value)}
-                  placeholder="Explain why this account is being reconciled with unreviewed suggestions…"
+                  placeholder="Explain why this account is being marked as complete without taking action on all suggestions."
                   style={{
                     width: "100%", minHeight: 120, padding: "8px 10px",
                     border: "1px solid #E9E9EB", borderRadius: 6,
@@ -12509,10 +12489,12 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                                   if (card.primaryLabel === "Review") {
                                     openVatPreview({ contact: card.contact, amount: card.tableRow["Amount"], date: card.tableRow["Date"], account: card.tableRow["Expense account"], type: "Invoice", status: "Review", fileName: card.contact + " invoice.pdf", bankMatch: false, isDuplicate: false, cardIdx: card.idx, cardTitle: card.title, vatFrom: card.tableRow["VAT rate name"], vatTo: card.tableRow["Suggested"], description: card.description });
                                   } else {
-                                    setResolvedCards(prev => new Set([...prev, card.idx])); setToast("Action recorded"); setTimeout(() => setToast(null), 3000);
+                                    setResolvedCards(prev => new Set([...prev, card.idx]));
+                                    addVatAuditEntry("VAT suggestion resolved", `${card.title} – ${card.contact}, ${card.tableRow["Amount"]}, ${card.tableRow["Date"]}. Marked as resolved.`, "#05A105");
+                                    setToast("Action recorded"); setTimeout(() => setToast(null), 3000);
                                   }
                                 }}
-                                onIgnore={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); setToast("Suggestion ignored"); setTimeout(() => setToast(null), 3000); }}
+                                onIgnore={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); addVatAuditEntry("VAT suggestion ignored", `${card.title} – ${card.contact}, ${card.tableRow["Amount"]}, ${card.tableRow["Date"]}. Suggestion ignored.`, "#8C8C8B"); setToast("Suggestion ignored"); setTimeout(() => setToast(null), 3000); }}
                                 onSecondaryAction={() => {
                                   if (card.secondaryLabel === "Review") {
                                     openVatPreview({ contact: card.contact, amount: card.tableRow["Amount"], date: card.tableRow["Date"], account: card.tableRow["Expense account"], type: "Invoice", status: "Review", fileName: card.contact + " invoice.pdf", bankMatch: false, isDuplicate: false, cardIdx: card.idx, cardTitle: card.title, vatFrom: card.tableRow["VAT rate name"], vatTo: card.tableRow["Suggested"], description: card.description });
