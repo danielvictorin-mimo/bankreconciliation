@@ -1531,12 +1531,12 @@ function RecommendationCard({
   onIgnore,
   onMore,
 }) {
-  const [expanded, setExpanded] = useState(!collapsed && !isIgnored);
+  const [expanded, setExpanded] = useState(!collapsed);
   const [collectMenuOpen, setCollectMenuOpen] = useState(false);
   const [collectMenuPos, setCollectMenuPos] = useState({ top: 0, left: 0 });
   const collectBtnRef = useRef(null);
-  // Sync expanded state when collapsed/ignored prop changes
-  useEffect(() => { setExpanded(!collapsed && !isIgnored); }, [collapsed, isIgnored]);
+  // Sync expanded state when collapsed prop changes (ignored cards stay expandable)
+  useEffect(() => { setExpanded(!collapsed); }, [collapsed]);
   useEffect(() => {
     if (!collectMenuOpen) return;
     const handler = (e) => {
@@ -1632,11 +1632,11 @@ function RecommendationCard({
             <PrimaryButton style={{ height: 40, padding: "0 14px", fontSize: 14, borderRadius: 8 }} icon={external ? <ExternalIcon /> : undefined} onClick={onPrimaryAction}>
               {primaryLabel}
             </PrimaryButton>
-            {!isIgnored && fileAction ? (
+            {fileAction ? (
               <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} icon={null} onClick={onFileAction}>
                 <PdfIcon />{fileAction}
               </SecondaryButton>
-            ) : !isIgnored && secondaryLabel ? (
+            ) : secondaryLabel ? (
               <SecondaryButton style={{ height: 40, padding: "0 12px", fontSize: 14, borderRadius: 8, borderColor: "#EFF1F4" }} onClick={onSecondaryAction || onFileAction}>
                 {secondaryLabel}
               </SecondaryButton>
@@ -2482,7 +2482,7 @@ function DescriptionFieldWithStar({ defaultValue, inputStyle, labelStyle, requir
   );
 }
 
-function CustomSelectDropdown({ value, onChange, options, placeholder, withStar = false, aiReasoning = null, error = false, style }) {
+function CustomSelectDropdown({ value, onChange, options, placeholder, withStar = false, aiReasoning = null, error = false, style, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [starHovered, setStarHovered] = useState(false);
   const ref = useRef(null);
@@ -2503,8 +2503,8 @@ function CustomSelectDropdown({ value, onChange, options, placeholder, withStar 
           <div style={{ fontSize: 14, color: "#1F2024", lineHeight: 1.55 }}>{aiReasoning}</div>
         </div>
       )}
-      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: withStar ? "0 12px 0 32px" : "0 12px", height: 40, border: error ? "1px solid #DC5C40" : "1px solid #E9E9EB", borderRadius: 8, background: error ? "#FEF2F0" : "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", position: "relative" }}
-        onMouseEnter={e => { if (!error) e.currentTarget.style.background = "#FAFAFA"; }} onMouseLeave={e => { e.currentTarget.style.background = error ? "#FEF2F0" : "#FFFFFF"; }}>
+      <div onClick={() => { if (!disabled) setOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: withStar ? "0 12px 0 32px" : "0 12px", height: 40, border: error ? "1px solid #DC5C40" : "1px solid #E9E9EB", borderRadius: 8, background: disabled ? "#F9F9F9" : error ? "#FEF2F0" : "#FFFFFF", cursor: disabled ? "not-allowed" : "pointer", fontSize: 14, color: "#000", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", position: "relative" }}
+        onMouseEnter={e => { if (!error && !disabled) e.currentTarget.style.background = "#FAFAFA"; }} onMouseLeave={e => { e.currentTarget.style.background = disabled ? "#F9F9F9" : error ? "#FEF2F0" : "#FFFFFF"; }}>
         {withStar && (
           <div
             style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", cursor: "pointer", zIndex: 10 }}
@@ -2680,9 +2680,11 @@ function DuplicateReviewPanel({ onClose, renderInvoice }) {
 }
 
 // ── Review & Publish Panel ────────────────────────────────────────────────────
-function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish, bankMatch, bankMatchAccount, bankMatchAccountNo, account, type, isDuplicate, onDelete, onArchive, onKeep }) {
+function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClose, onPublish, bankMatch, bankMatchAccount, bankMatchAccountNo, account, type, isDuplicate, onDelete, onArchive, onKeep, confirmMode = false, suppressEscape = false, reasoningText = null, onIgnore, currentVat = "", suggestedVat = "" }) {
   const [visible, setVisible] = useState(false);
-  const [docTab, setDocTab] = useState("Document");
+  const [docTab, setDocTab] = useState(confirmMode ? "Suggestion" : "Document");
+  const [currentVatVal, setCurrentVatVal] = useState(currentVat);
+  const [suggestedVatVal, setSuggestedVatVal] = useState(suggestedVat);
   const [whoOpen, setWhoOpen] = useState(true);
   const [bankOpen, setBankOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(true);
@@ -2714,10 +2716,11 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
     return () => clearTimeout(t);
   }, []);
   useEffect(() => {
+    if (suppressEscape) return;
     const h = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(onClose, 350); } };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
-  }, []);
+  }, [suppressEscape]);
   useEffect(() => {
     if (!docCanvasRef.current) return;
     const BASE_W = 620;
@@ -2760,7 +2763,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   const extractedAmt = Math.round(absAmt * 1.05 * 100) / 100;
   const diffAmt = Math.round((extractedAmt - absAmt) * 100) / 100;
 
-  const inputStyle = { width: "100%", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 12px", fontSize: 14, color: "#080908", fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box", background: "#FFFFFF", height: 40 };
+  const inputStyle = { width: "100%", border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 12px", fontSize: 14, color: "#000", fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box", background: confirmMode ? "#F9F9F9" : "#FFFFFF", height: 40, ...(confirmMode ? { cursor: "not-allowed" } : {}) };
   const labelStyle = { fontSize: 14, fontWeight: 500, color: "#080908", marginBottom: 6, display: "block" };
   const requiredDot = <span style={{ color: "#C8543A", marginLeft: 2 }}>*</span>;
 
@@ -3136,7 +3139,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
       <div style={{ width: 600, background: "#FFFFFF", display: "flex", flexDirection: "column", position: "relative", transform: visible ? "translateX(0)" : "translateX(100%)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)" }}>
         {/* Panel header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 36px", borderBottom: "1px solid #ECECEC", flexShrink: 0, height: 112, boxSizing: "border-box" }}>
-          <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>Review & Publish</span>
+          <span style={{ fontSize: 24, fontWeight: 500, color: "#080908" }}>{confirmMode ? "Review suggestion" : "Review & Publish"}</span>
           <button onClick={() => { setVisible(false); setTimeout(onClose, 280); }} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", padding: 0, flexShrink: 0 }}>
             <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><rect width="30" height="30" rx="15" fill="#F5F5F5"/><path d="M20 10L10 20M10 10L20 20" stroke="#2A2A2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
@@ -3162,18 +3165,100 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               </button>
             </div>
           )}
+          {/* Reasoning notification box */}
+          {reasoningText && (
+            <div style={{ margin: "16px 36px 0", background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span style={{ fontSize: 14, color: "#000", lineHeight: 1.5 }}>{reasoningText}</span>
+            </div>
+          )}
           {/* Tabs */}
           <div style={{ padding: "12px 36px 0", flexShrink: 0 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #ECECEC" }}>
-              {["Document", "Audit log"].map(t => (
+              {(confirmMode ? ["Suggestion", "Document", "Audit log"] : ["Document", "Audit log"]).map(t => (
                 <button key={t} onClick={() => setDocTab(t)} style={{ padding: "0 4px", marginRight: 20, height: 40, border: "none", borderBottom: docTab === t ? "2px solid #05A105" : "2px solid transparent", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: docTab === t ? 500 : 400, color: docTab === t ? "#1F2024" : "#7C7C7C", fontFamily: "'Inter', sans-serif", flexShrink: 0, marginBottom: -1 }}>
                   {t}
                 </button>
               ))}
             </div>
           </div>
+          {/* Suggestion tab content */}
+          {docTab === "Suggestion" && (
+            <div style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 500, color: "#000", fontFamily: "'Inter', sans-serif" }}>Current VAT</label>
+                  {!suggestedVat ? (
+                    <CustomSelectDropdown
+                      value={currentVatVal}
+                      onChange={setCurrentVatVal}
+                      options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]}
+                      placeholder="Select VAT rate"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={currentVatVal}
+                      onChange={e => setCurrentVatVal(e.target.value)}
+                      disabled
+                      style={{ height: 40, border: "1px solid #E9E9EB", borderRadius: 8, padding: "0 12px", fontSize: 14, color: "#000", fontFamily: "'Inter', sans-serif", outline: "none", background: "#F5F5F5", boxSizing: "border-box", width: "100%", cursor: "not-allowed" }}
+                    />
+                  )}
+                </div>
+                {suggestedVat && (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 13, fontWeight: 500, color: "#000", fontFamily: "'Inter', sans-serif" }}>Suggested VAT</label>
+                    <CustomSelectDropdown
+                      value={suggestedVatVal}
+                      onChange={setSuggestedVatVal}
+                      options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]}
+                      placeholder="Select VAT rate"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Audit log tab content */}
+          {docTab === "Audit log" && (
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 24px", fontFamily: "'Inter', sans-serif" }}>
+              {/* 30/04/2026 group */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F5F5F5", borderRadius: 8, padding: "0 12px", height: 46, marginBottom: 12 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>30/04/2026</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { time: "14:22", color: "#05A105", action: "Document published to Xero", actor: "Laura Bennett", details: "Document successfully posted to Xero. Status set to Awaiting Payment." },
+                    { time: "14:21", color: "#4C71DF", action: "Publish initiated",          actor: "Laura Bennett", details: "Publish to Xero triggered following manual review and VAT suggestion acceptance." },
+                  ].map((entry, i) => (
+                    <AuditEntry key={i} {...entry} />
+                  ))}
+                </div>
+              </div>
+              {/* 8 Mar 2026 group */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F5F5F5", borderRadius: 8, padding: "0 12px", height: 46, marginBottom: 12 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#000000" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#000000" }}>08/03/2026</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { time: "08:43", color: "#8C8C8B", action: "Document in review",         actor: "Mimo AI Agent",  details: "Document flagged for manual VAT review. Awaiting confirmation before publishing to Xero." },
+                    { time: "08:41", color: "#4C71DF", action: "Document created",            actor: "Mimo AI Agent",  details: "Document record created and extracted data validated. Ready for review." },
+                    { time: "08:41", color: "#4C71DF", action: "Document uploaded",           actor: "Laura Bennett",  details: "File received and queued for processing. Source: manual upload." },
+                  ].map((entry, i) => (
+                    <AuditEntry key={i} {...entry} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sections */}
-          <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ flex: 1, padding: "16px 20px", display: docTab === "Document" ? "flex" : "none", flexDirection: "column", gap: 12 }}>
 
           {/* Who is it for? */}
           <div>
@@ -3182,13 +3267,13 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               <div style={{ padding: "16px 16px 18px" }}>
                 <label style={labelStyle}>Contact{requiredDot}</label>
                 <div ref={contactRef} style={{ position: "relative" }}>
-                  <div onClick={() => setContactOpen(v => !v)} style={{ display: "flex", alignItems: "center", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", padding: "0 12px", gap: 8 }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#FAFAFA"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                  <div onClick={() => { if (!confirmMode) setContactOpen(v => !v); }} style={{ display: "flex", alignItems: "center", height: 40, border: "1px solid #E9E9EB", borderRadius: 8, background: confirmMode ? "#F9F9F9" : "#FFFFFF", cursor: confirmMode ? "not-allowed" : "pointer", fontSize: 14, color: "#1F2024", fontFamily: "'Inter', sans-serif", boxSizing: "border-box", padding: "0 12px", gap: 8 }}
+                    onMouseEnter={e => { if (!confirmMode) e.currentTarget.style.background = "#FAFAFA"; }} onMouseLeave={e => { e.currentTarget.style.background = confirmMode ? "#F9F9F9" : "#FFFFFF"; }}>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contactVal}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#05A105", background: "#F1F8F0", borderRadius: 4, padding: "0 6px", height: 21, display: "flex", alignItems: "center", flexShrink: 0 }}>New</span>
+                    {!confirmMode && <span style={{ fontSize: 11, fontWeight: 600, color: "#05A105", background: "#F1F8F0", borderRadius: 4, padding: "0 6px", height: 21, display: "flex", alignItems: "center", flexShrink: 0 }}>New</span>}
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M4 6l4 4 4-4" stroke="#7C7C7C" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
-                  {contactOpen && (
+                  {contactOpen && !confirmMode && (
                     <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 400, maxHeight: 220, overflowY: "auto" }}>
                       {allContacts.map(c => (
                         <div key={c} onClick={() => { setContactVal(c); setContactOpen(false); }} style={{ padding: "10px 14px", fontSize: 14, color: "#1F2024", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
@@ -3202,7 +3287,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
           </div>
 
           {/* Bank statement */}
-          <div>
+          {!confirmMode && <div>
             <SectionHeader label="Bank statement" open={bankOpen} onToggle={() => setBankOpen(v => !v)} />
             {bankOpen && (
               <div style={{ padding: "14px 16px 16px" }}>
@@ -3245,7 +3330,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
                 )}
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Details */}
           <div>
@@ -3254,26 +3339,26 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               <div style={{ padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Document type{requiredDot}</label>
-                  <CustomSelectDropdown value={docTypeVal} onChange={setDocTypeVal} options={["Invoice", "Credit note", "Bank statement", "Invoice Split"]} placeholder="Select type" error={!docTypeVal} />
+                  <CustomSelectDropdown value={docTypeVal} onChange={setDocTypeVal} options={["Invoice", "Credit note", "Bank statement", "Invoice Split"]} placeholder="Select type" error={!docTypeVal} disabled={confirmMode} />
                   {!docTypeVal && <span style={{ fontSize: 14, color: "#DC5C40", marginTop: 4, display: "block" }}>This field is required</span>}
                 </div>
                 <div>
                   <label style={labelStyle}>Reference{requiredDot}</label>
-                  <input value={reference} onChange={e => setReference(e.target.value)} style={inputStyle} />
+                  <input value={reference} onChange={e => setReference(e.target.value)} disabled={confirmMode} style={inputStyle} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
                     <label style={labelStyle}>Issue date</label>
-                    <input value={issueDate} onChange={e => setIssueDate(e.target.value)} style={inputStyle} />
+                    <input value={issueDate} onChange={e => setIssueDate(e.target.value)} disabled={confirmMode} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Due date</label>
-                    <input value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} />
+                    <input value={dueDate} onChange={e => setDueDate(e.target.value)} disabled={confirmMode} style={inputStyle} />
                   </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Currency</label>
-                  <SelectRow value="GBP" onChange={() => {}} options={["GBP", "USD", "EUR", "AUD"]} />
+                  <CustomSelectDropdown value="GBP" onChange={() => {}} options={["GBP", "USD", "EUR", "AUD"]} disabled={confirmMode} />
                 </div>
               </div>
             )}
@@ -3300,12 +3385,12 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
                     <DescriptionFieldWithStar defaultValue="International freight and logistics services" inputStyle={inputStyle} labelStyle={labelStyle} requiredDot={requiredDot} aiReasoning="The extracted text from the document reads 'International freight and logistics services'. This has been auto-filled as the line item description." />
                     <div>
                       <label style={labelStyle}>Amount{requiredDot}</label>
-                      <input defaultValue={amount || "£7,274.50"} style={inputStyle} />
+                      <input defaultValue={amount || "£7,274.50"} disabled={confirmMode} style={inputStyle} />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div>
                         <label style={labelStyle}>Account{requiredDot}</label>
-                        <CustomSelectDropdown value={accountVal} onChange={setAccountVal} options={["Postage, Freight & Courier", "Office Expenses", "Consulting", "Travel & Accommodation", "General Expenses", "Repairs & Maintenance", "Subscriptions", "Professional Fees", "Legal Fees", "Rent", "Purchases"]} withStar={!!accountVal} aiReasoning={({
+                        <CustomSelectDropdown value={accountVal} onChange={setAccountVal} options={["Postage, Freight & Courier", "Office Expenses", "Consulting", "Travel & Accommodation", "General Expenses", "Repairs & Maintenance", "Subscriptions", "Professional Fees", "Legal Fees", "Rent", "Purchases"]} withStar={!!accountVal} disabled={confirmMode} aiReasoning={({
                           "Postage, Freight & Courier": "The invoice description references international freight and courier services. The most fitting account code is 'Postage, Freight & Courier' (420).",
                           "Office Expenses": "The document contains charges related to office supplies and general administrative costs. 'Office Expenses' (460) is the appropriate account code.",
                           "Consulting": "The invoice describes professional advisory or consulting services rendered. 'Consulting' (480) is the correct account classification.",
@@ -3322,13 +3407,13 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
                       </div>
                       <div>
                         <label style={labelStyle}>Tracking category</label>
-                        <CustomSelectDropdown value="" onChange={() => {}} options={["Operations", "Marketing", "Finance", "Engineering"]} placeholder="Select category" />
+                        <CustomSelectDropdown value="" onChange={() => {}} options={["Operations", "Marketing", "Finance", "Engineering"]} placeholder="Select category" disabled={confirmMode} />
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div style={{ minWidth: 0 }}>
                         <label style={labelStyle}>Tax rate{requiredDot}</label>
-                        <CustomSelectDropdown value={taxRateVal} onChange={setTaxRateVal} options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]} withStar={true} aiReasoning="The supplier is based internationally, making this transaction subject to reverse charge VAT. 'Reverse Charge Expenses (0%)' is the correct tax treatment." />
+                        <CustomSelectDropdown value={taxRateVal} onChange={setTaxRateVal} options={["Reverse Charge Expenses (0%)", "20% (VAT on Expenses)", "Exempt Expenses", "Zero Rated Expenses"]} withStar={true} disabled={confirmMode} aiReasoning="The supplier is based internationally, making this transaction subject to reverse charge VAT. 'Reverse Charge Expenses (0%)' is the correct tax treatment." />
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <label style={{ ...labelStyle, color: "#000" }}>Tax amount{requiredDot}</label>
@@ -3365,7 +3450,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               <div style={{ padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Publish as</label>
-                  <SelectRow value={publishAs} onChange={setPublishAs} options={["Awaiting payment", "Draft", "Approved"]} />
+                  <CustomSelectDropdown value={publishAs} onChange={setPublishAs} options={["Awaiting payment", "Draft", "Approved"]} disabled={confirmMode} />
                 </div>
               </div>
             )}
@@ -3410,6 +3495,28 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
               </button>
               <button onClick={() => { setVisible(false); setTimeout(() => { onDelete?.(); }, 280); }} style={{ flex: 1, height: 42, border: "1px solid #F5D1C9", borderRadius: 8, background: "#FEF2F0", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#DC5C40", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#FDEAE7"} onMouseLeave={e => e.currentTarget.style.background = "#FEF2F0"}>
                 Delete this document
+              </button>
+            </>
+          ) : confirmMode ? (
+            <>
+              <button onClick={() => { setVisible(false); setTimeout(onClose, 380); }} style={{ flex: 1, height: 42, border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#080908", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                Cancel
+              </button>
+              <button onClick={() => { setVisible(false); setTimeout(() => { onIgnore?.(); onClose(); }, 380); }} style={{ flex: 2, height: 42, border: "none", borderRadius: 8, background: "#FCEFEC", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#C8543A", fontFamily: "'Inter', sans-serif" }} onMouseEnter={e => e.currentTarget.style.background = "#F9E5E1"} onMouseLeave={e => e.currentTarget.style.background = "#FCEFEC"}>
+                Ignore suggestion
+              </button>
+              <button
+                disabled={!accountVal || !docTypeVal}
+                onClick={() => {
+                  if (!accountVal || !docTypeVal) return;
+                  setVisible(false);
+                  setTimeout(() => { onPublish?.(); onClose(); }, 380);
+                }}
+                style={{ flex: 3, height: 42, border: "none", borderRadius: 8, background: (!accountVal || !docTypeVal) ? "#C8E6C8" : "#05A105", cursor: (!accountVal || !docTypeVal) ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 500, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif", transition: "background 0.2s ease" }}
+                onMouseEnter={e => { if (accountVal && docTypeVal) e.currentTarget.style.background = "#058F05"; }}
+                onMouseLeave={e => { if (accountVal && docTypeVal) e.currentTarget.style.background = "#05A105"; }}
+              >
+                Accept suggestion
               </button>
             </>
           ) : (
@@ -6766,7 +6873,7 @@ function DataTable({ title, columns = [], rows = [], footerLabel, footerRow, onR
       {title && <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #E9E9EB" }}><span style={{ fontSize: 18, fontWeight: 500, color: "#080908" }}>{title}</span></div>}
       <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid #E9E9EB", background: "#FFFFFF" }}>
         {columns.map((col, ci) => (
-          <div key={col.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 500, color: "#8C8C8B", padding: col.cellPadding ? col.cellPadding.replace("14px", "10px") : "10px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none", justifyContent: col.align === "right" ? "flex-end" : "flex-start" }}>
+          <div key={col.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 400, color: "#8C8C8B", padding: col.cellPadding ? col.cellPadding.replace("14px", "10px") : "10px 16px", borderRight: ci < columns.length - 1 ? "1px solid #E9E9EB" : "none", justifyContent: col.align === "right" ? "flex-end" : "flex-start" }}>
             {col.label}{col.sortable && <SortIcon />}
           </div>
         ))}
@@ -11222,7 +11329,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "No VAT", strikethrough: true },
       "Suggested": "—",
     },
-    primaryLabel: "Review invoice", secondaryLabel: null,
+    primaryLabel: "Review", secondaryLabel: null,
   },
   {
     idx: 1, cat: "wrong-code", score: null,
@@ -11252,7 +11359,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
       "Suggested": "Reverse Charge (20%)",
     },
-    primaryLabel: "Accept", secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Review",
   },
   {
     idx: 3, cat: "non-reclaimable", score: null,
@@ -11267,7 +11374,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "Tax on Purchases (20%)", strikethrough: true },
       "Suggested": "Tax Exempt",
     },
-    primaryLabel: "Accept", secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Review",
   },
   {
     idx: 4, cat: "pva", score: null,
@@ -11282,7 +11389,7 @@ const VAT_CARDS = [
       "VAT rate name": { text: "No VAT", strikethrough: true },
       "Suggested": "Tax on Purchases (20%) (PVA)",
     },
-    primaryLabel: "Accept", secondaryLabel: "Edit",
+    primaryLabel: "Accept", secondaryLabel: "Review",
   },
 ];
 
@@ -11304,11 +11411,11 @@ const VAT_CAT_LABELS = {
 
 function VATReturnCard({ onReviewReport, showingReport = false, resolvedCards = new Set(), ignoredCards = new Set() }) {
   const VAT_ITEMS = [
-    { box: 1, label: "VAT due on sales",            value: "£3,211.44", highlight: false },
-    { box: 4, label: "VAT reclaimed on purchases",  value: "£1,097.56", highlight: false },
-    { box: 5, label: "Net VAT due to HMRC",         value: "£2,113.88", highlight: true  },
-    { box: 6, label: "Total sales (excl. VAT)",     value: "£16,057",   highlight: false },
-    { box: 7, label: "Total purchases (excl. VAT)", value: "£5,488",    highlight: false },
+    { box: 1, label: "VAT due on sales and other outputs",                                                                value: "£3,211.44", highlight: false },
+    { box: 4, label: "VAT reclaimed on purchases and other inputs (including acquisitions from the EU)",                  value: "£1,097.56", highlight: false },
+    { box: 5, label: "Net VAT to be paid to Customs or reclaimed by you (difference between boxes 3 and 4)",             value: "£2,113.88", highlight: true  },
+    { box: 6, label: "Total value of sales and all other outputs excluding any VAT",                                      value: "£16,057",   highlight: false },
+    { box: 7, label: "Total value of purchases and all other inputs excluding any VAT",                                   value: "£5,488",    highlight: false },
   ];
   const [collapsed, setCollapsed] = useState(false);
   const [downloadState, setDownloadState] = useState("idle"); // "idle" | "downloading" | "done"
@@ -11589,6 +11696,8 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const [periodDropOpen, setPeriodDropOpen]   = useState(false);
   const [activePeriod, setActivePeriod]       = useState(selectedPeriod);
   const [auditTrailOpen, setAuditTrailOpen]   = useState(false);
+  const auditTrailOpenRef = useRef(false);
+  useEffect(() => { auditTrailOpenRef.current = auditTrailOpen; }, [auditTrailOpen]);
   const periodDropRef = useRef(null);
   const ALL_PERIODS = ["January 2026","February 2026","March 2026","April 2026","May 2026","June 2026","July 2026","August 2026","September 2026","October 2026","November 2026","December 2026"];
   const [vatReportLoading, setVatReportLoading] = useState(false);
@@ -11597,12 +11706,25 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
   const [isAtBottom, setIsAtBottom]           = useState(true);
   const [inputValue, setInputValue]           = useState("");
   const [toast, setToast]                     = useState(null);
+  const [vatPreviewRow, setVatPreviewRow]     = useState(null);
+  const [vatPreviewVisible, setVatPreviewVisible] = useState(false);
+  const vatPreviewOpenRef = useRef(false);
+  const openVatPreview = (row) => { vatPreviewOpenRef.current = true; setVatPreviewRow(row); setVatPreviewVisible(false); requestAnimationFrame(() => requestAnimationFrame(() => setVatPreviewVisible(true))); };
+  const closeVatPreview = () => { vatPreviewOpenRef.current = false; setVatPreviewVisible(false); setTimeout(() => setVatPreviewRow(null), 360); };
+  const [vatAuditEntries, setVatAuditEntries] = useState([]);
+  const vatAuditCounterRef = useRef(0);
+  const addVatAuditEntry = (action, details, color = "#05A105") => {
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
+    const id = ++vatAuditCounterRef.current;
+    setVatAuditEntries(prev => [{ id, time, color, action, actor: "Laura Bennett", details }, ...prev]);
+  };
   const chatScrollRef = useRef(null);
   const chatEndRef    = useRef(null);
   const stepRowRefs   = useRef([]);
 
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose?.(); };
+    const handler = (e) => { if (e.key === "Escape") { if (vatPreviewOpenRef.current || auditTrailOpenRef.current) { return; } else { onClose?.(); } } };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
@@ -11923,7 +12045,7 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
 
         {/* Suggestions toggle — same expanding button as bank rec */}
         {resultsVisible && canvasReady && (
-          <Tooltip text={boxesOpen ? "Collapse sidebar" : "Expand sidebar"}>
+          <Tooltip text={boxesOpen ? "Collapse sidebar" : "Expand sidebar"} placement="bottom">
           <button
             onClick={() => setBoxesOpen(o => !o)}
             style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 8, cursor: "pointer", fontFamily: "inherit", border: "1px solid #E9E9EB", borderRadius: 8, background: "#FFFFFF", height: 48, minWidth: 48, padding: boxesOpen ? 0 : "0 12px 0 0", overflow: "hidden", justifyContent: "center", flexShrink: 0, transition: "padding 0.35s cubic-bezier(0.16,1,0.3,1), background 0.15s" }}
@@ -12314,6 +12436,22 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                 {/* Results heading */}
                 <h2 style={{ fontSize: 24, fontWeight: 500, color: "#080908", margin: "0 0 20px" }}>Results</h2>
 
+                {/* Analysis & key findings accordion */}
+                <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", marginBottom: 28 }}>
+                  <div onClick={() => setAnalysisOpen(o => !o)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
+                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)", flexShrink: 0, marginLeft: 12 }}>
+                      <ChevronUpIcon />
+                    </div>
+                  </div>
+                  <div style={{ overflow: "hidden", maxHeight: analysisOpen ? 300 : 0, opacity: analysisOpen ? 1 : 0, transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease" }}>
+                    <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "16px 0 0" }}>
+                      The VAT and miscoding review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Results table */}
                 <div style={{ marginBottom: 12 }}>
                   <DataTable
@@ -12337,22 +12475,6 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                       total: `£${catOrder.reduce((sum, key) => sum + VAT_CARDS.filter(c => c.cat === key).reduce((s, c) => s + Math.abs(VAT_CARD_ADJ[c.idx] || 0), 0), 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                     }}
                   />
-                </div>
-
-                {/* Analysis & key findings accordion */}
-                <div style={{ background: "#FFFFFF", border: "1px solid #ECECEC", borderRadius: 8, padding: "20px", marginBottom: 28 }}>
-                  <div onClick={() => setAnalysisOpen(o => !o)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Analysis & key findings</span>
-                    <div style={{ display: "flex", transform: analysisOpen ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)", flexShrink: 0, marginLeft: 12 }}>
-                      <ChevronUpIcon />
-                    </div>
-                  </div>
-                  <div style={{ overflow: "hidden", maxHeight: analysisOpen ? 300 : 0, opacity: analysisOpen ? 1 : 0, transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease" }}>
-                    <p style={{ fontSize: 14, color: "#2A2A2A", lineHeight: "20px", margin: "16px 0 0" }}>
-                      The VAT and miscoding review identified 6 issues across 5 categories from 184 transactions for {selectedPeriod}. The most significant findings are 2 entries with incorrect VAT codes and 1 non-reclaimable VAT charge on client entertainment. Net VAT due to HMRC is £5,200, calculated as Output VAT £23,400 less Input VAT £18,200. A duplicate entry from Premier Office Supplies requires deletion to avoid double-claiming £90 of input VAT. One late claim from March 2021 falls outside HMRC's 4-year statutory limit and cannot be reclaimed.
-                    </p>
-                  </div>
                 </div>
 
                 <hr style={{ border: "none", borderTop: "1px solid #E9E9EB", margin: "32px 0 40px" }} />
@@ -12383,9 +12505,19 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
                                 tableRow={card.tableRow}
                                 primaryLabel={card.primaryLabel}
                                 secondaryLabel={card.secondaryLabel}
-                                onPrimaryAction={() => { setResolvedCards(prev => new Set([...prev, card.idx])); setToast("Action recorded"); setTimeout(() => setToast(null), 3000); }}
+                                onPrimaryAction={() => {
+                                  if (card.primaryLabel === "Review") {
+                                    openVatPreview({ contact: card.contact, amount: card.tableRow["Amount"], date: card.tableRow["Date"], account: card.tableRow["Expense account"], type: "Invoice", status: "Review", fileName: card.contact + " invoice.pdf", bankMatch: false, isDuplicate: false, cardIdx: card.idx, cardTitle: card.title, vatFrom: card.tableRow["VAT rate name"], vatTo: card.tableRow["Suggested"], description: card.description });
+                                  } else {
+                                    setResolvedCards(prev => new Set([...prev, card.idx])); setToast("Action recorded"); setTimeout(() => setToast(null), 3000);
+                                  }
+                                }}
                                 onIgnore={() => { setIgnoredCards(prev => new Set([...prev, card.idx])); setToast("Suggestion ignored"); setTimeout(() => setToast(null), 3000); }}
-                                onSecondaryAction={() => {}}
+                                onSecondaryAction={() => {
+                                  if (card.secondaryLabel === "Review") {
+                                    openVatPreview({ contact: card.contact, amount: card.tableRow["Amount"], date: card.tableRow["Date"], account: card.tableRow["Expense account"], type: "Invoice", status: "Review", fileName: card.contact + " invoice.pdf", bankMatch: false, isDuplicate: false, cardIdx: card.idx, cardTitle: card.title, vatFrom: card.tableRow["VAT rate name"], vatTo: card.tableRow["Suggested"], description: card.description });
+                                  }
+                                }}
                                 onMore={() => {}}
                               />
                             </div>
@@ -12446,7 +12578,60 @@ function VATReviewFlow({ onClose, selectedPeriod = "April 2026", resolvedCards, 
       )}
 
       {/* Audit trail sidebar */}
-      {auditTrailOpen && <AuditTrailSidebar onClose={() => setAuditTrailOpen(false)} />}
+      {auditTrailOpen && <AuditTrailSidebar onClose={() => setAuditTrailOpen(false)} accountName="VAT review" period={activePeriod} liveEntries={vatAuditEntries} />}
+
+      {/* Document preview panel — opened from "Review invoice" */}
+      {vatPreviewRow && (
+        <ReviewPublishPanel
+          contact={vatPreviewRow.contact}
+          amount={vatPreviewRow.amount}
+          date={vatPreviewRow.date}
+          fileName={vatPreviewRow.fileName}
+          docStatus={vatPreviewRow.status}
+          bankMatch={vatPreviewRow.bankMatch}
+          account={vatPreviewRow.account}
+          type={vatPreviewRow.type}
+          isDuplicate={false}
+          confirmMode={true}
+          reasoningText={vatPreviewRow.description || null}
+          currentVat={vatPreviewRow.vatFrom && typeof vatPreviewRow.vatFrom === "object" ? vatPreviewRow.vatFrom.text : (vatPreviewRow.vatFrom || "")}
+          suggestedVat={vatPreviewRow.vatTo && vatPreviewRow.vatTo !== "—" ? vatPreviewRow.vatTo : ""}
+          onClose={closeVatPreview}
+          onPublish={() => {
+            const { cardIdx, cardTitle, contact, amount, date, vatFrom, vatTo } = vatPreviewRow;
+            const vatFromText = vatFrom && typeof vatFrom === "object" ? vatFrom.text : vatFrom;
+            const changeDesc = vatTo && vatTo !== "—" ? `VAT code changed: ${vatFromText} → ${vatTo}.` : `VAT treatment confirmed via invoice review (was: ${vatFromText}).`;
+            closeVatPreview();
+            setTimeout(() => {
+              setResolvedCards(prev => new Set([...prev, cardIdx]));
+              addVatAuditEntry(
+                "VAT suggestion resolved",
+                `${cardTitle} – ${contact}, ${amount}, ${date}. ${changeDesc}`,
+                "#05A105"
+              );
+              setToast("Document confirmed");
+              setTimeout(() => setToast(null), 3000);
+            }, 420);
+          }}
+          onIgnore={() => {
+            const { cardIdx, cardTitle, contact, amount, date } = vatPreviewRow;
+            closeVatPreview();
+            setTimeout(() => {
+              setIgnoredCards(prev => new Set([...prev, cardIdx]));
+              addVatAuditEntry(
+                "VAT suggestion ignored",
+                `${cardTitle} – ${contact}, ${amount}, ${date}. Suggestion ignored via document review.`,
+                "#8C8C8B"
+              );
+              setToast("Suggestion ignored");
+              setTimeout(() => setToast(null), 3000);
+            }, 420);
+          }}
+          onDelete={closeVatPreview}
+          onArchive={closeVatPreview}
+          onKeep={closeVatPreview}
+        />
+      )}
     </div>
   );
 }
