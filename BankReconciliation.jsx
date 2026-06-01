@@ -2713,7 +2713,8 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   const [xeroPrefsOpen, setXeroPrefsOpen] = useState(true);
   const [adjustOpen, setAdjustOpen] = useState(true);
   const [publishAs, setPublishAs] = useState("Awaiting payment");
-  const [prepayment, setPrepayment] = useState(true);
+  const isStackwise = (contact || "").toLowerCase().includes("stackwise");
+  const [prepayment, setPrepayment] = useState(isStackwise);
   const [reference, setReference] = useState("INV-04829");
   const [issueDate, setIssueDate] = useState("20 / 04 / 2026");
   const [dueDate, setDueDate] = useState("04 / 05 / 2026");
@@ -2736,6 +2737,31 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
     const t = setTimeout(() => setDocReady(true), 1500);
     return () => clearTimeout(t);
   }, []);
+  const [userZoom, setUserZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const panOffsetRef = useRef({ x: 0, y: 0 });
+  const zoomStep = 0.25;
+  const minZoom = 0.5;
+  const maxZoom = 3;
+  const handleZoomIn  = () => setUserZoom(z => { const n = Math.min(maxZoom, Math.round((z + zoomStep) * 100) / 100); if (n === z) return z; return n; });
+  const handleZoomOut = () => setUserZoom(z => { const n = Math.max(minZoom, Math.round((z - zoomStep) * 100) / 100); if (n === z) return z; setPanOffset({ x: 0, y: 0 }); panOffsetRef.current = { x: 0, y: 0 }; return n; });
+  const handleCanvasMouseDown = (e) => {
+    if (userZoom <= 1) return;
+    isPanningRef.current = true;
+    panStartRef.current = { x: e.clientX - panOffsetRef.current.x, y: e.clientY - panOffsetRef.current.y };
+    e.preventDefault();
+  };
+  const handleCanvasMouseMove = (e) => {
+    if (!isPanningRef.current) return;
+    const nx = e.clientX - panStartRef.current.x;
+    const ny = e.clientY - panStartRef.current.y;
+    panOffsetRef.current = { x: nx, y: ny };
+    setPanOffset({ x: nx, y: ny });
+  };
+  const handleCanvasMouseUp = () => { isPanningRef.current = false; };
+
   useEffect(() => {
     if (suppressEscape) return;
     const h = (e) => { if (e.key === "Escape") { setVisible(false); setTimeout(onClose, 350); } };
@@ -2954,6 +2980,97 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
         </div>
       );
     }
+    /* ── Template NorthStar: Bold media/agency ── */
+    if ((contactVal || "").toLowerCase().includes("northstar")) {
+      const [v1,v2,v3] = _split([0.50, 0.30, 0.20]);
+      const nsRows = [
+        ["Creative strategy & campaign direction", 1, _fmt(v1), _fmt(v1)],
+        ["Video production & post-production", 1, _fmt(v2), _fmt(v2)],
+        ["Media placement & distribution", 1, _fmt(v3), _fmt(v3)],
+      ];
+      return (
+        <div style={{ ..._pageStyle, background: "#FFFFFF", fontFamily: "'Inter', Arial, sans-serif" }}>
+          {/* Full-width black header bar */}
+          <div style={{ background: "#000000", padding: "36px 40px 28px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#FFFFFF", letterSpacing: -0.5 }}>{contactVal || "NORTHSTAR MEDIA GROUP"}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginTop: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>Media · Production · Strategy</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 36, fontWeight: 900, color: "rgba(255,255,255,0.08)", letterSpacing: -1, lineHeight: 1 }}>INV</div>
+                <div style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 700, marginTop: -4 }}>{_ref}</div>
+              </div>
+            </div>
+          </div>
+          {/* Yellow accent stripe */}
+          <div style={{ height: 4, background: "#F5C400" }} />
+          {/* From / To / Meta */}
+          <div style={{ padding: "28px 40px 20px", display: "flex", gap: 0, borderBottom: "1px solid #EBEBEB" }}>
+            <div style={{ flex: 1, paddingRight: 32, borderRight: "1px solid #EBEBEB" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>From</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#000" }}>{contactVal || "NorthStar Media Group"}</div>
+              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.8, marginTop: 4 }}>18 Soho Square<br/>London W1D 3QL<br/>United Kingdom</div>
+            </div>
+            <div style={{ flex: 1, paddingLeft: 32, paddingRight: 32, borderRight: "1px solid #EBEBEB" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Bill To</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#000" }}>Seabrook Foods Ltd.</div>
+              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.8, marginTop: 4 }}>Seabrook House, Pitfield<br/>Bradford BD4 8SB<br/>United Kingdom</div>
+            </div>
+            <div style={{ width: 160, paddingLeft: 32 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#AAA", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Details</div>
+              {[["Issue", _iDate], ["Due", _dDate], ["Currency", "GBP"]].map(([k,v]) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 5 }}>
+                  <span style={{ color: "#AAA" }}>{k}</span>
+                  <span style={{ color: "#000", fontWeight: 600 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Table */}
+          <div style={{ margin: "0 40px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #000" }}>
+                  {["Description", "Qty", "Rate", "Amount"].map((h,i) => (
+                    <th key={h} style={{ padding: "12px 10px", color: "#000", fontWeight: 700, textAlign: i >= 2 ? "right" : "left", fontSize: 10, letterSpacing: 1, textTransform: "uppercase" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {nsRows.map(([d,q,r,a], ri) => (
+                  <tr key={ri} style={{ borderBottom: "1px solid #F0F0F0" }}>
+                    <td style={{ padding: "13px 10px", color: "#1C1C1E", fontWeight: 500 }}>{d}</td>
+                    <td style={{ padding: "13px 10px", color: "#777", textAlign: "right" }}>{q}</td>
+                    <td style={{ padding: "13px 10px", color: "#777", textAlign: "right" }}>{r}</td>
+                    <td style={{ padding: "13px 10px", color: "#1C1C1E", fontWeight: 600, textAlign: "right" }}>{a}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Totals */}
+          <div style={{ padding: "20px 40px 32px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ width: 260 }}>
+              {[["Subtotal", _fmt(_total)], ["VAT (0%)", _fmt(0)]].map(([k,v]) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12, borderBottom: "1px solid #F0F0F0" }}>
+                  <span style={{ color: "#AAA" }}>{k}</span>
+                  <span style={{ color: "#555" }}>{v}</span>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, padding: "10px 14px", background: "#F5C400", borderRadius: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>TOTAL DUE</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{_fmt(_total)}</span>
+              </div>
+            </div>
+          </div>
+          {/* Footer */}
+          <div style={{ margin: "0 40px 28px", paddingTop: 16, borderTop: "1px solid #EBEBEB", fontSize: 10, color: "#AAA", lineHeight: 1.8 }}>
+            Payment due within 30 days · BACS: HSBC Business · Sort 40-11-60 · Account 72048391 · Ref: {_ref}
+          </div>
+        </div>
+      );
+    }
     /* ── Template 2: Dark tech ── */
     if (_tpl === 2) {
       const _unitPrice = 15.00;
@@ -3112,94 +3229,74 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", pointerEvents: visible ? "auto" : "none" }}>
       {/* Left: document preview area — slides in from left */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", transform: visible ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)" }}>
-        {/* Toolbar */}
-        <div style={{ height: 44, background: "#404040", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", flexShrink: 0, gap: 8 }}>
-          {/* Left: menu + filename */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-            <button style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, flexShrink: 0 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            </button>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fileName || "untitled"}</span>
-          </div>
-          {/* Centre: page nav + zoom */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.1)", borderRadius: 6, padding: "2px 8px", height: 28 }}>
-              <span style={{ fontSize: 13, color: "#FFFFFF", minWidth: 32, textAlign: "center" }}>1 / 1</span>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", transform: visible ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)", background: "#ECECEC", position: "relative" }}>
+        {/* Thumbnail strip — white card */}
+        <div style={{ width: 148, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0 16px", gap: 10, flexShrink: 0, overflowY: "auto", margin: "24px 0 24px 24px", background: "#FFFFFF", borderRadius: 12, boxShadow: "0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)" }}>
+          <div style={{ padding: 3, background: "#FFFFFF", borderRadius: 6, border: "2px solid #4A90D9", cursor: "pointer", flexShrink: 0 }}>
+            <div style={{ width: 108, height: 153, overflow: "hidden", position: "relative" }}>
+              <div style={{ transform: "scale(0.1742)", transformOrigin: "top left", width: 620, pointerEvents: "none", userSelect: "none" }}>
+                {renderInvoice()}
+              </div>
             </div>
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
-            {[
-              <path d="M5 12H19M12 5l-7 7 7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
-              <path d="M19 12H5M12 5l7 7-7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            ].map((d, i) => (
-              <button key={i} style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">{d}</svg>
-              </button>
-            ))}
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
-            <button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l-7 7 7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "rgba(255,255,255,0.1)", borderRadius: 6, padding: "2px 8px", height: 28 }}>
-              <span style={{ fontSize: 13, color: "#FFFFFF" }}>100%</span>
-            </div>
-            <button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l7 7-7 7" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.2)" }} />
-            {[
-              <><rect x="3" y="3" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="#FFFFFF" strokeWidth="1.5"/></>,
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>,
-              <><path d="M10 9l-3 3 3 3M14 9l3 3-3 3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>,
-              <><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9z" stroke="#FFFFFF" strokeWidth="1.5"/><path d="M9 22V12h6v10" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/></>,
-            ].map((d, i) => (
-              <button key={i} style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">{d}</svg>
-              </button>
-            ))}
-          </div>
-          {/* Right: action icons */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "flex-end" }}>
-            {[
-              <path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round"/>,
-              <path d="M21 15V16.2C21 17.88 21 18.72 20.673 19.362C20.385 19.927 19.927 20.385 19.362 20.673C18.72 21 17.88 21 16.2 21H7.8C6.12 21 5.28 21 4.638 20.673C4.073 20.385 3.615 19.927 3.327 19.362C3 18.72 3 17.88 3 16.2V15M7 10l5 5 5-5M12 15V3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
-              <path d="M6 9V6a3 3 0 0 1 6 0v3M5 9h14l-1.4 9.8A2 2 0 0 1 15.62 21H8.38a2 2 0 0 1-1.98-2.2L5 9z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>,
-              <><circle cx="12" cy="12" r="1" fill="#FFFFFF"/><circle cx="12" cy="5" r="1" fill="#FFFFFF"/><circle cx="12" cy="19" r="1" fill="#FFFFFF"/></>
-            ].map((d, i) => (
-              <button key={i} style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">{d}</svg>
-              </button>
-            ))}
+            <div style={{ textAlign: "center", marginTop: 4, fontSize: 10, color: "#8C8C8B", fontFamily: "'Inter', sans-serif" }}>1</div>
           </div>
         </div>
-        {/* Content: thumbnail strip + document canvas */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* Thumbnail strip */}
-          <div style={{ width: 200, background: "#525252", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0", gap: 12, flexShrink: 0 }}>
-            <div style={{ padding: 4, background: "#FFFFFF", borderRadius: 4, border: "2px solid #4A90D9", cursor: "pointer", flexShrink: 0 }}>
-              <div style={{ width: 130, height: 184, overflow: "hidden", position: "relative" }}>
-                <div style={{ transform: "scale(0.2097)", transformOrigin: "top left", width: 620, pointerEvents: "none", userSelect: "none" }}>
-                  {renderInvoice()}
-                </div>
-              </div>
-              <div style={{ textAlign: "center", marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>1</div>
+        {/* Document canvas */}
+        <div ref={docCanvasRef}
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: userZoom > 1 ? (isPanningRef.current ? "grabbing" : "grab") : "default" }}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
+        >
+          {!docReady ? (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
+                <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
             </div>
+          ) : null}
+          <div style={{ opacity: docReady ? 1 : 0, transition: "opacity 0.4s ease", transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${docScale * userZoom})`, transformOrigin: "center center", flexShrink: 0, userSelect: "none" }}>
+            {renderInvoice()}
           </div>
-          {/* Document canvas */}
-          <div ref={docCanvasRef} style={{ flex: 1, background: "#ECECEC", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-            {!docReady ? (
-              /* Loading spinner — shown for 1.5 s before document appears */
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
-                  <path d="M18 3A15 15 0 1 1 3 18" stroke="#05A105" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
+          {/* FAB — floating bottom-center */}
+          {docReady && (
+            <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#FFFFFF", borderRadius: 12, boxShadow: "0px 4px 6px -2px rgba(0,0,0,0.05), 0px 8px 16px -4px rgba(0,0,0,0.08)", display: "flex", alignItems: "center", padding: "12px", gap: 2, fontFamily: "'Inter', sans-serif" }}>
+              {/* Page nav */}
+              <div style={{ display: "flex", alignItems: "center", background: "#FFFFFF", border: "1px solid #E0E0E0", borderRadius: 8, padding: "0 10px", height: 36, gap: 4 }}>
+                <span style={{ fontSize: 14, color: "#1C1C1E", fontWeight: 500 }}>1</span>
+                <span style={{ fontSize: 14, color: "#ADADAD" }}>/</span>
+                <span style={{ fontSize: 14, color: "#1C1C1E", fontWeight: 500 }}>1</span>
               </div>
-            ) : null}
-            {/* Invoice template — fades in after spinner, scaled to fit canvas */}
-            <div style={{ opacity: docReady ? 1 : 0, transition: "opacity 0.4s ease", transform: `scale(${docScale})`, transformOrigin: "center center", flexShrink: 0 }}>
-              {renderInvoice()}
-            </div>{/* end invoice fade wrapper */}
-          </div>
+              {/* Divider */}
+              <div style={{ width: 1, height: 20, background: "#E9E9EB", margin: "0 4px" }} />
+              {/* Zoom controls */}
+              <button onClick={handleZoomOut} style={{ width: 36, height: 36, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: 20, color: "#545453", fontWeight: 300 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>−</button>
+              <div style={{ display: "flex", alignItems: "center", background: "#FFFFFF", border: "1px solid #E0E0E0", borderRadius: 8, padding: "0 10px", height: 36, minWidth: 56, justifyContent: "center" }}>
+                <span style={{ fontSize: 14, color: "#1C1C1E", fontWeight: 500 }}>{Math.round(userZoom * 100)}%</span>
+              </div>
+              <button onClick={handleZoomIn} style={{ width: 36, height: 36, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: 20, color: "#545453", fontWeight: 300 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>+</button>
+              {/* Divider */}
+              <div style={{ width: 1, height: 20, background: "#E9E9EB", margin: "0 4px" }} />
+              {/* Download */}
+              <button title="Download" style={{ width: 36, height: 36, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15V16.2C21 17.88 21 18.72 20.673 19.362C20.385 19.927 19.927 20.385 19.362 20.673C18.72 21 17.88 21 16.2 21H7.8C6.12 21 5.28 21 4.638 20.673C4.073 20.385 3.615 19.927 3.327 19.362C3 18.72 3 17.88 3 16.2V15M7 10l5 5 5-5M12 15V3" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {/* Print */}
+              <button title="Print" style={{ width: 36, height: 36, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6v-7z" stroke="#545453" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {/* More */}
+              <button title="More" style={{ width: 36, height: 36, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="1.5" fill="#545453"/><circle cx="12" cy="12" r="1.5" fill="#545453"/><circle cx="12" cy="19" r="1.5" fill="#545453"/></svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -3214,6 +3311,25 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
         </div>
         {/* Scrollable content — tabs scroll with content, only header is fixed */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          {/* Duplicate detected banner */}
+          {isDuplicate && (
+            <div style={{ margin: "16px 36px 0", padding: "14px 16px", background: "#FEF2F0", border: "1px solid #F5D1C9", borderRadius: 10, display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="10" cy="10" r="9" stroke="#DC5C40" strokeWidth="1.5"/>
+                <path d="M10 6v5" stroke="#DC5C40" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="10" cy="14" r="0.75" fill="#DC5C40" stroke="#DC5C40" strokeWidth="0.5"/>
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#1F2024", marginBottom: 3 }}>Duplicate detected</div>
+                <div style={{ fontSize: 14, color: "#000", lineHeight: 1.5 }}>The uploaded document is an identical duplicate of an existing file.</div>
+              </div>
+              <button onClick={() => setShowDuplicateView(true)} style={{ flexShrink: 0, height: 36, padding: "0 16px", border: "1px solid #E2D9D7", borderRadius: 8, background: "#FFFFFF", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "#1F2024", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F5F5F5"}
+                onMouseLeave={e => e.currentTarget.style.background = "#FFFFFF"}>
+                View
+              </button>
+            </div>
+          )}
           {/* Reasoning notification box */}
           {reasoningText && (
             <div style={{ margin: "16px 36px 0", background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
@@ -3511,15 +3627,17 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
             {adjustOpen && (
               <div style={{ padding: "14px 16px 16px" }}>
                 <div style={{ border: "1px solid #E9E9EB", borderRadius: 10, padding: "14px 14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-                  {/* AI insight box */}
+                  {/* AI insight box — only for Stackwise */}
+                  {isStackwise && (
                   <div style={{ background: "#F0FAF0", border: "1px solid #C8E6C8", borderRadius: 8, padding: "12px 14px", display: "flex", gap: 10, alignItems: "center" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M4.5 22V17M4.5 7V2M2 4.5H7M2 19.5H7M13 3L11.2658 7.50886C10.9838 8.24209 10.8428 8.60871 10.6235 8.91709C10.4292 9.1904 10.1904 9.42919 9.91709 9.62353C9.60871 9.84281 9.24209 9.98381 8.50886 10.2658L4 12L8.50886 13.7342C9.24209 14.0162 9.60871 14.1572 9.91709 14.3765C10.1904 14.5708 10.4292 14.8096 10.6235 15.0829C10.8428 15.3913 10.9838 15.7579 11.2658 16.4911L13 21L14.7342 16.4911C15.0162 15.7579 15.1572 15.3913 15.3765 15.0829C15.5708 14.8096 15.8096 14.5708 16.0829 14.3765C16.3913 14.1572 16.7579 14.0162 17.4911 13.7342L22 12L17.4911 10.2658C16.7579 9.98381 16.3913 9.8428 16.0829 9.62353C15.8096 9.42919 15.5708 9.1904 15.3765 8.91709C15.1572 8.60871 15.0162 8.24209 14.7342 7.50886L13 3Z" stroke="#05A105" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span style={{ fontSize: 14, color: "#1A5C1A", lineHeight: 1.5 }}>The invoice explicitly states 'Monthly' and 'Subscription', suggesting this may be a prepayment.</span>
                   </div>
+                  )}
                   {/* Toggle row */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Mark as prepayment</span>
-                    <div onClick={() => setPrepayment(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: prepayment ? "#05A105" : "#DBDBDB", cursor: "pointer", position: "relative", transition: "background 0.2s ease", flexShrink: 0 }}>
+                    <div onClick={() => { if (isStackwise) setPrepayment(v => !v); }} style={{ width: 44, height: 24, borderRadius: 12, background: prepayment ? "#05A105" : "#DBDBDB", cursor: isStackwise ? "pointer" : "not-allowed", opacity: isStackwise ? 1 : 0.4, position: "relative", transition: "background 0.2s ease", flexShrink: 0 }}>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 2, left: prepayment ? 22 : 2, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
                     </div>
                   </div>
@@ -17460,15 +17578,17 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
   }, []);
 
   const STATUS_STYLE = {
-    "Review":    { bg: "#FDF8EE", color: "#D5A750", border: "none" },
-    "Ready":     { bg: "#EDE9FB", color: "#6B4EE6", border: "none" },
-    "Archived":  { bg: "#F0F0F0", color: "#6B6B6B", border: "none" },
-    "Published": { bg: "#EAF2E2", color: "#05A105", border: "none" },
+    "Review":             { bg: "#FDF8EE", color: "#D5A750", border: "none" },
+    "Ready":              { bg: "#EDE9FB", color: "#6B4EE6", border: "none" },
+    "Archived":           { bg: "#F0F0F0", color: "#6B6B6B", border: "none" },
+    "Published":          { bg: "#F1F8F0", color: "#05A105", border: "none" },
+    "Manually Published": { bg: "#F1F8F0", color: "#05A105", border: "none" },
+    "Auto-published":     { bg: "#F1F8F0", color: "#05A105", border: "none" },
   };
 
   const [inboxRows, setInboxRows] = useState([
     { status: "Review", contact: "Stackwise",                       date: "29/04/2026", account: "Subscriptions (485)",                    ref: "DOC-2026-0511",      type: "Invoice",       tax: "£21.00",       amount: "£105.00",      uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
-    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Direct Expenses (325)",      ref: "INV-04829",          bankMatch: true, openRequestName: "Outback Logistics – April freight",          bankMatchAccount: "Lloyds Bank - Business",        bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 14:32:47", dot: true },
+    { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Direct Expenses (325)",      ref: "INV-04829",                                                                                                                                                         type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 14:32:47", dot: true },
     { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance (473)",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 09:05:22", dot: true },
     { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses (429)",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "23 May, 2026", uploadedDateTime: "23/05/2026, 11:48:59", dot: true },
     { status: "Review", contact: "Calendly LLC",                       date: "21/03/2026", account: "Subscriptions (485)",                   ref: "F7A7C97A-000212",    type: "Bank statement",tax: "US$0.00",      amount: "US$12.00",     uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "22 May, 2026", uploadedDateTime: "22/05/2026, 16:20:11", dot: true },
@@ -17524,7 +17644,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
     { status: "Published", contact: "Whitford Mechanical Services",  date: "20/01/2026", account: "General Expenses (429)",          ref: "WMS-26-0120",   type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "client",     uploadedByName: "Oliver Bennett", uploadedDate: "20 Jan, 2026", uploadedDateTime: "20/01/2026, 10:44:22" },
     { status: "Published", contact: "Gorgias Inc",                   date: "11/01/2026", account: "General Expenses (429)",          ref: "INC-01-2026-588",type: "Credit note",  tax: "US$0.00",      amount: "US$3,100.00",  uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "11 Jan, 2026", uploadedDateTime: "11/01/2026, 09:19:05" },
     { status: "Archived",  contact: "Acme Solutions Inc.",           date: "05/01/2026", account: "Consulting (412)",                ref: "INV-2540",      type: "Invoice Split", tax: "US$1,104.00",  amount: "US$14,904.00", uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "5 Jan, 2026",  uploadedDateTime: "05/01/2026, 08:58:44" },
-    { status: "Published", contact: "Northgate Financial Ltd",       date: "28/12/2025", account: "Audit & Accountancy fees (401)",         ref: "NF-2025-1228",  type: "Invoice",       tax: "£320.00",      amount: "£1,920.00",    uploadedBy: "client",     uploadedByName: "Sara Thompson",  uploadedDate: "28 Dec, 2025", uploadedDateTime: "28/12/2025, 13:15:00" },
+    { status: "Published", contact: "Northgate Financial Ltd",       date: "28/12/2025", account: "Audit & Accountancy fees (401)",         ref: "NF-2025-1228",  type: "Invoice",       tax: "£320.00",      amount: "£1,920.00",    uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "28 Dec, 2025", uploadedDateTime: "28/12/2025, 13:15:00" },
     { status: "Published", contact: "Elmwood Trading Co",            date: "22/12/2025", account: "Cost of Goods Sold (310)",                 ref: "ET-2025-1222",  type: "Invoice",       tax: "£112.50",      amount: "£675.00",      uploadedBy: "accountant", uploadedByName: "Laura Bennett",  uploadedDate: "22 Dec, 2025", uploadedDateTime: "22/12/2025, 15:10:30" },
     { status: "Archived",  contact: "Bridgewater Associates",        date: "18/12/2025", account: "Subscriptions (485)",             ref: "BWA-DEC25-001", type: "Bank statement",tax: "US$0.00",      amount: "US$299.00",    uploadedBy: "client",     uploadedByName: "James Clarke",   uploadedDate: "18 Dec, 2025", uploadedDateTime: "18/12/2025, 11:05:52" },
   ]);
@@ -17566,15 +17686,22 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
 
   const cols = [
     { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", align: "center", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
-    { key: "status",  label: "Status",     width: uploadingRows.length > 0 ? "150px" : "100px", render: (v, r) => {
+    { key: "status",  label: "Status",     width: uploadingRows.length > 0 ? "150px" : "130px", render: (v, r) => {
       const docType = r.type && r.type !== "Invoice Split" ? r.type : r.type === "Invoice Split" ? "Invoice" : "Document";
-      const tipText = r.status === "Ready"
+      const isPublished = r.status === "Published" && activeTab === "Archived";
+      const isManual = r._raw?.uploadedBy === "client";
+      const displayLabel = isPublished ? (isManual ? "Manually Published" : "Auto-published") : r.status;
+      const tipText = isPublished
+        ? (isManual
+            ? `Manually published by ${r._raw?.uploadedByName || "accountant"} on ${r.uploadedDate || ""}`
+            : `Auto-published on ${r.uploadedDate || ""} via Mimo AI`)
+        : r.status === "Ready"
         ? `${docType} ready to be published to Xero`
         : `${docType} contains missing or incorrect information`;
       return (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Tooltip text={tipText}>
-            <span style={{ fontSize: 12, fontWeight: 500, color: STATUS_STYLE[r.status]?.color, background: STATUS_STYLE[r.status]?.bg, border: STATUS_STYLE[r.status]?.border, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{r.status}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: STATUS_STYLE[displayLabel]?.color, background: STATUS_STYLE[displayLabel]?.bg, border: STATUS_STYLE[displayLabel]?.border, borderRadius: 6, padding: "0 8px", height: 25, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{displayLabel}</span>
           </Tooltip>
         </div>
       );
@@ -18071,7 +18198,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
         bankMatchAccountNo={inboxPreviewRow.bankMatchAccountNo}
         account={inboxPreviewRow.account}
         type={inboxPreviewRow.type}
-        isDuplicate={!!inboxPreviewRow.dot && inboxPreviewRow.status !== "Ready" && inboxPreviewRow.contact !== "NorthStar Media Group"}
+        isDuplicate={inboxPreviewRow.contact === "Outback Logistics Pty Ltd"}
         onClose={closeInboxPreview}
         onDelete={() => {
           const row = inboxPreviewRow;
