@@ -2980,6 +2980,104 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
         </div>
       );
     }
+    /* ── Template Meridian Freight: Industrial split layout ── */
+    if ((contactVal || "").toLowerCase().includes("meridian freight")) {
+      const _subtotal = _total;
+      const _vatAmt   = Math.round(_subtotal * 0.20 * 100) / 100;
+      const _grandTotal = _subtotal + _vatAmt;
+      const mRows = [
+        ["International freight & logistics services", 1, _fmt(Math.round(_subtotal * 0.60 * 100)/100), _fmt(Math.round(_subtotal * 0.60 * 100)/100)],
+        ["Customs clearance & documentation",          1, _fmt(Math.round(_subtotal * 0.20 * 100)/100), _fmt(Math.round(_subtotal * 0.20 * 100)/100)],
+        ["Port handling & storage fees",               1, _fmt(Math.round(_subtotal * 0.12 * 100)/100), _fmt(Math.round(_subtotal * 0.12 * 100)/100)],
+        ["Cargo insurance premium",                    1, _fmt(Math.round(_subtotal * 0.08 * 100)/100), _fmt(Math.round(_subtotal * 0.08 * 100)/100)],
+      ];
+      return (
+        <div style={{ ..._pageStyle, background: "#FFFFFF", fontFamily: "'Inter', Arial, sans-serif", display: "flex" }}>
+          {/* Left accent column */}
+          <div style={{ width: 8, background: "#E85D26", flexShrink: 0 }} />
+          {/* Main content */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            {/* Header */}
+            <div style={{ padding: "32px 32px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #F0F0F0" }}>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#1A1A1A", letterSpacing: -0.5 }}>{contactVal || "Meridian Freight Ltd"}</div>
+                <div style={{ fontSize: 10, color: "#AAA", marginTop: 5, letterSpacing: 1.5, textTransform: "uppercase" }}>Freight · Logistics · Customs</div>
+                <div style={{ fontSize: 10, color: "#AAA", marginTop: 12, lineHeight: 1.8 }}>Unit 4, Portside Industrial Estate<br/>Felixstowe IP11 3SY, United Kingdom</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 32, fontWeight: 900, color: "#E85D26", letterSpacing: -1 }}>INVOICE</div>
+                <div style={{ fontSize: 12, color: "#555", marginTop: 6, lineHeight: 1.8 }}>
+                  <span style={{ fontWeight: 600 }}>{_ref}</span><br/>
+                  {_iDate} → {_dDate}
+                </div>
+              </div>
+            </div>
+            {/* From / To */}
+            <div style={{ padding: "20px 32px", display: "flex", gap: 32, borderBottom: "1px solid #F0F0F0" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D26", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>From</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{contactVal || "Meridian Freight Ltd"}</div>
+                <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, marginTop: 2 }}>Unit 4, Portside Industrial Estate<br/>Felixstowe IP11 3SY, UK</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D26", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Bill To</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>Seabrook Foods Ltd.</div>
+                <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, marginTop: 2 }}>Seabrook House, Pitfield<br/>Bradford BD4 8SB, UK</div>
+              </div>
+              <div style={{ width: 140 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D26", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Details</div>
+                {[["Issue date", _iDate], ["Due date", _dDate], ["Currency", "GBP"], ["VAT", "20%"]].map(([k,v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}>
+                    <span style={{ color: "#AAA" }}>{k}</span>
+                    <span style={{ color: "#1A1A1A", fontWeight: 600 }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Table */}
+            <div style={{ margin: "0 32px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #1A1A1A" }}>
+                    {["Description", "Qty", "Rate", "Amount"].map((h,i) => (
+                      <th key={h} style={{ padding: "10px 8px", color: "#1A1A1A", fontWeight: 700, textAlign: i >= 2 ? "right" : "left", fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {mRows.map(([d,q,r,a], ri) => (
+                    <tr key={ri} style={{ borderBottom: "1px solid #F0F0F0" }}>
+                      <td style={{ padding: "11px 8px", color: "#1A1A1A", fontWeight: 500 }}>{d}</td>
+                      <td style={{ padding: "11px 8px", color: "#AAA", textAlign: "right" }}>{q}</td>
+                      <td style={{ padding: "11px 8px", color: "#555", textAlign: "right" }}>{r}</td>
+                      <td style={{ padding: "11px 8px", color: "#1A1A1A", fontWeight: 600, textAlign: "right" }}>{a}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Totals */}
+            <div style={{ padding: "16px 32px 24px", display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ width: 240 }}>
+                {[["Subtotal", _fmt(_subtotal)], ["VAT (20%)", _fmt(_vatAmt)]].map(([k,v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 11, borderBottom: "1px solid #F0F0F0" }}>
+                    <span style={{ color: "#AAA" }}>{k}</span><span style={{ color: "#555" }}>{v}</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, padding: "10px 14px", background: "#E85D26", borderRadius: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#FFFFFF" }}>TOTAL DUE</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#FFFFFF" }}>{_fmt(_grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ margin: "0 32px 24px", paddingTop: 12, borderTop: "1px solid #F0F0F0", fontSize: 9, color: "#BBB", lineHeight: 1.8 }}>
+              Payment within 30 days · Lloyds Bank · Sort 30-94-61 · Account 10489418 · Ref: {_ref}
+            </div>
+          </div>
+        </div>
+      );
+    }
     /* ── Template NorthStar: Bold media/agency ── */
     if ((contactVal || "").toLowerCase().includes("northstar")) {
       const [v1,v2,v3] = _split([0.50, 0.30, 0.20]);
@@ -3547,7 +3645,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
                   </div>
                   {/* Line item form */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 14px 0" }}>
-                    <DescriptionFieldWithStar defaultValue="Professional Full seats (monthly)" inputStyle={inputStyle} labelStyle={labelStyle} requiredDot={requiredDot} aiReasoning="The extracted text from the document reads 'Professional Full seats (monthly)'. This has been auto-filled as the line item description." />
+                    <DescriptionFieldWithStar defaultValue={(contact || "").toLowerCase().includes("meridian freight") ? "International freight & logistics services — March 2026" : "Professional Full seats (monthly)"} inputStyle={inputStyle} labelStyle={labelStyle} requiredDot={requiredDot} aiReasoning={(contact || "").toLowerCase().includes("meridian freight") ? "The document describes international freight and logistics services. This has been auto-filled as the line item description." : "The extracted text from the document reads 'Professional Full seats (monthly)'. This has been auto-filled as the line item description."} />
                     <div>
                       <label style={labelStyle}>Amount{requiredDot}</label>
                       <input defaultValue={amount || "£7,274.50"} disabled={confirmMode} style={inputStyle} />
@@ -3637,7 +3735,7 @@ function ReviewPublishPanel({ contact, amount, date, fileName, docStatus, onClos
                   {/* Toggle row */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "#080908" }}>Mark as prepayment</span>
-                    <div onClick={() => { if (isStackwise) setPrepayment(v => !v); }} style={{ width: 44, height: 24, borderRadius: 12, background: prepayment ? "#05A105" : "#DBDBDB", cursor: isStackwise ? "pointer" : "not-allowed", opacity: isStackwise ? 1 : 0.4, position: "relative", transition: "background 0.2s ease", flexShrink: 0 }}>
+                    <div onClick={() => setPrepayment(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: prepayment ? "#05A105" : "#DBDBDB", cursor: "pointer", position: "relative", transition: "background 0.2s ease", flexShrink: 0 }}>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 2, left: prepayment ? 22 : 2, transition: "left 0.2s ease", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
                     </div>
                   </div>
@@ -17652,7 +17750,10 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
   const activeSource = activeTab === "Archived" ? archivedRows : inboxRows;
   const filtered = activeSource.filter(r => {
     const matchSearch = !search || (r.contact || "").toLowerCase().includes(search.toLowerCase()) || (r.ref || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus = !statusFilter || r.status === statusFilter;
+    const matchStatus = !statusFilter
+      || (statusFilter === "Manually Published" ? (r.status === "Published" && r.uploadedBy === "client")
+        : statusFilter === "Auto-published" ? (r.status === "Published" && r.uploadedBy === "accountant")
+        : r.status === statusFilter);
     const matchDocType = docTypeFilter.size === 0 || docTypeFilter.has(r.type) || (docTypeFilter.has("General file") && !r.type);
     return matchSearch && matchStatus && matchDocType;
   });
@@ -17689,11 +17790,11 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
     { key: "status",  label: "Status",     width: uploadingRows.length > 0 ? "150px" : "130px", render: (v, r) => {
       const docType = r.type && r.type !== "Invoice Split" ? r.type : r.type === "Invoice Split" ? "Invoice" : "Document";
       const isPublished = r.status === "Published" && activeTab === "Archived";
-      const isManual = r._raw?.uploadedBy === "client";
+      const isManual = r.uploadedBy === "client";
       const displayLabel = isPublished ? (isManual ? "Manually Published" : "Auto-published") : r.status;
       const tipText = isPublished
         ? (isManual
-            ? `Manually published by ${r._raw?.uploadedByName || "accountant"} on ${r.uploadedDate || ""}`
+            ? `Manually published by ${r.uploadedByName || "accountant"} on ${r.uploadedDate || ""}`
             : `Auto-published on ${r.uploadedDate || ""} via Mimo AI`)
         : r.status === "Ready"
         ? `${docType} ready to be published to Xero`
@@ -17890,7 +17991,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
           </div>
           {/* Filter row */}
           {(() => {
-            const statusOpts = activeTab === "Archived" ? ["All statuses", "Archived", "Published"] : ["All statuses", "Review", "Ready"];
+            const statusOpts = activeTab === "Archived" ? ["All statuses", "Archived", "Manually Published", "Auto-published"] : ["All statuses", "Review", "Ready"];
             const chevron = (open) => (
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
                 <path d="M4 6L8 10L12 6" stroke="#080908" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
@@ -17918,7 +18019,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
                   </button>
                   {addFilterOpen && (() => {
                     const [addCat, setAddCat] = [addFilterCategory, setAddFilterCategory];
-                    const statusOpts2 = activeTab === "Archived" ? ["Any status", "Archived", "Published"] : ["Any status", "Review", "Ready"];
+                    const statusOpts2 = activeTab === "Archived" ? ["Any status", "Archived", "Manually Published", "Auto-published"] : ["Any status", "Review", "Ready"];
                     return (
                       <div ref={addFilterDropRef} style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 500, background: "#FFFFFF", border: "1px solid #E9E9EB", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", width: 540, overflow: "hidden", fontFamily: "'Inter',sans-serif" }}>
                         <div style={{ display: "flex", borderBottom: "1px solid #E9E9EB" }}>
@@ -18234,7 +18335,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
             const now = new Date();
             const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
             const publishedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
-            setArchivedRows(prev => [{ ...row, status: "Published", uploadedDate: publishedDate }, ...prev]);
+            setArchivedRows(prev => [{ ...row, status: "Published", uploadedDate: publishedDate, uploadedBy: "client", uploadedByName: "Laura Bennett" }, ...prev]);
             setInboxRows(prev => prev.filter(r => r.ref !== row.ref));
             showInboxToast("Document published successfully");
           }
@@ -18282,7 +18383,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
               const now = new Date();
               const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
               const publishedDate = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
-              const newArchived = readyChecked.map(r => ({ ...(r._raw || r), status: "Published", uploadedDate: publishedDate }));
+              const newArchived = readyChecked.map(r => ({ ...(r._raw || r), status: "Published", uploadedDate: publishedDate, uploadedBy: "client", uploadedByName: "Laura Bennett" }));
               setArchivedRows(prev => [...newArchived, ...prev]);
               setInboxRows(prev => prev.filter(r => !readyRefs.has(r.ref)));
               setInboxChecked(new Set());
