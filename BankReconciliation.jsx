@@ -17685,7 +17685,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
   };
 
   const [inboxRows, setInboxRows] = useState([
-    { status: "Review", contact: "Stackwise",                       date: "29/04/2026", account: "Subscriptions (485)",                    ref: "DOC-2026-0511",      type: "Invoice",       tax: "£21.00",       amount: "£105.00",      uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
+    { status: "Ready",  contact: "Stackwise",                       date: "29/04/2026", account: "Subscriptions (485)",                    ref: "DOC-2026-0511",      type: "Invoice",       tax: "£21.00",       amount: "£105.00",      uploadedBy: "client",      uploadedByName: "Sarah Thompson",  uploadedDate: "26 May, 2026", uploadedDateTime: "26/05/2026, 08:14:03", dot: true },
     { status: "Review", contact: "Outback Logistics Pty Ltd",          date: "20/04/2026", account: "Direct Expenses (325)",      ref: "INV-04829",                                                                                                                                                         type: "Invoice",       tax: "A$727.45",     amount: "A$8,001.95",   uploadedBy: "accountant",  uploadedByName: "Daniel Victorin",    uploadedDate: "25 May, 2026", uploadedDateTime: "25/05/2026, 14:32:47", dot: true },
     { status: "Review", contact: "Alpentech Engineering GmbH",         date: "16/04/2026", account: "Repairs & Maintenance (473)",           ref: "R-2026-0392",        type: "Credit note",   tax: "CHF 930.33",   amount: "CHF 12,415.83",uploadedBy: "accountant",  uploadedByName: "Laura Bennett",   uploadedDate: "24 May, 2026", uploadedDateTime: "24/05/2026, 09:05:22", dot: true },
     { status: "Ready",  contact: "Whitford Mechanical Services",       date: "14/04/2026", account: "General Expenses (429)",                ref: "WMS-26-0418",        bankMatch: true, openRequestName: "Whitford – March maintenance",        bankMatchAccount: "Lloyds Bank - Operations GBP",  bankMatchAccountNo: "12-5561-12344-27", type: "Invoice",       tax: "£98.40",       amount: "£830.40",      uploadedBy: "accountant",  uploadedByName: "Oliver Bennett",  uploadedDate: "23 May, 2026", uploadedDateTime: "23/05/2026, 11:48:59", dot: true },
@@ -17787,7 +17787,7 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
 
   const cols = [
     { key: "check", label: <input type="checkbox" className="mimo-cb mimo-cb-all" onChange={e=>{if(e.target.checked)setInboxChecked(new Set(rows.map((_,i)=>i)));else setInboxChecked(new Set());}} checked={rows.length>0&&rows.every((_,i)=>inboxChecked.has(i))} />, width: "48px", cellPadding:"14px 12px", align: "center", render: (_,row,ri)=><input type="checkbox" className="mimo-cb" checked={!!inboxChecked.has(ri)} onChange={e=>{e.stopPropagation();const n=new Set(inboxChecked);e.target.checked?n.add(ri):n.delete(ri);setInboxChecked(n);}} onClick={e=>e.stopPropagation()} /> },
-    { key: "status",  label: "Status",     width: uploadingRows.length > 0 ? "150px" : "130px", render: (v, r) => {
+    { key: "status",  label: "Status",     width: activeTab === "Archived" ? "175px" : (uploadingRows.length > 0 ? "150px" : "130px"), render: (v, r) => {
       const docType = r.type && r.type !== "Invoice Split" ? r.type : r.type === "Invoice Split" ? "Invoice" : "Document";
       const isPublished = r.status === "Published" && activeTab === "Archived";
       const isManual = r.uploadedBy === "client";
