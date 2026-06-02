@@ -18167,15 +18167,15 @@ function InboxPage({ onUploadDocuments, externalUploadedFiles }) {
             const isScrollable = tableScrollable;
             const gridTpl = cols.map(c => {
               if (!c.width) return "1fr";
-              if (c.width === "1fr") return "minmax(120px, 1fr)";
+              if (c.width === "1fr") return c.key === "contact" ? "minmax(250px, 1fr)" : "minmax(120px, 1fr)";
               if (c.fixedWidth) return `minmax(${c.width}, ${c.width})`;
-              return `minmax(0, ${c.width})`;
+              return `minmax(${c.width}, ${c.width})`;
             }).join(" ");
             const lastI = cols.length - 1;
             const stickyStyle = (i, bg) => i === lastI && isScrollable ? { position:"sticky", right:0, background: bg, zIndex:2 } : {};
             return (
               <div ref={tableScrollRef} style={{ overflowX:"auto", border:"1px solid #E9E9EB", borderRadius:"0 0 8px 8px", borderTop:"none", background:"#FFFFFF", fontFamily:"'Inter',sans-serif" }}>
-                <div style={{ minWidth: 1260 }}>
+                <div style={{ minWidth: 1480 }}>
                   {/* Header */}
                   <div style={{ display:"grid", gridTemplateColumns: gridTpl, borderBottom:"1px solid #E9E9EB", background:"#FFFFFF" }}>
                     {cols.map((col, ci) => (
